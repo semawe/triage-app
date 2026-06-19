@@ -1,0 +1,195 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ── NextAuth required models ──────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+
+  orgMemberships   OrganisationMember[]
+  spaceMemberships SpaceMember[]
+  agendaItems      AgendaItem[]
+  outputs          Output[]
+  assignedOutputs  Output[]             @relation("OutputAssignee")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ── App models ────────────────────────────────────────────────────────────────
+
+model Organisation {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members OrganisationMember[]
+  spaces  Space[]
+}
+
+enum OrgRole {
+  admin
+  member
+}
+
+model OrganisationMember {
+  id             String   @id @default(cuid())
+  organisationId String
+  userId         String
+  role           OrgRole  @default(member)
+  createdAt      DateTime @default(now())
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organisationId, userId])
+}
+
+enum SpaceType {
+  circle
+  project
+}
+
+model Space {
+  id             String    @id @default(cuid())
+  organisationId String
+  name           String
+  type           SpaceType
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organisation Organisation  @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  members      SpaceMember[]
+  meetings     Meeting[]
+}
+
+enum SpaceRole {
+  lead
+  member
+}
+
+model SpaceMember {
+  id        String    @id @default(cuid())
+  spaceId   String
+  userId    String
+  role      SpaceRole @default(member)
+  createdAt DateTime  @default(now())
+
+  space Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([spaceId, userId])
+}
+
+enum MeetingStatus {
+  draft
+  open
+  closed
+}
+
+model Meeting {
+  id        String        @id @default(cuid())
+  spaceId   String
+  date      DateTime
+  status    MeetingStatus @default(draft)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  space       Space        @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  agendaItems AgendaItem[]
+}
+
+enum ItemStatus {
+  pending
+  active
+  done
+}
+
+model AgendaItem {
+  id        String     @id @default(cuid())
+  meetingId String
+  authorId  String
+  title     String
+  order     Int
+  status    ItemStatus @default(pending)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  meeting Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  author  User     @relation(fields: [authorId], references: [id])
+  outputs Output[]
+}
+
+enum OutputType {
+  note
+  action
+  decision
+  project
+  governance
+}
+
+model Output {
+  id         String     @id @default(cuid())
+  itemId     String
+  authorId   String
+  type       OutputType
+  content    String     @db.Text
+  assigneeId String?
+  dueDate    DateTime?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  item     AgendaItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  author   User       @relation(fields: [authorId], references: [id])
+  assignee User?      @relation("OutputAssignee", fields: [assigneeId], references: [id])
+}
