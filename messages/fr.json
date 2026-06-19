@@ -1,0 +1,80 @@
+{
+  "app": {
+    "name": "Triage App",
+    "tagline": "Facilitation du triage, pour Holacracy et au-delà"
+  },
+  "auth": {
+    "signIn": "Se connecter",
+    "signOut": "Se déconnecter",
+    "signInWithGoogle": "Continuer avec Google",
+    "signInWithEmail": "Continuer avec un lien magique",
+    "email": "Adresse email",
+    "send": "Envoyer le lien",
+    "checkEmail": "Vérifiez votre boîte mail"
+  },
+  "nav": {
+    "home": "Accueil",
+    "meetings": "Réunions",
+    "spaces": "Espaces",
+    "members": "Membres",
+    "roles": "Rôles"
+  },
+  "space": {
+    "type": {
+      "circle": "Cercle",
+      "project": "Projet",
+      "instance": "Instance"
+    },
+    "new": "Nouvel espace",
+    "name": "Nom"
+  },
+  "role": {
+    "new": "Nouveau rôle",
+    "name": "Nom du rôle",
+    "purpose": "Raison d'être",
+    "assign": "Affecter",
+    "unassign": "Désaffecter",
+    "noHolder": "Rôle vacant"
+  },
+  "meeting": {
+    "new": "Nouvelle réunion",
+    "agenda": "Ordre du jour",
+    "addItem": "Ajouter un point",
+    "nextItem": "Point suivant",
+    "closeItem": "Clore ce point",
+    "closeMeeting": "Clore la réunion",
+    "status": {
+      "draft": "Brouillon",
+      "open": "En cours",
+      "closed": "Terminée"
+    }
+  },
+  "item": {
+    "status": {
+      "pending": "En attente",
+      "active": "En cours",
+      "done": "Traité"
+    }
+  },
+  "output": {
+    "new": "Ajouter un output",
+    "type": {
+      "note": "Note",
+      "action": "Action",
+      "decision": "Décision",
+      "project": "Projet",
+      "governance": "Gouvernance"
+    }
+  },
+  "triage": {
+    "tracks": {
+      "title": "Pistes de traitement",
+      "next_action": "Action suivante",
+      "project": "Projet",
+      "waiting_for": "En attente de…",
+      "someday_maybe": "Un jour peut-être",
+      "reference": "Référence",
+      "trash": "À abandonner"
+    }
+  }
+}

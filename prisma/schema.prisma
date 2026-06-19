@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "../src/generated/prisma"
 }
 
@@ -20,6 +20,7 @@ model User {
 
   orgMemberships   OrganisationMember[]
   spaceMemberships SpaceMember[]
+  roleAssignments  RoleAssignment[]
   agendaItems      AgendaItem[]
   outputs          Output[]
   assignedOutputs  Output[]             @relation("OutputAssignee")
@@ -98,6 +99,7 @@ model OrganisationMember {
 enum SpaceType {
   circle
   project
+  instance // codir, board, comité, etc.
 }
 
 model Space {
@@ -111,6 +113,7 @@ model Space {
   organisation Organisation  @relation(fields: [organisationId], references: [id], onDelete: Cascade)
   members      SpaceMember[]
   meetings     Meeting[]
+  roles        Role[]
 }
 
 enum SpaceRole {
@@ -168,6 +171,30 @@ model AgendaItem {
   meeting Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
   author  User     @relation(fields: [authorId], references: [id])
   outputs Output[]
+}
+
+model Role {
+  id        String   @id @default(cuid())
+  spaceId   String
+  name      String
+  purpose   String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  space       Space            @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  assignments RoleAssignment[]
+}
+
+model RoleAssignment {
+  id        String    @id @default(cuid())
+  roleId    String
+  userId    String
+  startDate DateTime  @default(now())
+  endDate   DateTime?
+  createdAt DateTime  @default(now())
+
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 enum OutputType {

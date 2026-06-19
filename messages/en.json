@@ -1,0 +1,80 @@
+{
+  "app": {
+    "name": "Triage App",
+    "tagline": "Triage facilitation, for Holacracy and beyond"
+  },
+  "auth": {
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "signInWithGoogle": "Continue with Google",
+    "signInWithEmail": "Continue with a magic link",
+    "email": "Email address",
+    "send": "Send link",
+    "checkEmail": "Check your inbox"
+  },
+  "nav": {
+    "home": "Home",
+    "meetings": "Meetings",
+    "spaces": "Spaces",
+    "members": "Members",
+    "roles": "Roles"
+  },
+  "space": {
+    "type": {
+      "circle": "Circle",
+      "project": "Project",
+      "instance": "Instance"
+    },
+    "new": "New space",
+    "name": "Name"
+  },
+  "role": {
+    "new": "New role",
+    "name": "Role name",
+    "purpose": "Purpose",
+    "assign": "Assign",
+    "unassign": "Unassign",
+    "noHolder": "Vacant role"
+  },
+  "meeting": {
+    "new": "New meeting",
+    "agenda": "Agenda",
+    "addItem": "Add item",
+    "nextItem": "Next item",
+    "closeItem": "Close item",
+    "closeMeeting": "Close meeting",
+    "status": {
+      "draft": "Draft",
+      "open": "Open",
+      "closed": "Closed"
+    }
+  },
+  "item": {
+    "status": {
+      "pending": "Pending",
+      "active": "Active",
+      "done": "Done"
+    }
+  },
+  "output": {
+    "new": "Add output",
+    "type": {
+      "note": "Note",
+      "action": "Action",
+      "decision": "Decision",
+      "project": "Project",
+      "governance": "Governance"
+    }
+  },
+  "triage": {
+    "tracks": {
+      "title": "Triage tracks",
+      "next_action": "Next action",
+      "project": "Project",
+      "waiting_for": "Waiting for…",
+      "someday_maybe": "Someday / maybe",
+      "reference": "Reference",
+      "trash": "Drop it"
+    }
+  }
+}
