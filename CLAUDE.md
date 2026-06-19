@@ -45,6 +45,21 @@ Output                (id, item_id, type: note|action|decision|project, content,
 - **Phase 2** : Export — Notion + Google Drive
 - **Phase 3** : Synchro (post-V1)
 
+## Base de données — dev
+
+PostgreSQL sur VPS OVH `debian@51.178.234.59` (même instance que of-qualiopi).
+Base : `triageapp`, user : `triageapp`. Connexion locale via tunnel SSH :
+
+```bash
+ssh -N -L 15432:localhost:5432 -i ~/.ssh/id_semawe_master debian@51.178.234.59 &
+```
+
+DATABASE_URL dev : `postgresql://triageapp:<mdp>@localhost:15432/triageapp`
+DATABASE_URL prod (sur le VPS) : `postgresql://triageapp:<mdp>@localhost:5432/triageapp`
+
+Le mot de passe est dans `.env.local` (gitignorée) et dans la page Secrets Notion.
+Migration : `npx prisma migrate dev --name <nom>` (tunnel ouvert requis).
+
 ## Autonomie
 
 Périmètre standard Claude Code (§5 CLAUDE.md racine).
