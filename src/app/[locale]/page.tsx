@@ -1,11 +1,8 @@
-import { useTranslations } from "next-intl";
+import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
 
-export default function HomePage() {
-  const t = useTranslations("app");
-  return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-4 p-8">
-      <h1 className="text-3xl font-bold">{t("name")}</h1>
-      <p className="text-gray-600">{t("tagline")}</p>
-    </main>
-  );
+export default async function HomePage() {
+  const session = await auth();
+  if (!session) redirect("/login");
+  redirect("/meetings");
 }
