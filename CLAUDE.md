@@ -16,13 +16,15 @@ Cible : organisations Holacracy et non-Holacracy, distribué librement.
 
 ## Stack
 
-- **Next.js 15** (App Router, React Server Components)
-- **PostgreSQL** (VPS OVH)
-- **Prisma** (ORM, migrations)
-- **NextAuth.js v5** (Google OAuth + magic links via Resend)
-- **Server-Sent Events** (temps réel, 20-30 participants max par réunion)
-- **Tailwind CSS + shadcn/ui**
-- **Docker + Nginx** (deploy VPS OVH)
+- **Next.js 16.2.9** (App Router, RSC, Turbopack) — `params` est une `Promise<{...}>`
+- **PostgreSQL** local dev via Postgres.app v2.9.5 (`aliocha@localhost:5432/triageapp`) ; prod sur VPS OVH
+- **Prisma v7** avec `@prisma/adapter-pg` (PrismaPg) — `src/lib/prisma.ts`
+- **NextAuth.js v5 beta** (`next-auth@beta`) — Google OAuth uniquement en V1, `src/lib/auth.ts`
+- **next-intl v4** — routing `/[locale]/`, fichiers `messages/fr.json` et `messages/en.json` ; proxy `src/proxy.ts` (remplace `middleware.ts`)
+- **Tailwind CSS** (pas shadcn pour l'instant)
+- **Server Actions** pour toutes les mutations (pas d'API REST)
+- **Server-Sent Events** (temps réel) : Phase 2+
+- **Docker + Nginx** (deploy VPS OVH) : Phase 2+
 
 ## Schéma de données (Prisma)
 
@@ -38,27 +40,57 @@ Output                (id, item_id, type: note|action|decision|project, content,
                        assignee_id, due_date)
 ```
 
+## Architecture — fichiers clés
+
+```
+src/
+  lib/auth.ts           # NextAuth v5 config (Google OAuth, PrismaAdapter)
+  lib/prisma.ts         # Singleton PrismaClient avec PrismaPg adapter
+  lib/session.ts        # requireAuth() / requireOrg() — redirections locale-aware
+  actions/org.ts        # createOrg (Server Action)
+  actions/meeting.ts    # createMeeting, addAgendaItem, openMeeting, nextItem, closeMeeting
+  actions/output.ts     # addOutput
+  i18n/routing.ts       # defineRouting({ locales: ['fr','en'], defaultLocale: 'fr' })
+  i18n/navigation.ts    # createNavigation(routing) — Link, redirect locale-aware
+  i18n/request.ts       # getRequestConfig → messages/${locale}.json
+  proxy.ts              # next-intl middleware (remplace middleware.ts, convention Next.js 16)
+  app/[locale]/
+    layout.tsx          # NextIntlClientProvider
+    setup/page.tsx      # Onboarding : créer une organisation
+    meetings/page.tsx   # Liste + formulaire de création
+    meetings/[id]/
+      page.tsx          # Facilitation RSC (agenda, point actif, outputs, récap)
+      PistesPanel.tsx   # Client — panneau 6 pistes rétractable
+  components/AppShell.tsx  # Nav bar dark mode
+messages/
+  fr.json               # Traductions françaises
+  en.json               # Traductions anglaises
+prisma/schema.prisma    # Schéma complet (Organisation, Space, Role, Meeting, AgendaItem, Output)
+```
+
 ## Roadmap
 
-- **Phase 0** : Fondations — repo, schéma Prisma, auth, orgs/espaces/membres, deploy VPS
-- **Phase 1** : Triage V1 — agenda, facilitation, 6 pistes, outputs
-- **Phase 2** : Export — Notion + Google Drive
-- **Phase 3** : Synchro (post-V1)
+- **Phase 0** ✅ : Fondations — repo, schéma Prisma, auth Google, dark mode, i18n fr/en
+- **Phase 1** ✅ : Triage V1 — onboarding org, agenda, facilitation, 6 pistes GTD, outputs
+- **Phase 2** : Espaces multiples, gestion membres, rôles dans les espaces
+- **Phase 3** : Export — Notion + Google Drive
+- **Phase 4** : Temps réel (SSE) + synchro (check-in tactique)
 
 ## Base de données — dev
 
-PostgreSQL sur VPS OVH `debian@51.178.234.59` (même instance que of-qualiopi).
-Base : `triageapp`, user : `triageapp`. Connexion locale via tunnel SSH :
+**Local (Mac)** : Postgres.app v2.9.5, base `triageapp`, user `aliocha` (pas de mot de passe, socket Unix).
+```
+DATABASE_URL="postgresql://aliocha@localhost:5432/triageapp"
+```
 
+**VPS OVH** (prod à venir) : `debian@51.178.234.59`, même instance que of-qualiopi.
+Connexion locale via tunnel SSH :
 ```bash
 ssh -N -L 15432:localhost:5432 -i ~/.ssh/id_semawe_master debian@51.178.234.59 &
 ```
+Note : le réseau domicile peut bloquer ce tunnel — utiliser un hotspot ou VPN si nécessaire.
 
-DATABASE_URL dev : `postgresql://triageapp:<mdp>@localhost:15432/triageapp`
-DATABASE_URL prod (sur le VPS) : `postgresql://triageapp:<mdp>@localhost:5432/triageapp`
-
-Le mot de passe est dans `.env.local` (gitignorée) et dans la page Secrets Notion.
-Migration : `npx prisma migrate dev --name <nom>` (tunnel ouvert requis).
+Migration : `npx prisma migrate dev --name <nom>`
 
 ## Autonomie
 
