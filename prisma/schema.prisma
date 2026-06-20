@@ -24,6 +24,7 @@ model User {
   agendaItems      AgendaItem[]
   outputs          Output[]
   assignedOutputs  Output[]             @relation("OutputAssignee")
+  superAdmin       SuperAdmin?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -68,14 +69,19 @@ model VerificationToken {
 // ── App models ────────────────────────────────────────────────────────────────
 
 model Organisation {
-  id        String   @id @default(cuid())
-  name      String
-  slug      String   @unique
+  id           String  @id @default(cuid())
+  name         String
+  slug         String  @unique
+  logoUrl      String?
+  primaryColor String? // hex ex: "#6366f1"
+  features     Json    @default("{}")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  members OrganisationMember[]
-  spaces  Space[]
+  members        OrganisationMember[]
+  spaces         Space[]
+  pendingInvites PendingInvite[]
 }
 
 enum OrgRole {
@@ -103,14 +109,21 @@ enum SpaceType {
 }
 
 model Space {
-  id             String    @id @default(cuid())
-  organisationId String
-  name           String
-  type           SpaceType
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id               String    @id @default(cuid())
+  organisationId   String
+  parentId         String?
+  name             String
+  type             SpaceType
+  purpose          String?   @db.Text
+  domains          String[]
+  accountabilities String[]
+  isPrivate        Boolean   @default(false)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   organisation Organisation  @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  parent       Space?        @relation("SpaceChildren", fields: [parentId], references: [id], onDelete: SetNull)
+  children     Space[]       @relation("SpaceChildren")
   members      SpaceMember[]
   meetings     Meeting[]
   roles        Role[]
@@ -141,12 +154,17 @@ enum MeetingStatus {
 }
 
 model Meeting {
-  id        String        @id @default(cuid())
-  spaceId   String
-  date      DateTime
-  status    MeetingStatus @default(draft)
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
+  id              String        @id @default(cuid())
+  spaceId         String
+  title           String?       // optionnel — sinon on affiche la date
+  link            String?       // lien visio, Fireflies, etc.
+  date            DateTime
+  durationMinutes Int?
+  status          MeetingStatus @default(draft)
+  isPrivate       Boolean?      // null = hérite de l'espace, true/false = override
+  openedAt        DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
   space       Space        @relation(fields: [spaceId], references: [id], onDelete: Cascade)
   agendaItems AgendaItem[]
@@ -174,12 +192,14 @@ model AgendaItem {
 }
 
 model Role {
-  id        String   @id @default(cuid())
-  spaceId   String
-  name      String
-  purpose   String?  @db.Text
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id               String   @id @default(cuid())
+  spaceId          String
+  name             String
+  purpose          String?  @db.Text
+  domains          String[]
+  accountabilities String[]
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   space       Space            @relation(fields: [spaceId], references: [id], onDelete: Cascade)
   assignments RoleAssignment[]
@@ -194,6 +214,26 @@ model RoleAssignment {
   createdAt DateTime  @default(now())
 
   role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, userId])
+}
+
+model PendingInvite {
+  id        String   @id @default(cuid())
+  orgId     String
+  role      OrgRole  @default(member)
+  token     String   @unique @default(cuid())
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  organisation Organisation @relation(fields: [orgId], references: [id], onDelete: Cascade)
+}
+
+model SuperAdmin {
+  id     String @id @default(cuid())
+  userId String @unique
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
@@ -213,6 +253,7 @@ model Output {
   content    String     @db.Text
   assigneeId String?
   dueDate    DateTime?
+  isDone     Boolean    @default(false)
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
 

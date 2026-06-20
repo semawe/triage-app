@@ -1,53 +1,44 @@
-"use client";
+import { isSuperAdmin, requireOrg } from "@/lib/session";
+import { prisma } from "@/lib/prisma";
+import { getOrgFeatures } from "@/lib/features";
+import NavBar from "./NavBar";
 
-import { usePathname } from "next/navigation";
-import { signOut } from "next-auth/react";
-import { useLocale } from "next-intl";
-import { Link } from "@/i18n/navigation";
+export default async function AppShell({ children }: { children: React.ReactNode }) {
+  const { session, org, membership, allOrgs } = await requireOrg();
 
-const NAV_ITEMS = [
-  { key: "meetings", label: "Réunions", href: "/meetings" },
-  { key: "spaces", label: "Espaces", href: "/spaces" },
-  { key: "members", label: "Membres", href: "/members" },
-] as const;
+  const sa = await isSuperAdmin(session.user.id);
+  const features = getOrgFeatures(org);
 
-export default function AppShell({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-  const locale = useLocale();
+  const liveMeetings = await prisma.meeting.findMany({
+    where: {
+      status: "open",
+      space: {
+        organisationId: org.id,
+        OR: [
+          { members: { some: { userId: session.user.id } } },
+          ...(membership.role === "admin" ? [{ organisationId: org.id }] : []),
+        ],
+      },
+    },
+    include: { space: { select: { name: true } } },
+    take: 3,
+  });
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-950">
-      <header className="border-b border-gray-800 bg-gray-900 px-4 py-3">
-        <div className="mx-auto flex max-w-6xl items-center justify-between">
-          <Link href="/meetings" className="text-sm font-bold text-white tracking-tight">
-            Triage App
-          </Link>
-          <nav className="flex items-center gap-1">
-            {NAV_ITEMS.map((item) => {
-              const active = pathname.includes(item.href);
-              return (
-                <Link
-                  key={item.key}
-                  href={item.href}
-                  className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${
-                    active
-                      ? "bg-indigo-900/60 font-medium text-indigo-300"
-                      : "text-gray-400 hover:bg-gray-800 hover:text-gray-100"
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
-          </nav>
-          <button
-            onClick={() => signOut({ callbackUrl: `/${locale}/login` })}
-            className="text-sm text-gray-500 hover:text-gray-300 transition-colors"
-          >
-            Déconnexion
-          </button>
-        </div>
-      </header>
+      <NavBar
+        showAdmin={sa}
+        activeOrg={{
+          id: org.id,
+          name: org.name,
+          logoUrl: org.logoUrl,
+          primaryColor: org.primaryColor,
+        }}
+        allOrgs={allOrgs}
+        liveMeetings={liveMeetings.map((m) => ({ id: m.id, spaceName: m.space.name }))}
+        features={features}
+        isOrgAdmin={membership.role === "admin"}
+      />
       <main className="flex-1 px-4 py-8">
         <div className="mx-auto max-w-6xl">{children}</div>
       </main>

@@ -3,7 +3,10 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
+import { cookies } from "next/headers";
+import type { FeatureKey } from "@/lib/features";
 
 export async function createOrg(formData: FormData) {
   const session = await auth();
@@ -24,7 +27,6 @@ export async function createOrg(formData: FormData) {
     redirect(`/${locale}/meetings`);
   }
 
-  // Generate unique slug
   const base = name
     .toLowerCase()
     .normalize("NFD")
@@ -50,4 +52,71 @@ export async function createOrg(formData: FormData) {
 
   const locale = await getLocale().catch(() => "fr");
   redirect(`/${locale}/meetings`);
+}
+
+export async function switchOrg(orgId: string) {
+  const session = await auth();
+  if (!session?.user?.id) return;
+
+  // Verify membership
+  const membership = await prisma.organisationMember.findUnique({
+    where: { organisationId_userId: { organisationId: orgId, userId: session.user.id } },
+  });
+  if (!membership) return;
+
+  const cookieStore = await cookies();
+  cookieStore.set("triage-active-org", orgId, {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 30, // 30 days
+  });
+
+  revalidatePath("/", "layout");
+}
+
+export async function updateOrgBranding(formData: FormData) {
+  const session = await auth();
+  if (!session?.user?.id) return;
+
+  const orgId = formData.get("orgId") as string;
+  const logoUrl = (formData.get("logoUrl") as string)?.trim() || null;
+  const primaryColor = (formData.get("primaryColor") as string)?.trim() || null;
+
+  // Verify admin
+  const membership = await prisma.organisationMember.findUnique({
+    where: { organisationId_userId: { organisationId: orgId, userId: session.user.id } },
+  });
+  if (!membership || membership.role !== "admin") return;
+
+  await prisma.organisation.update({
+    where: { id: orgId },
+    data: { logoUrl, primaryColor },
+  });
+
+  revalidatePath("/", "layout");
+}
+
+export async function updateOrgFeature(orgId: string, key: FeatureKey, enabled: boolean) {
+  const session = await auth();
+  if (!session?.user?.id) return;
+
+  const membership = await prisma.organisationMember.findUnique({
+    where: { organisationId_userId: { organisationId: orgId, userId: session.user.id } },
+  });
+  if (!membership || membership.role !== "admin") return;
+
+  const org = await prisma.organisation.findUnique({ where: { id: orgId } });
+  if (!org) return;
+
+  const current = (typeof org.features === "object" && !Array.isArray(org.features) && org.features)
+    ? (org.features as Record<string, boolean>)
+    : {};
+
+  await prisma.organisation.update({
+    where: { id: orgId },
+    data: { features: { ...current, [key]: enabled } },
+  });
+
+  revalidatePath("/", "layout");
 }

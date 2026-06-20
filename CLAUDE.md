@@ -23,8 +23,8 @@ Cible : organisations Holacracy et non-Holacracy, distribué librement.
 - **next-intl v4** — routing `/[locale]/`, fichiers `messages/fr.json` et `messages/en.json` ; proxy `src/proxy.ts` (remplace `middleware.ts`)
 - **Tailwind CSS** (pas shadcn pour l'instant)
 - **Server Actions** pour toutes les mutations (pas d'API REST)
-- **Server-Sent Events** (temps réel) : Phase 2+
-- **Docker + Nginx** (deploy VPS OVH) : Phase 2+
+- **Server-Sent Events** (temps réel) : Phase 4
+- **Docker + Nginx** (deploy VPS OVH) : Phase 4
 
 ## Schéma de données (Prisma)
 
@@ -32,11 +32,12 @@ Cible : organisations Holacracy et non-Holacracy, distribué librement.
 Organisation          (id, name, slug)
 User                  (id, email, name, avatar)
 OrganisationMember    (org_id, user_id, role: admin|member)
-Space                 (id, org_id, name, type: circle|project)
+Space                 (id, org_id, name, type: circle|project|instance)
 SpaceMember           (space_id, user_id, role)
-Meeting               (id, space_id, date, status: draft|open|closed)
+Meeting               (id, space_id, date, durationMinutes?, openedAt?,
+                       status: draft|open|closed)
 AgendaItem            (id, meeting_id, author_id, title, order, status: pending|active|done)
-Output                (id, item_id, type: note|action|decision|project, content,
+Output                (id, item_id, type: note|action|decision|project|governance, content,
                        assignee_id, due_date)
 ```
 
@@ -48,7 +49,8 @@ src/
   lib/prisma.ts         # Singleton PrismaClient avec PrismaPg adapter
   lib/session.ts        # requireAuth() / requireOrg() — redirections locale-aware
   actions/org.ts        # createOrg (Server Action)
-  actions/meeting.ts    # createMeeting, addAgendaItem, openMeeting, nextItem, closeMeeting
+  actions/meeting.ts    # createMeeting, addAgendaItem, openMeeting, jumpToItem,
+                        # nextItem, closeMeeting
   actions/output.ts     # addOutput
   i18n/routing.ts       # defineRouting({ locales: ['fr','en'], defaultLocale: 'fr' })
   i18n/navigation.ts    # createNavigation(routing) — Link, redirect locale-aware
@@ -57,10 +59,11 @@ src/
   app/[locale]/
     layout.tsx          # NextIntlClientProvider
     setup/page.tsx      # Onboarding : créer une organisation
-    meetings/page.tsx   # Liste + formulaire de création
+    meetings/page.tsx   # Liste + formulaire de création (date+heure+durée)
     meetings/[id]/
       page.tsx          # Facilitation RSC (agenda, point actif, outputs, récap)
-      PistesPanel.tsx   # Client — panneau 6 pistes rétractable
+      PistesPanel.tsx   # Client — panneau 6 pistes + onglet tactiques Holacracy
+      Chrono.tsx        # Client — compte à rebours (ou chrono montant si sans durée)
   components/AppShell.tsx  # Nav bar dark mode
 messages/
   fr.json               # Traductions françaises
@@ -68,13 +71,21 @@ messages/
 prisma/schema.prisma    # Schéma complet (Organisation, Space, Role, Meeting, AgendaItem, Output)
 ```
 
+## Notes techniques importantes
+
+- **`params` comme Promise** : `const { id } = await params` dans les page components (Next.js 16)
+- **`datetime-local` → Date locale** : `parseDatetimeLocal()` dans `actions/meeting.ts` pour éviter le décalage UTC
+- **jump-to-item** : `updateMany` active→pending puis `update` cible→active (préserve le retour en arrière)
+- **Avatars auteur** : Google OAuth fournit `image` URL dans la session ; fallback initiales
+- **Chrono** : client component avec `setInterval`, rouge+pulse quand dépassé, orange sous 5 min
+
 ## Roadmap
 
 - **Phase 0** ✅ : Fondations — repo, schéma Prisma, auth Google, dark mode, i18n fr/en
 - **Phase 1** ✅ : Triage V1 — onboarding org, agenda, facilitation, 6 pistes GTD, outputs
-- **Phase 2** : Espaces multiples, gestion membres, rôles dans les espaces
-- **Phase 3** : Export — Notion + Google Drive
-- **Phase 4** : Temps réel (SSE) + synchro (check-in tactique)
+- **Phase 2** ✅ : Améliorations facilitation — chrono, jump-to-item, avatars, pistes Holacracy, programmation avancée (date+heure+durée)
+- **Phase 3** : Espaces/Rôles — gestion cercles/projets, assignation rôles, membres ; compte-rendu email participants
+- **Phase 4** : Export (Notion + Google Drive) + Temps réel (SSE)
 
 ## Base de données — dev
 
