@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 
 export default function LoginPage() {
   const t = useTranslations("auth");
+  const tApp = useTranslations("app");
 
   return (
     <main className="flex flex-1 flex-col items-center justify-center px-4">
@@ -12,7 +13,7 @@ export default function LoginPage() {
         <div className="text-center">
           <h1 className="text-2xl font-bold tracking-tight">Triage App</h1>
           <p className="mt-2 text-sm text-gray-500">
-            {useTranslations("app")("tagline")}
+            {tApp("tagline")}
           </p>
         </div>
 
