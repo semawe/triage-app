@@ -52,7 +52,8 @@ export default function NavBar({
     const orgId = e.target.value;
     startSwitch(async () => {
       await switchOrg(orgId);
-      router.refresh();
+      // Hard navigation to ensure the new cookie is picked up by the RSC tree
+      window.location.href = `/${locale}/meetings`;
     });
   }
 
