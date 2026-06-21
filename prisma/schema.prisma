@@ -68,6 +68,13 @@ model VerificationToken {
 
 // ── App models ────────────────────────────────────────────────────────────────
 
+enum SubscriptionStatus {
+  trial
+  active
+  past_due
+  canceled
+}
+
 model Organisation {
   id           String  @id @default(cuid())
   name         String
@@ -75,6 +82,13 @@ model Organisation {
   logoUrl      String?
   primaryColor String? // hex ex: "#6366f1"
   features     Json    @default("{}")
+
+  // Billing
+  stripeCustomerId   String?            @unique
+  subscriptionStatus SubscriptionStatus @default(trial)
+  stripeSubId        String?            @unique
+  seatCount          Int                @default(3)
+  trialEndsAt        DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

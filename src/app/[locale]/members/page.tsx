@@ -25,9 +25,18 @@ export default async function MembersPage() {
 
   return (
     <AppShell>
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-8 flex items-center justify-between gap-4 flex-wrap">
         <h1 className="text-2xl font-bold text-white">Membres</h1>
-        <span className="text-sm text-gray-400">{org.name}</span>
+        <div className="flex items-center gap-3 text-sm text-gray-400">
+          <span>{org.name}</span>
+          <span className="text-gray-700">·</span>
+          <span>
+            <span className={members.length > org.seatCount ? "text-red-400" : "text-white"}>
+              {members.length}
+            </span>
+            <span className="text-gray-600"> / {org.seatCount} siège{org.seatCount > 1 ? "s" : ""}</span>
+          </span>
+        </div>
       </div>
 
       {/* Invite — admins only */}

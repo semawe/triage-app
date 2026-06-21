@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 import { cookies } from "next/headers";
 import type { FeatureKey } from "@/lib/features";
+import { TRIAL_DAYS } from "@/lib/stripe";
 
 export async function createOrg(formData: FormData) {
   const session = await auth();
@@ -41,10 +42,15 @@ export async function createOrg(formData: FormData) {
     slug = `${base}-${attempt}`;
   }
 
+  const trialEndsAt = new Date();
+  trialEndsAt.setDate(trialEndsAt.getDate() + TRIAL_DAYS);
+
   await prisma.organisation.create({
     data: {
       name,
       slug,
+      subscriptionStatus: "trial",
+      trialEndsAt,
       members: { create: { userId: session.user.id, role: "admin" } },
       spaces: { create: { name: "Cercle principal", type: "circle" } },
     },

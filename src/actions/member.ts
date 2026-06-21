@@ -69,11 +69,22 @@ export async function removeMember(memberId: string) {
 // ── Invitations ───────────────────────────────────────────────────────────────
 
 export async function generateInvite(
-  _prev: { url: string } | null,
+  _prev: { url: string; error?: string } | null,
   formData: FormData
-): Promise<{ url: string }> {
+): Promise<{ url: string; error?: string }> {
   const { org, membership } = await requireOrg();
   if (membership.role !== "admin") return { url: "" };
+
+  // Seat check
+  const currentCount = await prisma.organisationMember.count({
+    where: { organisationId: org.id },
+  });
+  if (currentCount >= org.seatCount) {
+    return {
+      url: "",
+      error: `Limite de ${org.seatCount} siège${org.seatCount > 1 ? "s" : ""} atteinte. Augmentez votre abonnement depuis Paramètres.`,
+    };
+  }
 
   const role = (formData.get("role") as "admin" | "member") ?? "member";
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days

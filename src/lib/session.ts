@@ -4,6 +4,7 @@ import { prisma } from "./prisma";
 import { redirect } from "next/navigation";
 import { getLocale } from "next-intl/server";
 import { cookies } from "next/headers";
+import { isOrgAccessible } from "./stripe";
 import type { Session } from "next-auth";
 
 type AuthSession = Session & { user: { id: string } };
@@ -50,9 +51,17 @@ export const requireOrg = cache(async () => {
     role: m.role,
   }));
 
+  const org = membership.organisation;
+
+  // Redirect to billing wall if subscription expired (skip for super admins checked later)
+  if (!isOrgAccessible(org) && membership.role !== "admin") {
+    const locale = await getLocale().catch(() => "fr");
+    redirect(`/${locale}/billing-wall`);
+  }
+
   return {
     session,
-    org: membership.organisation,
+    org,
     membership,
     allOrgs,
   };

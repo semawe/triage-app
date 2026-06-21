@@ -6,11 +6,20 @@ import { getOrgFeatures, FEATURE_LABELS, FEATURE_DEFAULTS } from "@/lib/features
 import type { FeatureKey } from "@/lib/features";
 import { prisma } from "@/lib/prisma";
 import { Link } from "@/i18n/navigation";
+import { createCheckoutSession, createCustomerPortalSession } from "@/actions/billing";
+import { isOrgAccessible } from "@/lib/stripe";
+
+const STATUS_LABELS: Record<string, { label: string; color: string }> = {
+  trial:    { label: "Essai gratuit",        color: "text-yellow-400 bg-yellow-900/30 border-yellow-800" },
+  active:   { label: "Abonnement actif",     color: "text-green-400 bg-green-900/30 border-green-800" },
+  past_due: { label: "Paiement en retard",   color: "text-red-400 bg-red-900/30 border-red-800" },
+  canceled: { label: "Abonnement résilié",   color: "text-gray-400 bg-gray-800 border-gray-700" },
+};
 
 export default async function SettingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ org?: string }>;
+  searchParams: Promise<{ org?: string; billing?: string }>;
 }) {
   const { allOrgs } = await requireOrg();
 
@@ -18,7 +27,7 @@ export default async function SettingsPage({
   const adminOrgs = allOrgs.filter((o) => o.role === "admin");
   if (adminOrgs.length === 0) notFound();
 
-  const { org: orgParam } = await searchParams;
+  const { org: orgParam, billing: billingFeedback } = await searchParams;
   const targetOrgId =
     orgParam && adminOrgs.some((o) => o.id === orgParam)
       ? orgParam
@@ -28,6 +37,9 @@ export default async function SettingsPage({
   if (!org) notFound();
 
   const features = getOrgFeatures(org);
+  const memberCount = await prisma.organisationMember.count({ where: { organisationId: org.id } });
+  const accessible = isOrgAccessible(org);
+  const statusInfo = STATUS_LABELS[org.subscriptionStatus] ?? STATUS_LABELS.trial;
 
   return (
     <AppShell>
@@ -93,6 +105,73 @@ export default async function SettingsPage({
             Enregistrer
           </button>
         </form>
+      </section>
+
+      {/* Facturation */}
+      <section className="mb-8 rounded-xl bg-gray-900 border border-gray-800 p-6">
+        <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-5">Facturation</h2>
+
+        {/* Feedback Stripe */}
+        {billingFeedback === "success" && (
+          <div className="mb-4 rounded-lg bg-green-900/30 border border-green-800 px-4 py-3 text-sm text-green-300">
+            Abonnement activé. Merci !
+          </div>
+        )}
+        {billingFeedback === "cancel" && (
+          <div className="mb-4 rounded-lg bg-gray-800 border border-gray-700 px-4 py-3 text-sm text-gray-400">
+            Paiement annulé. Votre accès reste inchangé.
+          </div>
+        )}
+
+        <div className="flex flex-wrap gap-6 items-start justify-between">
+          <div className="space-y-3">
+            {/* Statut */}
+            <div className="flex items-center gap-3">
+              <span className={`rounded-full border px-3 py-1 text-xs font-medium ${statusInfo.color}`}>
+                {statusInfo.label}
+              </span>
+              {org.subscriptionStatus === "trial" && org.trialEndsAt && (
+                <span className="text-xs text-gray-500">
+                  Expire le {new Date(org.trialEndsAt).toLocaleDateString("fr-FR")}
+                </span>
+              )}
+            </div>
+
+            {/* Sièges */}
+            <div className="text-sm text-gray-400">
+              <span className="text-white font-medium">{memberCount}</span> membre{memberCount > 1 ? "s" : ""} actif{memberCount > 1 ? "s" : ""}
+              {" · "}
+              <span className={memberCount > org.seatCount ? "text-red-400" : "text-white font-medium"}>
+                {org.seatCount}
+              </span> siège{org.seatCount > 1 ? "s" : ""} inclus
+              {" · "}
+              <span className="text-gray-500">2 €/siège/mois</span>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-3 flex-wrap">
+            {!accessible || org.subscriptionStatus !== "active" ? (
+              <form action={createCheckoutSession.bind(null, Math.max(memberCount, org.seatCount))}>
+                <button
+                  type="submit"
+                  className="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors"
+                >
+                  {org.subscriptionStatus === "trial" ? "S'abonner" : "Réactiver"}
+                </button>
+              </form>
+            ) : org.stripeCustomerId ? (
+              <form action={createCustomerPortalSession}>
+                <button
+                  type="submit"
+                  className="rounded-lg bg-gray-800 border border-gray-700 px-5 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors"
+                >
+                  Gérer l&apos;abonnement
+                </button>
+              </form>
+            ) : null}
+          </div>
+        </div>
       </section>
 
       {/* Modules */}
