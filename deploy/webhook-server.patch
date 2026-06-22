@@ -1,0 +1,7 @@
+# Patch à appliquer sur le VPS dans /home/debian/webhook-server.js
+# Ajouter cette entrée dans l'objet ROUTES :
+
+  '/hooks/deploy-triage-app': {
+    script: '/home/debian/deploy-triage-app.sh',
+    ref: 'refs/heads/main',
+  },
