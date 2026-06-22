@@ -123,6 +123,12 @@ export default async function HomePage() {
           </a>
         </span>
         <span>Licence AGPL-3.0 — open source</span>
+        <Link
+          href="/mentions-legales"
+          className="hover:text-gray-400 transition-colors"
+        >
+          Mentions légales
+        </Link>
       </footer>
     </div>
   );
