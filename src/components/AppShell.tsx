@@ -39,7 +39,7 @@ export default async function AppShell({ children }: { children: React.ReactNode
         features={features}
         isOrgAdmin={membership.role === "admin"}
       />
-      <main className="flex-1 px-4 py-8">
+      <main className="flex-1 px-4 py-8 pb-24 md:pb-8">
         <div className="mx-auto max-w-6xl">{children}</div>
       </main>
     </div>

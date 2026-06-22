@@ -20,6 +20,6 @@ npx prisma migrate deploy
 NEXT_DIST_DIR=.next-build npm run build
 rm -rf .next.old && mv .next .next.old && mv .next-build .next
 
-pm2 reload triage-app
+pm2 reload triage-app --update-env
 
 echo "=== Deploy OK ==="

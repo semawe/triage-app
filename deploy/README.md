@@ -4,7 +4,7 @@ VPS OVH partagé avec of-qualiopi : `ssh -i ~/.ssh/id_semawe_master debian@51.17
 
 ## Architecture
 
-- Next.js sur le port **3001** (of-qualiopi occupe le 3000)
+- Next.js sur le port **3002** (of-qualiopi=3000, plateforme-elearning=3001)
 - PM2 process name : `triage-app`
 - Nginx reverse proxy : triapp.fr → localhost:3001
 - SSL Let's Encrypt (certbot)
@@ -37,7 +37,7 @@ npx prisma migrate deploy
 npm run build
 
 # Démarrer via PM2
-pm2 start "npm start -- -p 3001" --name triage-app
+pm2 start "npm start -- -p 3002" --name triage-app
 pm2 save
 ```
 
