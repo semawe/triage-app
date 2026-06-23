@@ -33,6 +33,18 @@ export const requireOrg = cache(async () => {
 
   if (allMemberships.length === 0) {
     const locale = await getLocale().catch(() => "fr");
+    // Check if the user's email domain matches an org that allows domain auto-join
+    const email = session.user.email ?? "";
+    const domain = email.split("@")[1] ?? "";
+    if (domain) {
+      const matchingOrg = await prisma.organisation.findFirst({
+        where: { allowedEmailDomain: domain },
+        select: { id: true },
+      });
+      if (matchingOrg) {
+        redirect(`/${locale}/join-request?orgId=${matchingOrg.id}`);
+      }
+    }
     redirect(`/${locale}/setup`);
   }
 

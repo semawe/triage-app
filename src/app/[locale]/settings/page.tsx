@@ -1,7 +1,7 @@
 import { requireOrg } from "@/lib/session";
 import { notFound } from "next/navigation";
 import AppShell from "@/components/AppShell";
-import { updateOrgBranding, updateOrgFeature } from "@/actions/org";
+import { updateOrgBranding, updateOrgFeature, updateOrgDomain } from "@/actions/org";
 import { getOrgFeatures, FEATURE_LABELS, FEATURE_DEFAULTS } from "@/lib/features";
 import type { FeatureKey } from "@/lib/features";
 import { prisma } from "@/lib/prisma";
@@ -104,6 +104,43 @@ export default async function SettingsPage({
           >
             Enregistrer
           </button>
+        </form>
+      </section>
+
+      {/* Accès par domaine */}
+      <section className="mb-8 rounded-xl bg-gray-900 border border-gray-800 p-6">
+        <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
+          Accès par domaine email
+        </h2>
+        <p className="text-xs text-gray-600 mb-5">
+          Les utilisateurs dont l&apos;adresse se termine par ce domaine pourront demander à rejoindre l&apos;organisation. Tu valides chaque demande depuis la page Membres.
+        </p>
+        <form action={updateOrgDomain} className="flex flex-wrap gap-3 items-end">
+          <input type="hidden" name="orgId" value={org.id} />
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs text-gray-500">Domaine autorisé</label>
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm text-gray-500">@</span>
+              <input
+                type="text"
+                name="domain"
+                defaultValue={org.allowedEmailDomain ?? ""}
+                placeholder="semawe.fr"
+                className="rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 w-52"
+              />
+            </div>
+          </div>
+          <button
+            type="submit"
+            className="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors"
+          >
+            Enregistrer
+          </button>
+          {org.allowedEmailDomain && (
+            <p className="text-xs text-green-400 self-center">
+              ✓ Actif — @{org.allowedEmailDomain}
+            </p>
+          )}
         </form>
       </section>
 

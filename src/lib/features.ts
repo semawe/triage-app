@@ -18,7 +18,7 @@ export const FEATURE_DEFAULTS: Record<FeatureKey, boolean> = {
   pistes_panel: true,
   recap_email: true,
   projector_mode: true,
-  circle_view: false,
+  circle_view: true,
 };
 
 export const FEATURE_LABELS: Record<FeatureKey, { label: string; description: string }> = {

@@ -103,6 +103,26 @@ export async function updateOrgBranding(formData: FormData) {
   revalidatePath("/", "layout");
 }
 
+export async function updateOrgDomain(formData: FormData) {
+  const session = await auth();
+  if (!session?.user?.id) return;
+
+  const orgId = formData.get("orgId") as string;
+  const domain = ((formData.get("domain") as string) ?? "").trim().toLowerCase().replace(/^@/, "");
+
+  const membership = await prisma.organisationMember.findUnique({
+    where: { organisationId_userId: { organisationId: orgId, userId: session.user.id } },
+  });
+  if (!membership || membership.role !== "admin") return;
+
+  await prisma.organisation.update({
+    where: { id: orgId },
+    data: { allowedEmailDomain: domain || null },
+  });
+
+  revalidatePath("/", "layout");
+}
+
 export async function updateOrgFeature(orgId: string, key: FeatureKey, enabled: boolean) {
   const session = await auth();
   if (!session?.user?.id) return;

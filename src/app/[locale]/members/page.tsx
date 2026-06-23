@@ -2,6 +2,7 @@ import { requireOrg } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import AppShell from "@/components/AppShell";
 import { updateMemberRole, removeMember } from "@/actions/member";
+import { approveJoinRequest, rejectJoinRequest } from "@/actions/join";
 import InviteButton from "./InviteButton";
 import { Link } from "@/i18n/navigation";
 
@@ -16,6 +17,15 @@ export default async function MembersPage() {
     },
     orderBy: { createdAt: "asc" },
   });
+
+  // Pending join requests (admin only)
+  const joinRequests = isAdmin
+    ? await prisma.joinRequest.findMany({
+        where: { organisationId: org.id, status: "pending" },
+        include: { user: { select: { id: true, name: true, email: true, image: true } } },
+        orderBy: { createdAt: "asc" },
+      })
+    : [];
 
   // Current user's space memberships
   const mySpaces = await prisma.spaceMember.findMany({
@@ -49,6 +59,47 @@ export default async function MembersPage() {
           <p className="mt-3 text-xs text-gray-600">
             Partage le lien généré dans Slack ou par email. Le destinataire est ajouté à l&apos;organisation dès qu&apos;il clique.
           </p>
+        </div>
+      )}
+
+      {/* Pending join requests — admins only */}
+      {isAdmin && joinRequests.length > 0 && (
+        <div className="mb-8 rounded-xl bg-gray-900 border border-yellow-900/50 overflow-hidden">
+          <div className="px-5 py-3 border-b border-yellow-900/50 flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-yellow-400 animate-pulse" />
+            <p className="text-xs font-semibold text-yellow-400 uppercase tracking-wider">
+              {joinRequests.length} demande{joinRequests.length !== 1 ? "s" : ""} en attente
+            </p>
+          </div>
+          <div className="divide-y divide-gray-800">
+            {joinRequests.map((req) => {
+              const approve = approveJoinRequest.bind(null, req.id);
+              const reject = rejectJoinRequest.bind(null, req.id);
+              return (
+                <div key={req.id} className="flex items-center justify-between px-5 py-4 gap-4">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Avatar name={req.user.name} image={req.user.image} />
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-white truncate">{req.user.name ?? "—"}</p>
+                      <p className="text-xs text-gray-500 truncate">{req.user.email}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <form action={approve}>
+                      <button type="submit" className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-500 transition-colors">
+                        Accepter
+                      </button>
+                    </form>
+                    <form action={reject}>
+                      <button type="submit" className="text-xs text-gray-500 hover:text-red-400 transition-colors">
+                        Refuser
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 

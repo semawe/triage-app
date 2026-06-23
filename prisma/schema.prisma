@@ -25,6 +25,7 @@ model User {
   outputs          Output[]
   assignedOutputs  Output[]             @relation("OutputAssignee")
   superAdmin       SuperAdmin?
+  joinRequests     JoinRequest[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -83,6 +84,9 @@ model Organisation {
   primaryColor String? // hex ex: "#6366f1"
   features     Json    @default("{}")
 
+  // Domain auto-join
+  allowedEmailDomain String? // ex: "semawe.fr" — members with matching domain can request to join
+
   // Billing
   stripeCustomerId   String?            @unique
   subscriptionStatus SubscriptionStatus @default(trial)
@@ -96,6 +100,7 @@ model Organisation {
   members        OrganisationMember[]
   spaces         Space[]
   pendingInvites PendingInvite[]
+  joinRequests   JoinRequest[]
 }
 
 enum OrgRole {
@@ -242,6 +247,25 @@ model PendingInvite {
   expiresAt DateTime
 
   organisation Organisation @relation(fields: [orgId], references: [id], onDelete: Cascade)
+}
+
+enum JoinRequestStatus {
+  pending
+  approved
+  rejected
+}
+
+model JoinRequest {
+  id             String            @id @default(cuid())
+  userId         String
+  organisationId String
+  status         JoinRequestStatus @default(pending)
+  createdAt      DateTime          @default(now())
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organisationId])
 }
 
 model SuperAdmin {
