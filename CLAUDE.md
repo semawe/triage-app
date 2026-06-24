@@ -96,10 +96,10 @@ prisma/schema.prisma    # Schéma complet (Organisation, Space, Role, Meeting, A
 DATABASE_URL="postgresql://aliocha@localhost:5432/triageapp"
 ```
 
-**VPS OVH** (prod à venir) : `debian@51.178.234.59`, même instance que of-qualiopi.
+**VPS OVH** (prod à venir) : voir les accès dans Notion — même instance que of-qualiopi.
 Connexion locale via tunnel SSH :
 ```bash
-ssh -N -L 15432:localhost:5432 -i ~/.ssh/id_semawe_master debian@51.178.234.59 &
+ssh -N -L 15432:localhost:5432 -i ~/.ssh/<your-key> <user>@<vps-ip> &
 ```
 Note : le réseau domicile peut bloquer ce tunnel — utiliser un hotspot ou VPN si nécessaire.
 

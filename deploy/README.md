@@ -1,6 +1,6 @@
 # Déploiement — triage-app (triapp.fr)
 
-VPS OVH partagé avec of-qualiopi : `ssh -i ~/.ssh/id_semawe_master debian@51.178.234.59`
+VPS OVH partagé avec of-qualiopi : `ssh -i ~/.ssh/<your-key> <user>@<vps-ip>`
 
 ## Architecture
 
@@ -15,7 +15,7 @@ VPS OVH partagé avec of-qualiopi : `ssh -i ~/.ssh/id_semawe_master debian@51.17
 ### 1. Sur le VPS
 
 ```bash
-ssh -i ~/.ssh/id_semawe_master debian@51.178.234.59
+ssh -i ~/.ssh/<your-key> <user>@<vps-ip>
 
 # Cloner le repo
 cd /home/debian
@@ -82,7 +82,7 @@ git push origin main  # le webhook se charge du reste
 ## Logs
 
 ```bash
-ssh -i ~/.ssh/id_semawe_master debian@51.178.234.59
+ssh -i ~/.ssh/<your-key> <user>@<vps-ip>
 tail -f /home/debian/deploy-triage-app.log
 pm2 logs triage-app
 ```

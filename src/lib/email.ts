@@ -1,14 +1,14 @@
 import nodemailer from "nodemailer";
 
-export const EMAIL_FROM = process.env.EMAIL_FROM ?? "aliocha@semawe.fr";
+export const EMAIL_FROM = process.env.EMAIL_FROM ?? "noreply@triapp.fr";
 
-// Brevo SMTP relay — username from account relay config, password = clé SMTP (xsmtpsib-...)
+// Brevo SMTP relay — credentials in BREVO_SMTP_USER / BREVO_SMTP_PASSWORD env vars
 const transporter = nodemailer.createTransport({
   host: "smtp-relay.brevo.com",
   port: 587,
   secure: false,
   auth: {
-    user: "8904eb001@smtp-brevo.com",
+    user: process.env.BREVO_SMTP_USER ?? "",
     pass: process.env.BREVO_SMTP_PASSWORD ?? "",
   },
 });
