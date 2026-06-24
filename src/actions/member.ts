@@ -5,6 +5,7 @@ import { requireOrg, requireSuperAdmin } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 import { redirect } from "next/navigation";
+import { sendEmail } from "@/lib/email";
 
 export async function updateMemberRole(
   memberId: string,
@@ -95,6 +96,60 @@ export async function generateInvite(
 
   const locale = await getLocale().catch(() => "fr");
   return { url: `${process.env.AUTH_URL ?? "http://localhost:3000"}/${locale}/invite/${invite.token}` };
+}
+
+export async function sendInviteByEmail(
+  _prev: { ok: boolean; error?: string } | null,
+  formData: FormData
+): Promise<{ ok: boolean; error?: string }> {
+  const { org, membership } = await requireOrg();
+  if (membership.role !== "admin") return { ok: false, error: "Non autorisé." };
+
+  const email = ((formData.get("email") as string) ?? "").trim().toLowerCase();
+  const role = (formData.get("role") as "admin" | "member") ?? "member";
+
+  if (!email || !email.includes("@")) return { ok: false, error: "Adresse email invalide." };
+
+  // Seat check
+  const currentCount = await prisma.organisationMember.count({
+    where: { organisationId: org.id },
+  });
+  if (currentCount >= org.seatCount) {
+    return {
+      ok: false,
+      error: `Limite de ${org.seatCount} siège${org.seatCount > 1 ? "s" : ""} atteinte. Augmentez votre abonnement depuis Paramètres.`,
+    };
+  }
+
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  const invite = await prisma.pendingInvite.create({
+    data: { orgId: org.id, role, expiresAt },
+  });
+
+  const locale = await getLocale().catch(() => "fr");
+  const baseUrl = process.env.AUTH_URL ?? "http://localhost:3000";
+  const inviteUrl = `${baseUrl}/${locale}/invite/${invite.token}`;
+  const roleLabel = role === "admin" ? "administrateur" : "membre";
+
+  const result = await sendEmail({
+    to: [email],
+    subject: `Invitation à rejoindre ${org.name} sur Triage App`,
+    html: `
+      <div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:24px">
+        <h2 style="color:#1f2937;margin-bottom:8px">Tu es invité(e) sur Triage App</h2>
+        <p style="color:#4b5563">Tu as été invité(e) à rejoindre l'organisation <strong>${org.name}</strong> en tant que <strong>${roleLabel}</strong>.</p>
+        <p style="margin:24px 0">
+          <a href="${inviteUrl}" style="background:#4f46e5;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">
+            Rejoindre ${org.name} →
+          </a>
+        </p>
+        <p style="color:#9ca3af;font-size:13px">Ce lien est valable 7 jours. Si tu n'es pas à l'origine de cette demande, ignore cet email.</p>
+      </div>
+    `,
+  });
+
+  if (!result.ok) return { ok: false, error: result.error ?? "Erreur lors de l'envoi." };
+  return { ok: true };
 }
 
 export async function acceptInvite(token: string) {

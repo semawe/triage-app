@@ -4,6 +4,7 @@ import AppShell from "@/components/AppShell";
 import { updateMemberRole, removeMember } from "@/actions/member";
 import { approveJoinRequest, rejectJoinRequest } from "@/actions/join";
 import InviteButton from "./InviteButton";
+import SendInviteForm from "./SendInviteForm";
 import { Link } from "@/i18n/navigation";
 
 export default async function MembersPage() {
@@ -51,14 +52,25 @@ export default async function MembersPage() {
 
       {/* Invite — admins only */}
       {isAdmin && (
-        <div className="mb-8 rounded-xl bg-gray-900 border border-gray-800 p-5">
-          <h2 className="mb-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-            Inviter un membre
-          </h2>
-          <InviteButton />
-          <p className="mt-3 text-xs text-gray-600">
-            Partage le lien généré dans Slack ou par email. Le destinataire est ajouté à l&apos;organisation dès qu&apos;il clique.
-          </p>
+        <div className="mb-8 rounded-xl bg-gray-900 border border-gray-800 p-5 space-y-6">
+          <div>
+            <h2 className="mb-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              Inviter par email
+            </h2>
+            <SendInviteForm />
+            <p className="mt-3 text-xs text-gray-600">
+              Un email avec un lien d&apos;accès est envoyé directement au destinataire. Valable 7 jours.
+            </p>
+          </div>
+          <div className="border-t border-gray-800 pt-5">
+            <h2 className="mb-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              Ou générer un lien
+            </h2>
+            <InviteButton />
+            <p className="mt-3 text-xs text-gray-600">
+              Partage le lien manuellement dans Slack ou par message. Le destinataire est ajouté dès qu&apos;il clique.
+            </p>
+          </div>
         </div>
       )}
 
