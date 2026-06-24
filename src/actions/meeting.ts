@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
+import { broadcast } from "@/lib/sse";
 
 function parseDatetimeLocal(value: string): Date {
   const [datePart, timePart = "00:00"] = value.split("T");
@@ -99,6 +100,7 @@ export async function addAgendaItem(meetingId: string, formData: FormData) {
   });
 
   revalidatePath("/", "layout");
+  broadcast(meetingId);
 }
 
 export async function openMeeting(meetingId: string) {
@@ -120,6 +122,7 @@ export async function openMeeting(meetingId: string) {
   }
 
   revalidatePath("/", "layout");
+  broadcast(meetingId);
 }
 
 export async function jumpToItem(meetingId: string, targetItemId: string) {
@@ -133,6 +136,7 @@ export async function jumpToItem(meetingId: string, targetItemId: string) {
   });
 
   revalidatePath("/", "layout");
+  broadcast(meetingId);
 }
 
 export async function nextItem(meetingId: string, currentItemId: string) {
@@ -159,6 +163,7 @@ export async function nextItem(meetingId: string, currentItemId: string) {
   }
 
   revalidatePath("/", "layout");
+  broadcast(meetingId);
 }
 
 export async function closeMeeting(meetingId: string) {
@@ -173,4 +178,5 @@ export async function closeMeeting(meetingId: string) {
   });
 
   revalidatePath("/", "layout");
+  broadcast(meetingId);
 }

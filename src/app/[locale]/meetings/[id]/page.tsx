@@ -18,6 +18,7 @@ import {
 } from "@/actions/meeting";
 import { addOutput } from "@/actions/output";
 import SendRecapButton from "./SendRecapButton";
+import SSEListener from "./SSEListener";
 import { Link } from "@/i18n/navigation";
 import { updateSpacePrivacy } from "@/actions/space";
 
@@ -102,6 +103,7 @@ export default async function MeetingPage({ params }: Props) {
 
   return (
     <AppShell>
+      {meeting.status === "open" && <SSEListener meetingId={meeting.id} />}
       {/* Header */}
       <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
         <div className="min-w-0">

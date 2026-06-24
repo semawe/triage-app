@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import type { OutputType } from "@/generated/prisma";
+import { broadcast } from "@/lib/sse";
 
 export async function addOutput(formData: FormData) {
   const session = await auth();
@@ -17,6 +18,8 @@ export async function addOutput(formData: FormData) {
 
   if (!itemId || !type || !content) return;
 
+  const item = await prisma.agendaItem.findUnique({ where: { id: itemId }, select: { meetingId: true } });
+
   await prisma.output.create({
     data: {
       itemId,
@@ -29,6 +32,7 @@ export async function addOutput(formData: FormData) {
   });
 
   revalidatePath("/", "layout");
+  if (item) broadcast(item.meetingId);
 }
 
 export async function toggleOutputDone(outputId: string) {
