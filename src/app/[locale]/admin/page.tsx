@@ -1,91 +1,69 @@
-import { requireSuperAdmin, requireOrg } from "@/lib/session";
+import { requireSuperAdmin } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import AppShell from "@/components/AppShell";
-import { superAdminCreateOrg } from "@/actions/member";
-import { updateOrgBranding } from "@/actions/org";
+import { adminCreateOrg } from "@/actions/admin";
+import { Link } from "@/i18n/navigation";
+
+const STATUS_COLORS: Record<string, string> = {
+  trial:    "text-yellow-400 bg-yellow-900/20 border-yellow-800",
+  active:   "text-green-400 bg-green-900/20 border-green-800",
+  past_due: "text-red-400 bg-red-900/20 border-red-800",
+  canceled: "text-gray-400 bg-gray-800 border-gray-700",
+};
+const STATUS_LABELS: Record<string, string> = {
+  trial: "Essai", active: "Actif", past_due: "En retard", canceled: "Résilié",
+};
 
 export default async function AdminPage() {
   await requireSuperAdmin();
-  const { org: currentOrg, membership } = await requireOrg();
 
-  const orgs = await prisma.organisation.findMany({
-    include: {
-      _count: { select: { members: true, spaces: true } },
-      members: {
-        take: 3,
-        include: { user: { select: { name: true, email: true } } },
-        orderBy: { createdAt: "asc" },
+  const [orgs, userCount] = await Promise.all([
+    prisma.organisation.findMany({
+      include: {
+        _count: { select: { members: true, spaces: true } },
+        members: {
+          take: 3,
+          include: { user: { select: { name: true, email: true } } },
+          orderBy: { createdAt: "asc" },
+        },
       },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.user.count(),
+  ]);
 
-  const updateBranding = updateOrgBranding;
-  const isOrgAdmin = membership.role === "admin";
+  const activeOrgs = orgs.filter((o) => o.subscriptionStatus === "active").length;
 
   return (
     <AppShell>
+      {/* Header */}
       <div className="mb-8 flex items-center gap-3">
-        <span className="text-xs text-gray-500 bg-red-900/30 border border-red-800 rounded-full px-2.5 py-0.5 text-red-400 font-medium">
+        <span className="text-xs font-medium text-red-400 bg-red-900/30 border border-red-800 rounded-full px-2.5 py-0.5">
           Super admin
         </span>
-        <h1 className="text-2xl font-bold text-white">Administration</h1>
+        <h1 className="text-2xl font-bold text-white">Administration plateforme</h1>
       </div>
 
-      {/* Branding de l'org active */}
-      {isOrgAdmin && (
-        <div className="mb-8 rounded-xl bg-gray-900 border border-gray-800 p-5">
-          <h2 className="mb-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-            Identité — {currentOrg.name}
-          </h2>
-          <form action={updateBranding} className="flex flex-wrap gap-4 items-end">
-            <input type="hidden" name="orgId" value={currentOrg.id} />
-            <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-500">URL du logo</label>
-              <input
-                type="url"
-                name="logoUrl"
-                defaultValue={currentOrg.logoUrl ?? ""}
-                placeholder="https://example.com/logo.png"
-                className="rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 w-72"
-              />
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-500">Couleur principale</label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  name="primaryColor"
-                  defaultValue={currentOrg.primaryColor ?? "#6366f1"}
-                  className="h-10 w-10 rounded-lg border border-gray-700 bg-gray-800 cursor-pointer"
-                />
-                <input
-                  type="text"
-                  defaultValue={currentOrg.primaryColor ?? "#6366f1"}
-                  className="rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 w-28"
-                  readOnly
-                />
-              </div>
-            </div>
-            <button
-              type="submit"
-              className="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors"
-            >
-              Enregistrer
-            </button>
-          </form>
-          <p className="mt-2 text-xs text-gray-600">
-            La couleur teinte la barre de navigation et les éléments actifs.
-          </p>
-        </div>
-      )}
+      {/* Stats */}
+      <div className="mb-8 grid grid-cols-3 gap-4">
+        {[
+          { label: "Organisations", value: orgs.length },
+          { label: "Utilisateurs", value: userCount },
+          { label: "Abonnements actifs", value: activeOrgs },
+        ].map((s) => (
+          <div key={s.label} className="rounded-xl bg-gray-900 border border-gray-800 px-5 py-4">
+            <p className="text-2xl font-bold text-white">{s.value}</p>
+            <p className="text-xs text-gray-500 mt-0.5">{s.label}</p>
+          </div>
+        ))}
+      </div>
 
       {/* Create org */}
       <div className="mb-8 rounded-xl bg-gray-900 border border-gray-800 p-5">
         <h2 className="mb-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">
           Nouvelle organisation
         </h2>
-        <form action={superAdminCreateOrg} className="flex flex-wrap gap-3 items-end">
+        <form action={adminCreateOrg} className="flex flex-wrap gap-3 items-end">
           <div className="flex flex-col gap-1">
             <label className="text-xs text-gray-500">Nom</label>
             <input
@@ -97,12 +75,12 @@ export default async function AdminPage() {
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-gray-500">Email admin</label>
+            <label className="text-xs text-gray-500">Email admin (optionnel)</label>
             <input
               type="email"
               name="adminEmail"
               placeholder="admin@example.com"
-              className="rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 w-52"
+              className="rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 w-56"
             />
           </div>
           <button
@@ -112,53 +90,49 @@ export default async function AdminPage() {
             Créer
           </button>
         </form>
-        <p className="mt-2 text-xs text-gray-600">
-          Si l&apos;email admin n&apos;a pas encore de compte, l&apos;org sera créée sans admin.
-        </p>
       </div>
 
       {/* Org list */}
-      <div className="space-y-3">
-        {orgs.map((org) => (
-          <div key={org.id} className="rounded-xl bg-gray-900 border border-gray-800 px-5 py-4">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-center gap-3">
-                {org.logoUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={org.logoUrl} alt={org.name} className="h-8 w-8 rounded object-cover" />
-                ) : (
-                  <span
-                    className="h-8 w-8 rounded text-sm font-bold flex items-center justify-center text-white"
-                    style={{ background: org.primaryColor ?? "#6366f1" }}
-                  >
-                    {org.name[0]?.toUpperCase()}
-                  </span>
-                )}
-                <div>
-                  <p className="text-sm font-semibold text-white">{org.name}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">slug: {org.slug}</p>
+      <div className="rounded-xl bg-gray-900 border border-gray-800 overflow-hidden">
+        <div className="px-5 py-3 border-b border-gray-800">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+            {orgs.length} organisation{orgs.length !== 1 ? "s" : ""}
+          </p>
+        </div>
+        <div className="divide-y divide-gray-800">
+          {orgs.map((org) => (
+            <div key={org.id} className="flex items-center justify-between px-5 py-4 gap-4">
+              <div className="flex items-center gap-3 min-w-0">
+                <span
+                  className="h-8 w-8 rounded text-sm font-bold flex items-center justify-center shrink-0 text-white"
+                  style={{ background: org.primaryColor ?? "#6366f1" }}
+                >
+                  {org.name[0]?.toUpperCase()}
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-white truncate">{org.name}</p>
+                  <p className="text-xs text-gray-600 truncate">
+                    {org._count.members} membre{org._count.members !== 1 ? "s" : ""}
+                    {" · "}
+                    {org._count.spaces} espace{org._count.spaces !== 1 ? "s" : ""}
+                    {org.allowedEmailDomain && ` · @${org.allowedEmailDomain}`}
+                  </p>
                 </div>
               </div>
-              <div className="flex gap-3 text-xs text-gray-500 shrink-0">
-                <span>{org._count.members} membre{org._count.members !== 1 ? "s" : ""}</span>
-                <span>{org._count.spaces} espace{org._count.spaces !== 1 ? "s" : ""}</span>
+              <div className="flex items-center gap-3 shrink-0">
+                <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${STATUS_COLORS[org.subscriptionStatus] ?? STATUS_COLORS.trial}`}>
+                  {STATUS_LABELS[org.subscriptionStatus] ?? org.subscriptionStatus}
+                </span>
+                <Link
+                  href={`/admin/org/${org.id}`}
+                  className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors font-medium"
+                >
+                  Gérer →
+                </Link>
               </div>
             </div>
-            {org.members.length > 0 && (
-              <div className="mt-2 flex gap-2 flex-wrap">
-                {org.members.map((m) => (
-                  <span key={m.id} className="text-xs text-gray-500 bg-gray-800 rounded px-2 py-0.5">
-                    {m.user.name ?? m.user.email}
-                    {m.role === "admin" && " (admin)"}
-                  </span>
-                ))}
-                {org._count.members > 3 && (
-                  <span className="text-xs text-gray-600">+{org._count.members - 3} autres</span>
-                )}
-              </div>
-            )}
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </AppShell>
   );
