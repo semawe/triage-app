@@ -16,8 +16,10 @@ set -a && . .env.local && set +a
 # Migrations Prisma (mode prod — ne génère pas les artefacts, applique seulement)
 npx prisma migrate deploy
 
-# Build atomique : le .next servi par PM2 reste intact pendant le build
-NEXT_DIST_DIR=.next-build npm run build
+# Build atomique : le .next servi par PM2 reste intact pendant le build.
+# SKIP_BUILD_CHECKS=1 : saute type-check/ESLint (gourmands en RAM, OOM sur ce VPS) —
+# ils sont validés en amont (tsc --noEmit + eslint avant push).
+SKIP_BUILD_CHECKS=1 NEXT_DIST_DIR=.next-build npm run build
 rm -rf .next.old && mv .next .next.old && mv .next-build .next
 
 pm2 reload triage-app --update-env
