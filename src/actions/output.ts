@@ -1,15 +1,12 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { requireMeetingAccess } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 import type { OutputType } from "@/generated/prisma";
 import { broadcast } from "@/lib/sse";
 
 export async function addOutput(formData: FormData) {
-  const session = await auth();
-  if (!session?.user?.id) return;
-
   const itemId = formData.get("itemId") as string;
   const type = formData.get("type") as OutputType;
   const content = (formData.get("content") as string)?.trim();
@@ -18,12 +15,19 @@ export async function addOutput(formData: FormData) {
 
   if (!itemId || !type || !content) return;
 
-  const item = await prisma.agendaItem.findUnique({ where: { id: itemId }, select: { meetingId: true } });
+  const item = await prisma.agendaItem.findUnique({
+    where: { id: itemId },
+    select: { meetingId: true },
+  });
+  if (!item) return;
+
+  const ctx = await requireMeetingAccess(item.meetingId);
+  if (!ctx) return;
 
   await prisma.output.create({
     data: {
       itemId,
-      authorId: session.user.id,
+      authorId: ctx.session.user.id,
       type,
       content,
       assigneeId: assigneeId || null,
@@ -32,15 +36,17 @@ export async function addOutput(formData: FormData) {
   });
 
   revalidatePath("/", "layout");
-  if (item) broadcast(item.meetingId);
+  broadcast(item.meetingId);
 }
 
 export async function toggleOutputDone(outputId: string) {
-  const session = await auth();
-  if (!session?.user?.id) return;
-
-  const output = await prisma.output.findUnique({ where: { id: outputId } });
+  const output = await prisma.output.findUnique({
+    where: { id: outputId },
+    select: { isDone: true, item: { select: { meetingId: true } } },
+  });
   if (!output) return;
+
+  if (!(await requireMeetingAccess(output.item.meetingId))) return;
 
   await prisma.output.update({
     where: { id: outputId },

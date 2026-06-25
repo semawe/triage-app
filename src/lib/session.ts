@@ -79,6 +79,33 @@ export const requireOrg = cache(async () => {
   };
 });
 
+/**
+ * Garde d'autorisation pour les mutations liées à une réunion.
+ * Vérifie que l'appelant est membre de l'organisation dont relève la réunion
+ * (indépendamment de l'org active du cookie), et renvoie null sinon.
+ * Les Server Actions appellent ce helper en tête et `return` si null.
+ */
+export const requireMeetingAccess = async (meetingId: string) => {
+  const session = await requireAuth();
+  const meeting = await prisma.meeting.findUnique({
+    where: { id: meetingId },
+    include: { space: { select: { organisationId: true } } },
+  });
+  if (!meeting) return null;
+
+  const membership = await prisma.organisationMember.findUnique({
+    where: {
+      organisationId_userId: {
+        organisationId: meeting.space.organisationId,
+        userId: session.user.id,
+      },
+    },
+  });
+  if (!membership) return null;
+
+  return { session, meeting, membership };
+};
+
 export const requireSuperAdmin = cache(async () => {
   const session = await requireAuth();
   const sa = await prisma.superAdmin.findUnique({

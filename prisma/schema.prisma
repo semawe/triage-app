@@ -119,6 +119,7 @@ model OrganisationMember {
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([organisationId, userId])
+  @@index([userId]) // requireOrg() filtre par userId à chaque page authentifiée
 }
 
 enum SpaceType {
@@ -146,6 +147,8 @@ model Space {
   members      SpaceMember[]
   meetings     Meeting[]
   roles        Role[]
+
+  @@index([organisationId])
 }
 
 enum SpaceRole {
@@ -187,6 +190,8 @@ model Meeting {
 
   space       Space        @relation(fields: [spaceId], references: [id], onDelete: Cascade)
   agendaItems AgendaItem[]
+
+  @@index([spaceId])
 }
 
 enum ItemStatus {
@@ -208,6 +213,8 @@ model AgendaItem {
   meeting Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
   author  User     @relation(fields: [authorId], references: [id])
   outputs Output[]
+
+  @@index([meetingId])
 }
 
 model Role {
@@ -298,4 +305,6 @@ model Output {
   item     AgendaItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
   author   User       @relation(fields: [authorId], references: [id])
   assignee User?      @relation("OutputAssignee", fields: [assigneeId], references: [id])
+
+  @@index([itemId])
 }

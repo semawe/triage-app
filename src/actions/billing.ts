@@ -1,6 +1,6 @@
 "use server";
 
-import { stripe, PRICE_PER_SEAT_EUR_CENTS, TRIAL_DAYS } from "@/lib/stripe";
+import { stripe, PRICE_PER_SEAT_EUR_CENTS } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 import { requireOrg } from "@/lib/session";
 import { revalidatePath } from "next/cache";
@@ -106,15 +106,4 @@ export async function updateSeats(seats: number) {
   });
 
   revalidatePath("/", "layout");
-}
-
-/** Démarre la période d'essai à la création d'une org (appelé depuis createOrg) */
-export async function startTrial(orgId: string) {
-  const trialEndsAt = new Date();
-  trialEndsAt.setDate(trialEndsAt.getDate() + TRIAL_DAYS);
-
-  await prisma.organisation.update({
-    where: { id: orgId },
-    data: { subscriptionStatus: "trial", trialEndsAt },
-  });
 }
