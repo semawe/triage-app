@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { requireAuth, requireMeetingAccess } from "@/lib/session";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
@@ -15,14 +15,29 @@ function parseDatetimeLocal(value: string): Date {
 }
 
 export async function createMeeting(formData: FormData) {
-  const session = await auth();
-  if (!session?.user?.id) return;
+  const session = await requireAuth();
 
   const spaceId = formData.get("spaceId") as string;
   const dateStr = formData.get("date") as string;
   const durationStr = formData.get("duration") as string;
   const title = (formData.get("title") as string)?.trim() || null;
   if (!spaceId || !dateStr) return;
+
+  // L'appelant doit être membre de l'organisation de l'espace cible.
+  const space = await prisma.space.findUnique({
+    where: { id: spaceId },
+    select: { organisationId: true },
+  });
+  if (!space) return;
+  const membership = await prisma.organisationMember.findUnique({
+    where: {
+      organisationId_userId: {
+        organisationId: space.organisationId,
+        userId: session.user.id,
+      },
+    },
+  });
+  if (!membership) return;
 
   const durationMinutes = durationStr ? parseInt(durationStr, 10) : null;
 
@@ -41,8 +56,7 @@ export async function createMeeting(formData: FormData) {
 }
 
 export async function updateMeetingTitle(meetingId: string, formData: FormData) {
-  const session = await auth();
-  if (!session?.user?.id) return;
+  if (!(await requireMeetingAccess(meetingId))) return;
 
   const title = (formData.get("title") as string)?.trim() || null;
   await prisma.meeting.update({
@@ -54,8 +68,7 @@ export async function updateMeetingTitle(meetingId: string, formData: FormData) 
 }
 
 export async function updateMeetingLink(meetingId: string, formData: FormData) {
-  const session = await auth();
-  if (!session?.user?.id) return;
+  if (!(await requireMeetingAccess(meetingId))) return;
 
   const link = (formData.get("link") as string)?.trim() || null;
   await prisma.meeting.update({
@@ -67,8 +80,7 @@ export async function updateMeetingLink(meetingId: string, formData: FormData) {
 }
 
 export async function updateMeetingPrivacy(meetingId: string, isPrivate: boolean | null) {
-  const session = await auth();
-  if (!session?.user?.id) return;
+  if (!(await requireMeetingAccess(meetingId))) return;
 
   await prisma.meeting.update({
     where: { id: meetingId },
@@ -79,8 +91,8 @@ export async function updateMeetingPrivacy(meetingId: string, isPrivate: boolean
 }
 
 export async function addAgendaItem(meetingId: string, formData: FormData) {
-  const session = await auth();
-  if (!session?.user?.id) return;
+  const ctx = await requireMeetingAccess(meetingId);
+  if (!ctx) return;
 
   const title = (formData.get("title") as string)?.trim();
   if (!title) return;
@@ -93,7 +105,7 @@ export async function addAgendaItem(meetingId: string, formData: FormData) {
   await prisma.agendaItem.create({
     data: {
       meetingId,
-      authorId: session.user.id,
+      authorId: ctx.session.user.id,
       title,
       order: (agg._max.order ?? 0) + 1,
     },
@@ -104,6 +116,8 @@ export async function addAgendaItem(meetingId: string, formData: FormData) {
 }
 
 export async function openMeeting(meetingId: string) {
+  if (!(await requireMeetingAccess(meetingId))) return;
+
   const firstItem = await prisma.agendaItem.findFirst({
     where: { meetingId },
     orderBy: { order: "asc" },
@@ -126,12 +140,16 @@ export async function openMeeting(meetingId: string) {
 }
 
 export async function jumpToItem(meetingId: string, targetItemId: string) {
+  if (!(await requireMeetingAccess(meetingId))) return;
+
+  // targetItemId doit appartenir à cette réunion (sinon on activerait
+  // un point d'une autre réunion via un id arbitraire).
   await prisma.agendaItem.updateMany({
     where: { meetingId, status: "active" },
     data: { status: "pending" },
   });
-  await prisma.agendaItem.update({
-    where: { id: targetItemId },
+  await prisma.agendaItem.updateMany({
+    where: { id: targetItemId, meetingId },
     data: { status: "active" },
   });
 
@@ -140,8 +158,10 @@ export async function jumpToItem(meetingId: string, targetItemId: string) {
 }
 
 export async function nextItem(meetingId: string, currentItemId: string) {
-  await prisma.agendaItem.update({
-    where: { id: currentItemId },
+  if (!(await requireMeetingAccess(meetingId))) return;
+
+  await prisma.agendaItem.updateMany({
+    where: { id: currentItemId, meetingId },
     data: { status: "done" },
   });
 
@@ -167,6 +187,8 @@ export async function nextItem(meetingId: string, currentItemId: string) {
 }
 
 export async function closeMeeting(meetingId: string) {
+  if (!(await requireMeetingAccess(meetingId))) return;
+
   await prisma.agendaItem.updateMany({
     where: { meetingId, status: { in: ["active", "pending"] } },
     data: { status: "done" },
