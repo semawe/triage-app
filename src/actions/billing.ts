@@ -38,29 +38,33 @@ export async function createCheckoutSession(seats: number) {
   const customerId = await ensureStripeCustomer(org.id);
   const base = appUrl();
 
-  // TVA : prix catalogue en HT. Si un TaxRate Stripe (20 %, inclusive=false) est
-  // configuré via STRIPE_TAX_RATE_ID, il est appliqué en supplément → 2 € HT = 2,40 € TTC.
-  // Sans cette variable, le comportement reste inchangé (montant facturé à plat).
+  // TVA : prix catalogue en HT (tax_behavior exclusive). Stripe Tax calcule la TVA
+  // automatiquement selon l'adresse et le n° de TVA du client (20 % en France,
+  // autoliquidation 0 % pour une entreprise UE à n° valide, hors champ hors UE).
+  // PRÉREQUIS : Stripe Tax doit être activé dans le compte Stripe (adresse d'origine
+  // + immatriculation TVA France), sinon Stripe rejette automatic_tax au paiement.
   // Les associations passent par un code promo (allow_promotion_codes) créé à la demande.
-  const taxRateId = process.env.STRIPE_TAX_RATE_ID;
-
   const session = await stripe.checkout.sessions.create({
     customer: customerId,
     mode: "subscription",
     payment_method_types: ["card"],
+    automatic_tax: { enabled: true },
+    tax_id_collection: { enabled: true },
+    billing_address_collection: "required",
+    customer_update: { address: "auto", name: "auto" },
     line_items: [
       {
         price_data: {
           currency: "eur",
           recurring: { interval: "month" },
           unit_amount: PRICE_PER_SEAT_EUR_CENTS,
+          tax_behavior: "exclusive",
           product_data: {
             name: "triapp.fr — abonnement",
             description: `${seats} siège${seats > 1 ? "s" : ""} · 2 € HT/utilisateur/mois`,
           },
         },
         quantity: seats,
-        ...(taxRateId ? { tax_rates: [taxRateId] } : {}),
       },
     ],
     subscription_data: {
@@ -184,6 +188,7 @@ export async function updateSeats(seats: number) {
   await stripe.subscriptions.update(org.stripeSubId, {
     items: [{ id: itemId, quantity: seats }],
     proration_behavior: "always_invoice",
+    automatic_tax: { enabled: true },
   });
 
   await prisma.organisation.update({
