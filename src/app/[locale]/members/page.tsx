@@ -7,9 +7,14 @@ import InviteButton from "./InviteButton";
 import SendInviteForm from "./SendInviteForm";
 import { Link } from "@/i18n/navigation";
 
-export default async function MembersPage() {
+export default async function MembersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
   const { session, org, membership } = await requireOrg();
   const isAdmin = membership.role === "admin";
+  const { error } = await searchParams;
 
   const members = await prisma.organisationMember.findMany({
     where: { organisationId: org.id },
@@ -50,6 +55,17 @@ export default async function MembersPage() {
         </div>
       </div>
 
+      {error === "seats-full" && (
+        <div className="mb-6 rounded-lg bg-red-900/30 border border-red-800 px-4 py-3 text-sm text-red-300">
+          Limite de {org.seatCount} siège{org.seatCount > 1 ? "s" : ""} atteinte — impossible
+          d&apos;approuver cette demande. Ajoute des sièges depuis{" "}
+          <Link href="/settings" className="underline hover:text-red-200">
+            Paramètres › Facturation
+          </Link>
+          .
+        </div>
+      )}
+
       {/* Invite — admins only */}
       {isAdmin && (
         <div className="mb-8 rounded-xl bg-gray-900 border border-gray-800 p-5 space-y-6">
@@ -68,7 +84,8 @@ export default async function MembersPage() {
             </h2>
             <InviteButton />
             <p className="mt-3 text-xs text-gray-600">
-              Partage le lien manuellement dans Slack ou par message. Le destinataire est ajouté dès qu&apos;il clique.
+              Partage le lien manuellement dans Slack ou par message. Lien à usage unique
+              (une personne), valable 7 jours.
             </p>
           </div>
         </div>

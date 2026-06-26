@@ -3,6 +3,9 @@
 import { prisma } from "@/lib/prisma";
 import { requireAuth, requireOrg } from "@/lib/session";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { getLocale } from "next-intl/server";
+import { consumedSeats } from "@/lib/seats";
 
 export async function requestJoin(orgId: string): Promise<{ ok: boolean; error?: string }> {
   const session = await requireAuth();
@@ -35,6 +38,12 @@ export async function approveJoinRequest(requestId: string): Promise<void> {
 
   const req = await prisma.joinRequest.findUnique({ where: { id: requestId } });
   if (!req || req.organisationId !== org.id) return;
+
+  // Garde de siège : ne pas approuver au-delà de la limite (membres + invitations en attente)
+  if ((await consumedSeats(org.id)) >= org.seatCount) {
+    const locale = await getLocale().catch(() => "fr");
+    redirect(`/${locale}/members?error=seats-full`);
+  }
 
   await prisma.$transaction([
     prisma.joinRequest.update({ where: { id: requestId }, data: { status: "approved" } }),

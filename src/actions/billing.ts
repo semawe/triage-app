@@ -158,11 +158,24 @@ export async function updateBillingInfo(formData: FormData) {
   redirect(`/${locale}/settings/billing-info?saved=1${vatInvalid ? "&vat=invalid" : ""}`);
 }
 
+/** Wrapper formData pour le formulaire d'ajustement des sièges (Paramètres › Facturation). */
+export async function updateSeatsForm(formData: FormData) {
+  const seats = parseInt(formData.get("seats") as string, 10);
+  if (!isNaN(seats) && seats > 0) await updateSeats(seats);
+}
+
 /** Met à jour le nombre de sièges (modifie l'abonnement Stripe) */
 export async function updateSeats(seats: number) {
   const { org, membership } = await requireOrg();
   if (membership.role !== "admin") return;
   if (!org.stripeSubId) return;
+
+  // Les sièges sont des licences consommées : on n'autorise pas à descendre
+  // sous le nombre de membres actuels (sinon des membres seraient « non couverts »).
+  const members = await prisma.organisationMember.count({
+    where: { organisationId: org.id },
+  });
+  if (seats < members) return;
 
   const sub = await stripe.subscriptions.retrieve(org.stripeSubId);
   const itemId = sub.items.data[0]?.id;

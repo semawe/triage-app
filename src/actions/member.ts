@@ -1,11 +1,12 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireOrg, requireSuperAdmin } from "@/lib/session";
+import { requireAuth, requireOrg, requireSuperAdmin } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 import { redirect } from "next/navigation";
 import { sendEmail } from "@/lib/email";
+import { consumedSeats, seatLimitMessage } from "@/lib/seats";
 
 export async function updateMemberRole(
   memberId: string,
@@ -76,15 +77,9 @@ export async function generateInvite(
   const { org, membership } = await requireOrg();
   if (membership.role !== "admin") return { url: "" };
 
-  // Seat check
-  const currentCount = await prisma.organisationMember.count({
-    where: { organisationId: org.id },
-  });
-  if (currentCount >= org.seatCount) {
-    return {
-      url: "",
-      error: `Limite de ${org.seatCount} siège${org.seatCount > 1 ? "s" : ""} atteinte. Augmentez votre abonnement depuis Paramètres.`,
-    };
+  // Seat check (membres + invitations en attente)
+  if ((await consumedSeats(org.id)) >= org.seatCount) {
+    return { url: "", error: seatLimitMessage(org.seatCount) };
   }
 
   const role = (formData.get("role") as "admin" | "member") ?? "member";
@@ -110,15 +105,9 @@ export async function sendInviteByEmail(
 
   if (!email || !email.includes("@")) return { ok: false, error: "Adresse email invalide." };
 
-  // Seat check
-  const currentCount = await prisma.organisationMember.count({
-    where: { organisationId: org.id },
-  });
-  if (currentCount >= org.seatCount) {
-    return {
-      ok: false,
-      error: `Limite de ${org.seatCount} siège${org.seatCount > 1 ? "s" : ""} atteinte. Augmentez votre abonnement depuis Paramètres.`,
-    };
+  // Seat check (membres + invitations en attente)
+  if ((await consumedSeats(org.id)) >= org.seatCount) {
+    return { ok: false, error: seatLimitMessage(org.seatCount) };
   }
 
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
@@ -153,36 +142,44 @@ export async function sendInviteByEmail(
 }
 
 export async function acceptInvite(token: string) {
-  const { session } = await requireOrg().catch(async () => {
-    // user has no org yet — still need auth
-    const session = await (await import("@/lib/session")).requireAuth();
-    return { session, org: null as never, membership: null as never };
-  });
+  const session = await requireAuth();
+  const locale = await getLocale().catch(() => "fr");
 
   const invite = await prisma.pendingInvite.findUnique({ where: { token } });
   if (!invite || invite.expiresAt < new Date()) {
-    const locale = await getLocale().catch(() => "fr");
-    redirect(`/${locale}/invite-expired`);
-    return;
+    // La page d'invitation rend l'état « invalide ou expiré »
+    redirect(`/${locale}/invite/${token}`);
   }
 
-  // Add to org if not already a member
-  await prisma.organisationMember.upsert({
+  const already = await prisma.organisationMember.findUnique({
     where: {
-      organisationId_userId: {
-        organisationId: invite.orgId,
-        userId: session.user.id,
-      },
+      organisationId_userId: { organisationId: invite.orgId, userId: session.user.id },
     },
-    create: {
-      organisationId: invite.orgId,
-      userId: session.user.id,
-      role: invite.role,
-    },
-    update: {},
   });
 
-  const locale = await getLocale().catch(() => "fr");
+  // Recontrôle du siège à l'acceptation (cas d'un downgrade après émission)
+  if (!already) {
+    const org = await prisma.organisation.findUniqueOrThrow({ where: { id: invite.orgId } });
+    const members = await prisma.organisationMember.count({
+      where: { organisationId: invite.orgId },
+    });
+    if (members >= org.seatCount) {
+      redirect(`/${locale}/invite/${token}?full=1`);
+    }
+  }
+
+  // Ajoute le membre et consomme l'invitation (usage unique)
+  await prisma.$transaction([
+    prisma.organisationMember.upsert({
+      where: {
+        organisationId_userId: { organisationId: invite.orgId, userId: session.user.id },
+      },
+      create: { organisationId: invite.orgId, userId: session.user.id, role: invite.role },
+      update: {},
+    }),
+    prisma.pendingInvite.delete({ where: { id: invite.id } }),
+  ]);
+
   redirect(`/${locale}/meetings`);
 }
 

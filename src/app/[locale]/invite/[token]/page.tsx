@@ -4,10 +4,14 @@ import { redirect } from "next/navigation";
 import { getLocale } from "next-intl/server";
 import { acceptInvite } from "@/actions/member";
 
-type Props = { params: Promise<{ token: string; locale: string }> };
+type Props = {
+  params: Promise<{ token: string; locale: string }>;
+  searchParams: Promise<{ full?: string }>;
+};
 
-export default async function InvitePage({ params }: Props) {
+export default async function InvitePage({ params, searchParams }: Props) {
   const { token, locale } = await params;
+  const { full } = await searchParams;
   const session = await auth();
 
   // Not logged in → go to login, come back after
@@ -28,6 +32,23 @@ export default async function InvitePage({ params }: Props) {
           <p className="text-2xl">⛔</p>
           <p className="text-white font-semibold">Lien d&apos;invitation invalide ou expiré</p>
           <p className="text-sm text-gray-500">Demande un nouveau lien à l&apos;administrateur.</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (full) {
+    return (
+      <main className="min-h-screen bg-gray-950 flex items-center justify-center">
+        <div className="text-center space-y-3 max-w-sm px-6">
+          <p className="text-2xl">🚪</p>
+          <p className="text-white font-semibold">
+            Plus de siège disponible dans {invite.organisation.name}
+          </p>
+          <p className="text-sm text-gray-500">
+            L&apos;organisation a atteint sa limite de sièges. Demande à un administrateur
+            d&apos;en ajouter, puis réessaie avec ce lien.
+          </p>
         </div>
       </main>
     );

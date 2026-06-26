@@ -6,7 +6,7 @@ import { getOrgFeatures, FEATURE_LABELS, FEATURE_DEFAULTS } from "@/lib/features
 import type { FeatureKey } from "@/lib/features";
 import { prisma } from "@/lib/prisma";
 import { Link } from "@/i18n/navigation";
-import { createCheckoutSession, createCustomerPortalSession } from "@/actions/billing";
+import { createCheckoutSession, createCustomerPortalSession, updateSeatsForm } from "@/actions/billing";
 import { isOrgAccessible } from "@/lib/stripe";
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
@@ -184,6 +184,31 @@ export default async function SettingsPage({
               {" · "}
               <span className="text-gray-500">2 € HT/siège/mois (2,40 € TTC)</span>
             </div>
+
+            {/* Ajuster les sièges — une fois abonné */}
+            {org.stripeSubId && org.subscriptionStatus === "active" && (
+              <form action={updateSeatsForm} className="flex items-end gap-2 pt-1">
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs text-gray-500">Nombre de sièges</label>
+                  <input
+                    type="number"
+                    name="seats"
+                    defaultValue={org.seatCount}
+                    min={memberCount}
+                    className="rounded-lg bg-gray-800 border border-gray-700 px-3 py-1.5 text-sm text-white focus:outline-none focus:border-indigo-500 w-24"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="rounded-lg bg-gray-800 border border-gray-700 px-4 py-1.5 text-sm font-medium text-gray-200 hover:bg-gray-700 transition-colors"
+                >
+                  Mettre à jour
+                </button>
+                <span className="text-xs text-gray-600 self-center">
+                  minimum {memberCount} (membres actuels) · facturation au prorata
+                </span>
+              </form>
+            )}
           </div>
 
           {/* Actions */}
