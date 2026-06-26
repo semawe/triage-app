@@ -17,10 +17,13 @@ export default function MentionsLegalesPage() {
             Éditeur du site
           </h2>
           <div className="text-sm text-gray-300 space-y-1">
-            <p className="font-medium text-white">Heterostasia</p>
-            <p>Société par actions simplifiée (SAS)</p>
-            <p>Siège social : [À compléter après immatriculation]</p>
-            <p>SIRET : [À compléter après immatriculation]</p>
+            <p className="font-medium text-white">La Fabrique des Alpes</p>
+            <p>
+              Société par actions simplifiée à associé unique (SASU) au capital
+              de 50&nbsp;000&nbsp;€
+            </p>
+            <p>Siège social : 8 allée de la Colline, 38100 Grenoble</p>
+            <p>SIRET : 510 866 254 00079 — RCS Grenoble</p>
             <p>
               Contact :{" "}
               <a

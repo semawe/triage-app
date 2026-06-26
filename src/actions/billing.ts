@@ -50,7 +50,7 @@ export async function createCheckoutSession(seats: number) {
           unit_amount: PRICE_PER_SEAT_EUR_CENTS,
           product_data: {
             name: "triapp.fr — abonnement",
-            description: `${seats} siège${seats > 1 ? "s" : ""} · 2 €/utilisateur/mois`,
+            description: `${seats} siège${seats > 1 ? "s" : ""} · 2 € TTC/utilisateur/mois`,
           },
         },
         quantity: seats,

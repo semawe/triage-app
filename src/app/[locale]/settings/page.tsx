@@ -182,7 +182,7 @@ export default async function SettingsPage({
                 {org.seatCount}
               </span> siège{org.seatCount > 1 ? "s" : ""} inclus
               {" · "}
-              <span className="text-gray-500">2 €/siège/mois</span>
+              <span className="text-gray-500">2 € TTC/siège/mois</span>
             </div>
           </div>
 
