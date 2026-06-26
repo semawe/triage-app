@@ -92,6 +92,72 @@ export async function createCustomerPortalSession() {
   redirect(session.url);
 }
 
+/**
+ * Met à jour les coordonnées de facturation de l'org (données légales/fiscales)
+ * et les pousse vers le Stripe Customer pour qu'elles figurent sur la facture.
+ * Réservé aux admins. La sauvegarde locale réussit même si Stripe est indisponible.
+ */
+export async function updateBillingInfo(formData: FormData) {
+  const { org, membership } = await requireOrg();
+  if (membership.role !== "admin") return;
+
+  const get = (k: string) => {
+    const v = (formData.get(k) as string | null)?.trim();
+    return v ? v : null;
+  };
+
+  const data = {
+    billingName: get("billingName"),
+    billingEmail: get("billingEmail"),
+    billingAddressLine1: get("billingAddressLine1"),
+    billingAddressLine2: get("billingAddressLine2"),
+    billingPostalCode: get("billingPostalCode"),
+    billingCity: get("billingCity"),
+    billingCountry: get("billingCountry") ?? "FR",
+    siret: get("siret"),
+    vatNumber: get("vatNumber"),
+  };
+
+  await prisma.organisation.update({ where: { id: org.id }, data });
+
+  const locale = await getLocale().catch(() => "fr");
+  let vatInvalid = false;
+
+  try {
+    const customerId = await ensureStripeCustomer(org.id);
+    await stripe.customers.update(customerId, {
+      name: data.billingName ?? org.name,
+      ...(data.billingEmail ? { email: data.billingEmail } : {}),
+      address: {
+        line1: data.billingAddressLine1 ?? undefined,
+        line2: data.billingAddressLine2 ?? undefined,
+        postal_code: data.billingPostalCode ?? undefined,
+        city: data.billingCity ?? undefined,
+        country: data.billingCountry ?? undefined,
+      },
+      metadata: { orgId: org.id, siret: data.siret ?? "" },
+    });
+
+    // TVA intracommunautaire → tax_id Stripe de type eu_vat (on remplace l'existant)
+    const existing = await stripe.customers.listTaxIds(customerId, { limit: 100 });
+    for (const t of existing.data) {
+      if (t.type === "eu_vat") await stripe.customers.deleteTaxId(customerId, t.id);
+    }
+    if (data.vatNumber) {
+      try {
+        await stripe.customers.createTaxId(customerId, { type: "eu_vat", value: data.vatNumber });
+      } catch {
+        vatInvalid = true; // format de TVA refusé par Stripe — la valeur reste enregistrée localement
+      }
+    }
+  } catch {
+    // Stripe non configuré (pas de clé) : la sauvegarde locale tient, on ne bloque pas.
+  }
+
+  revalidatePath("/", "layout");
+  redirect(`/${locale}/settings/billing-info?saved=1${vatInvalid ? "&vat=invalid" : ""}`);
+}
+
 /** Met à jour le nombre de sièges (modifie l'abonnement Stripe) */
 export async function updateSeats(seats: number) {
   const { org, membership } = await requireOrg();

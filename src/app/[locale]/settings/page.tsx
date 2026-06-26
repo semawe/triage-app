@@ -209,6 +209,15 @@ export default async function SettingsPage({
             ) : null}
           </div>
         </div>
+
+        <div className="mt-5 pt-4 border-t border-gray-800">
+          <Link
+            href={`/settings/billing-info?org=${org.id}`}
+            className="text-sm text-indigo-400 hover:text-indigo-300 transition-colors font-medium"
+          >
+            Coordonnées de facturation (adresse, SIRET, TVA) →
+          </Link>
+        </div>
       </section>
 
       {/* Modules */}

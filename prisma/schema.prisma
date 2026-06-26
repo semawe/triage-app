@@ -94,6 +94,17 @@ model Organisation {
   seatCount          Int                @default(3)
   trialEndsAt        DateTime?
 
+  // Coordonnées de facturation (données légales/fiscales du client, portées sur la facture)
+  billingName         String? // raison sociale facturée (peut différer du nom d'affichage)
+  billingEmail        String? // contact de facturation (destinataire des factures)
+  billingAddressLine1 String?
+  billingAddressLine2 String?
+  billingPostalCode   String?
+  billingCity         String?
+  billingCountry      String? @default("FR")
+  siret               String? // SIRET (établissement français)
+  vatNumber           String? // n° TVA intracommunautaire
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
