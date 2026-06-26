@@ -25,7 +25,7 @@ Cible : organisations Holacracy et non-Holacracy, distribué librement.
 - **next-intl v4** — routing `/[locale]/`, fichiers `messages/fr.json` et `messages/en.json` ; proxy `src/proxy.ts` (remplace `middleware.ts`)
 - **Tailwind CSS** (pas shadcn pour l'instant)
 - **Server Actions** pour toutes les mutations (pas d'API REST), sauf 3 routes : auth NextAuth, webhook Stripe, flux SSE
-- **Stripe** — abonnement par siège (2 €/utilisateur/mois), `src/lib/stripe.ts` + webhook `src/app/api/stripe/webhook/route.ts`
+- **Stripe** — abonnement par siège (2 € HT/utilisateur/mois → 2,40 € TTC, TVA via `STRIPE_TAX_RATE_ID` ; tarif asso via code promo `ASSO`, voir § Facturation), `src/lib/stripe.ts` + webhook `src/app/api/stripe/webhook/route.ts`
 - **nodemailer** (SMTP) — invitations et comptes-rendus email, `src/lib/email.ts`
 - **Server-Sent Events** (temps réel) ✅ — broker in-process `src/lib/sse.ts` (mono-instance PM2), route `src/app/api/events/[meetingId]/route.ts`
 - **Déploiement** : VPS OVH, PM2 + Nginx (même instance que of-qualiopi)
@@ -138,6 +138,15 @@ Migration : `npx prisma migrate dev --name <nom>`
 
 Périmètre standard Claude Code (§5 CLAUDE.md racine).
 Validation requise pour : config infra VPS (Nginx, Docker, cron serveur), clés OAuth en production.
+
+## Facturation — TVA et tarif associations
+
+Le prix catalogue est en **HT** (site B2B). Standard : **2 € HT/siège/mois → 2,40 € TTC** (TVA 20 %).
+
+- **TVA** : appliquée via un `TaxRate` Stripe (`inclusive=false`), référencé par la variable d'env `STRIPE_TAX_RATE_ID` et posé sur la ligne de checkout dans `actions/billing.ts`. Sans la variable, l'app facture à plat (pas de TVA). En prod (live) : `STRIPE_TAX_RATE_ID=txr_1TmcyFPYbG48BY68DD9EHdMN` (20 %, FR), dans `/home/debian/triage-app/.env.local`. Réversible en retirant la variable + `pm2 restart`.
+- **Tarif associations** : remise commerciale (pas une exonération de TVA — non applicable côté vendeur), via le code promo réutilisable **`ASSO`** (coupon Stripe `lijKoZip`, −16,67 %, `duration=forever`, `promotion_code` `promo_1Tmd2oPYbG48BY68J5sESf3I`). Appliqué au checkout (`allow_promotion_codes: true`), il ramène à **2,00 € TTC** tout compris (2 € HT − 0,33 € = 1,67 € net + 0,33 € TVA). À communiquer aux associations à but non lucratif qui en font la demande.
+- **Créer un code promo ponctuel** (cas particulier) : Stripe Dashboard (live) → Products → Coupons, ou API `POST /v1/coupons` (`percent_off`, `duration`) puis `POST /v1/promotion_codes` (`coupon`, `code`). ⚠️ La version d'API par défaut du compte rejette le param `coupon` sur `/v1/promotion_codes` : forcer l'en-tête `Stripe-Version: 2023-10-16`.
+- **Décision de prix** (activer la TVA, changer le tarif asso) = validation Aliocha (impact facturation prod).
 
 ## Conventions
 
