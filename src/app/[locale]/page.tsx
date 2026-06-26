@@ -129,13 +129,15 @@ export default async function HomePage() {
             Standard
           </p>
           <p className="text-4xl font-bold mb-1">
-            2 <span className="text-2xl">€</span> <span className="text-2xl">TTC</span>
+            2 <span className="text-2xl">€</span> <span className="text-2xl text-gray-500">HT</span>
           </p>
-          <p className="text-sm text-gray-500 mb-8">par utilisateur / mois · TVA incluse</p>
+          <p className="text-sm text-gray-500 mb-8">
+            par utilisateur / mois · soit 2,40 € TTC (TVA 20 %)
+          </p>
           <ul className="space-y-3 text-sm text-gray-400 mb-8">
             <li className="flex items-start gap-2">
               <span className="text-indigo-400 mt-0.5">✓</span>
-              Prix tout compris (TTC), sans TVA en supplément
+              Tarif spécial associations à but non lucratif, sur demande
             </li>
             <li className="flex items-start gap-2">
               <span className="text-indigo-400 mt-0.5">✓</span>

@@ -38,6 +38,12 @@ export async function createCheckoutSession(seats: number) {
   const customerId = await ensureStripeCustomer(org.id);
   const base = appUrl();
 
+  // TVA : prix catalogue en HT. Si un TaxRate Stripe (20 %, inclusive=false) est
+  // configuré via STRIPE_TAX_RATE_ID, il est appliqué en supplément → 2 € HT = 2,40 € TTC.
+  // Sans cette variable, le comportement reste inchangé (montant facturé à plat).
+  // Les associations passent par un code promo (allow_promotion_codes) créé à la demande.
+  const taxRateId = process.env.STRIPE_TAX_RATE_ID;
+
   const session = await stripe.checkout.sessions.create({
     customer: customerId,
     mode: "subscription",
@@ -50,10 +56,11 @@ export async function createCheckoutSession(seats: number) {
           unit_amount: PRICE_PER_SEAT_EUR_CENTS,
           product_data: {
             name: "triapp.fr — abonnement",
-            description: `${seats} siège${seats > 1 ? "s" : ""} · 2 € TTC/utilisateur/mois`,
+            description: `${seats} siège${seats > 1 ? "s" : ""} · 2 € HT/utilisateur/mois`,
           },
         },
         quantity: seats,
+        ...(taxRateId ? { tax_rates: [taxRateId] } : {}),
       },
     ],
     subscription_data: {
