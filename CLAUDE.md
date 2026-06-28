@@ -129,7 +129,7 @@ Migration : `npx prisma migrate dev --name <nom>`
 
 ## Déploiement (prod)
 
-- **VPS OVH** `debian@51.178.234.59` (même instance que of-qualiopi), `ssh -i ~/.ssh/id_semawe_master`. App dans `/home/debian/triage-app`, base PostgreSQL locale `triageapp_prod`, PM2 process `triage-app` (port 3002 interne), Nginx → triapp.fr, SSL Let's Encrypt.
+- **VPS OVH** `debian@145.239.55.58` (box `semawe-prod-gra11`, même instance que of-qualiopi), `ssh -i ~/.ssh/id_semawe_vps2`. App dans `/home/debian/triage-app`, base PostgreSQL locale `triageapp_prod`, PM2 process `triage-app` (port 3002, **bindé 127.0.0.1**), Nginx → triapp.fr, SSL Let's Encrypt. (Ancienne box `51.178.234.59` compromise et supprimée le 28/06/2026 — incident SEC-21 ; reconstruction propre + durcissement : egress UFW deny outgoing, vps-watch, fail2ban.)
 - **Auto-déploiement par webhook** : tout push sur `main` déclenche `webhook-server.js` → `deploy/deploy-triage-app.sh` (git pull → `npm ci --ignore-scripts` → `prisma migrate deploy` → build atomique `.next-build`→`.next` → `pm2 reload`). **Pas besoin de SSH pour déployer**, mais c'est `migrate deploy` (pas `dev`) qui tourne en prod.
 - **RAM limitée** : `next build` (Turbopack) sature la mémoire. Deux garde-fous en place : (1) swap de 6 Go (`/swapfile` + `/swapfile_deploy`, dans `/etc/fstab`) — la compilation déborde dessus ; (2) `SKIP_BUILD_CHECKS=1` dans le script de déploiement saute le type-check intégré (OOM), couvert en amont par `tsc --noEmit`. Ne pas retirer ces garde-fous sans alternative.
 - **Vérif post-deploy** : `https://triapp.fr/fr` → 200, et `pm2 list` (uptime de `triage-app` récent = reload effectif).
