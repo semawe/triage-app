@@ -74,6 +74,16 @@ export default async function BillingInfoPage({
             />
           </div>
           <div className="flex flex-col gap-1">
+            <label className={labelCls}>Nom et prénom du contact (à l&apos;attention de)</label>
+            <input
+              type="text"
+              name="billingContactName"
+              defaultValue={org.billingContactName ?? ""}
+              placeholder="Prénom Nom"
+              className={field}
+            />
+          </div>
+          <div className="flex flex-col gap-1">
             <label className={labelCls}>Email de facturation</label>
             <input
               type="email"

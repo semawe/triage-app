@@ -112,6 +112,7 @@ export async function updateBillingInfo(formData: FormData) {
 
   const data = {
     billingName: get("billingName"),
+    billingContactName: get("billingContactName"),
     billingEmail: get("billingEmail"),
     billingAddressLine1: get("billingAddressLine1"),
     billingAddressLine2: get("billingAddressLine2"),
@@ -139,7 +140,7 @@ export async function updateBillingInfo(formData: FormData) {
         city: data.billingCity ?? undefined,
         country: data.billingCountry ?? undefined,
       },
-      metadata: { orgId: org.id, siret: data.siret ?? "" },
+      metadata: { orgId: org.id, siret: data.siret ?? "", contactName: data.billingContactName ?? "" },
     });
 
     // TVA intracommunautaire → tax_id Stripe de type eu_vat (on remplace l'existant)

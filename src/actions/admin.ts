@@ -3,6 +3,8 @@
 import { prisma } from "@/lib/prisma";
 import { requireSuperAdmin } from "@/lib/session";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { getLocale } from "next-intl/server";
 import { TRIAL_DAYS } from "@/lib/stripe";
 import type { FeatureKey } from "@/lib/features";
 
@@ -98,6 +100,10 @@ export async function adminDeleteOrg(orgId: string) {
   await requireSuperAdmin();
   await prisma.organisation.delete({ where: { id: orgId } });
   revalidatePath("/admin");
+  // La suppression vide la page courante /admin/org/[orgId] → rediriger vers /admin
+  // pour éviter un 404 (retour de test #24).
+  const locale = await getLocale().catch(() => "fr");
+  redirect(`/${locale}/admin`);
 }
 
 export async function adminCreateOrg(formData: FormData) {

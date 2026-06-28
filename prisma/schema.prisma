@@ -96,6 +96,7 @@ model Organisation {
 
   // Coordonnées de facturation (données légales/fiscales du client, portées sur la facture)
   billingName         String? // raison sociale facturée (peut différer du nom d'affichage)
+  billingContactName  String? // nom et prénom du contact facturation (« à l'attention de »)
   billingEmail        String? // contact de facturation (destinataire des factures)
   billingAddressLine1 String?
   billingAddressLine2 String?

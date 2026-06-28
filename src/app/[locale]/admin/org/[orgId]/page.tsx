@@ -108,7 +108,7 @@ export default async function AdminOrgPage({ params }: { params: Promise<{ orgId
           </button>
         </form>
         {org.trialEndsAt && (
-          <p className="mt-2 text-xs text-gray-600">
+          <p className="mt-2 text-xs text-gray-400">
             Essai actuel jusqu&apos;au : {new Date(org.trialEndsAt).toLocaleDateString("fr-FR")}
           </p>
         )}
@@ -164,31 +164,40 @@ export default async function AdminOrgPage({ params }: { params: Promise<{ orgId
               <div key={m.id} className="flex items-center justify-between px-5 py-3 gap-4">
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-white truncate">{m.user.name ?? "—"}</p>
-                  <p className="text-xs text-gray-500 truncate">{m.user.email}</p>
+                  <p className="text-xs text-gray-400 truncate">{m.user.email}</p>
                 </div>
-                <div className="flex items-center gap-3 shrink-0 text-xs">
-                  <span className={`rounded-full border px-2 py-0.5 font-medium ${
+                <div className="flex items-center gap-2 shrink-0 text-xs">
+                  <span className={`rounded-full border px-2 py-0.5 font-semibold ${
                     m.role === "admin"
-                      ? "border-indigo-800 bg-indigo-900/30 text-indigo-300"
-                      : "border-gray-700 bg-gray-800 text-gray-400"
+                      ? "border-amber-500/60 bg-amber-500/15 text-amber-300"
+                      : "border-gray-600 bg-gray-800 text-gray-300"
                   }`}>
                     {m.role === "admin" ? "Admin" : "Membre"}
                   </span>
                   {m.role === "member" ? (
                     <form action={makeAdmin}>
-                      <button type="submit" className="text-gray-500 hover:text-indigo-400 transition-colors">
-                        → Admin
+                      <button
+                        type="submit"
+                        className="rounded-md border border-amber-500/50 bg-amber-500/10 px-2.5 py-1 font-medium text-amber-300 hover:bg-amber-500/20 transition-colors"
+                      >
+                        Passer admin
                       </button>
                     </form>
                   ) : (
                     <form action={makeMember}>
-                      <button type="submit" className="text-gray-500 hover:text-yellow-400 transition-colors">
-                        → Membre
+                      <button
+                        type="submit"
+                        className="rounded-md border border-gray-600 bg-gray-800 px-2.5 py-1 font-medium text-gray-200 hover:bg-gray-700 transition-colors"
+                      >
+                        Retirer admin
                       </button>
                     </form>
                   )}
                   <form action={remove}>
-                    <button type="submit" className="text-gray-500 hover:text-red-400 transition-colors">
+                    <button
+                      type="submit"
+                      className="rounded-md border border-red-800 bg-red-900/20 px-2.5 py-1 font-medium text-red-300 hover:bg-red-900/40 transition-colors"
+                    >
                       Retirer
                     </button>
                   </form>
@@ -287,7 +296,7 @@ export default async function AdminOrgPage({ params }: { params: Promise<{ orgId
           Zone dangereuse
         </h2>
         <DeleteOrgButton orgId={org.id} orgName={org.name} />
-        <p className="mt-2 text-xs text-gray-600">
+        <p className="mt-2 text-xs text-gray-400">
           Action irréversible. Toutes les données associées (membres, espaces, réunions, outputs) seront supprimées.
         </p>
       </section>

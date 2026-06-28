@@ -48,14 +48,32 @@ export default async function AdminPage() {
       <div className="mb-8 grid grid-cols-3 gap-4">
         {[
           { label: "Organisations", value: orgs.length },
-          { label: "Utilisateurs", value: userCount },
+          { label: "Utilisateurs", value: userCount, href: "/admin/users" },
           { label: "Abonnements actifs", value: activeOrgs },
-        ].map((s) => (
-          <div key={s.label} className="rounded-xl bg-gray-900 border border-gray-800 px-5 py-4">
-            <p className="text-2xl font-bold text-white">{s.value}</p>
-            <p className="text-xs text-gray-500 mt-0.5">{s.label}</p>
-          </div>
-        ))}
+        ].map((s) => {
+          const inner = (
+            <>
+              <p className="text-2xl font-bold text-white">{s.value}</p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {s.label}
+                {s.href && <span className="text-indigo-400"> →</span>}
+              </p>
+            </>
+          );
+          return s.href ? (
+            <Link
+              key={s.label}
+              href={s.href}
+              className="rounded-xl bg-gray-900 border border-gray-800 px-5 py-4 hover:border-indigo-700 transition-colors"
+            >
+              {inner}
+            </Link>
+          ) : (
+            <div key={s.label} className="rounded-xl bg-gray-900 border border-gray-800 px-5 py-4">
+              {inner}
+            </div>
+          );
+        })}
       </div>
 
       {/* Create org */}
@@ -111,7 +129,7 @@ export default async function AdminPage() {
                 </span>
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-white truncate">{org.name}</p>
-                  <p className="text-xs text-gray-600 truncate">
+                  <p className="text-xs text-gray-400 truncate">
                     {org._count.members} membre{org._count.members !== 1 ? "s" : ""}
                     {" · "}
                     {org._count.spaces} espace{org._count.spaces !== 1 ? "s" : ""}
