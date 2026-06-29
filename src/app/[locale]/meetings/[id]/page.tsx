@@ -17,6 +17,7 @@ import {
   updateMeetingPrivacy,
 } from "@/actions/meeting";
 import { addOutput } from "@/actions/output";
+import { OutputEntry, UnsavedOutputProvider, GuardedNavForm } from "./OutputEntry";
 import SendRecapButton from "./SendRecapButton";
 import SSEListener from "./SSEListener";
 import { Link } from "@/i18n/navigation";
@@ -211,6 +212,7 @@ export default async function MeetingPage({ params }: Props) {
       )}
 
       {/* Body */}
+      <UnsavedOutputProvider>
       <div className="flex gap-4 items-start">
         {/* Left: Agenda */}
         <div className="w-60 shrink-0 flex flex-col rounded-xl bg-gray-900 border border-gray-800 overflow-hidden">
@@ -221,7 +223,7 @@ export default async function MeetingPage({ params }: Props) {
             {doneItems.map((item) => {
               const jump = jumpToItem.bind(null, meeting.id, item.id);
               return (
-                <form key={item.id} action={jump}>
+                <GuardedNavForm key={item.id} action={jump}>
                   <button
                     type={meeting.status === "open" ? "submit" : "button"}
                     disabled={meeting.status !== "open"}
@@ -230,7 +232,7 @@ export default async function MeetingPage({ params }: Props) {
                     <AuthorAvatar name={item.author.name} image={item.author.image} size="xs" />
                     <span className="flex-1 truncate">{item.title}</span>
                   </button>
-                </form>
+                </GuardedNavForm>
               );
             })}
             {activeItem && (
@@ -243,7 +245,7 @@ export default async function MeetingPage({ params }: Props) {
             {pendingItems.map((item) => {
               const jump = jumpToItem.bind(null, meeting.id, item.id);
               return (
-                <form key={item.id} action={jump}>
+                <GuardedNavForm key={item.id} action={jump}>
                   <button
                     type={meeting.status === "open" ? "submit" : "button"}
                     disabled={meeting.status !== "open"}
@@ -252,7 +254,7 @@ export default async function MeetingPage({ params }: Props) {
                     <AuthorAvatar name={item.author.name} image={item.author.image} size="xs" />
                     <span className="flex-1 truncate">{item.title}</span>
                   </button>
-                </form>
+                </GuardedNavForm>
               );
             })}
             {meeting.agendaItems.length === 0 && (
@@ -328,49 +330,25 @@ export default async function MeetingPage({ params }: Props) {
                 </div>
               )}
 
-              <form action={addOutput} className="rounded-xl bg-gray-900 border border-gray-800 p-4 space-y-3">
-                <input type="hidden" name="itemId" value={activeItem.id} />
-                <div className="flex gap-3 flex-wrap">
-                  <select name="type" className="rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
-                    <option value="note">Note</option>
-                    {f.actions && <option value="action">Action</option>}
-                    <option value="decision">Décision</option>
-                    {f.projects && <option value="project">Projet</option>}
-                    {f.governance && <option value="governance">Gouvernance</option>}
-                  </select>
-                  <select name="assigneeId" className="rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
-                    <option value="">Assigné (optionnel)</option>
-                    {orgMembers.map((m) => (
-                      <option key={m.userId} value={m.userId}>{m.user.name ?? m.user.id}</option>
-                    ))}
-                  </select>
-                  <input
-                    type="date"
-                    name="dueDate"
-                    className="rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
-                  />
-                </div>
-                <textarea
-                  name="content"
-                  required
-                  rows={2}
-                  placeholder="Saisir l'output…"
-                  className="w-full rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 resize-none"
-                />
-                <button type="submit" className="rounded-lg bg-gray-700 px-4 py-2 text-sm text-gray-200 hover:bg-indigo-700 hover:text-white transition-colors">
-                  Ajouter l&apos;output
-                </button>
-              </form>
+              <OutputEntry
+                key={activeItem.id}
+                addOutput={addOutput}
+                itemId={activeItem.id}
+                showActions={f.actions}
+                showProjects={f.projects}
+                showGovernance={f.governance}
+                members={orgMembers.map((m) => ({ userId: m.userId, name: m.user.name ?? m.user.id }))}
+              />
 
               <div className="flex justify-end">
-                <form action={pendingItems.length > 0 ? next : close}>
+                <GuardedNavForm action={pendingItems.length > 0 ? next : close}>
                   <button
                     type="submit"
                     className={`rounded-xl px-6 py-3 text-sm font-semibold text-white transition-colors ${pendingItems.length > 0 ? "bg-indigo-600 hover:bg-indigo-500" : "bg-emerald-700 hover:bg-emerald-600"}`}
                   >
                     {pendingItems.length > 0 ? "Point suivant →" : "Clore la réunion ✓"}
                   </button>
-                </form>
+                </GuardedNavForm>
               </div>
             </>
           )}
@@ -448,6 +426,7 @@ export default async function MeetingPage({ params }: Props) {
           </div>
         )}
       </div>
+      </UnsavedOutputProvider>
     </AppShell>
   );
 }
