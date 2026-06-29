@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { requireAuth, requireMeetingAccess } from "@/lib/session";
+import { resolveParticipant } from "@/lib/guest";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
@@ -48,6 +49,7 @@ export async function createMeeting(formData: FormData) {
       durationMinutes: durationMinutes || null,
       title: title || null,
       status: "draft",
+      createdById: session.user.id,
     },
   });
 
@@ -91,8 +93,9 @@ export async function updateMeetingPrivacy(meetingId: string, isPrivate: boolean
 }
 
 export async function addAgendaItem(meetingId: string, formData: FormData) {
-  const ctx = await requireMeetingAccess(meetingId);
-  if (!ctx) return;
+  // Membres comme invités peuvent ajouter un point (retour de test #31).
+  const participant = await resolveParticipant(meetingId);
+  if (!participant) return;
 
   const title = (formData.get("title") as string)?.trim();
   if (!title) return;
@@ -105,7 +108,7 @@ export async function addAgendaItem(meetingId: string, formData: FormData) {
   await prisma.agendaItem.create({
     data: {
       meetingId,
-      authorId: ctx.session.user.id,
+      authorId: participant.userId,
       title,
       order: (agg._max.order ?? 0) + 1,
     },

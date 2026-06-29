@@ -18,10 +18,12 @@ import {
 } from "@/actions/meeting";
 import { addOutput } from "@/actions/output";
 import { OutputEntry, UnsavedOutputProvider, GuardedNavForm } from "./OutputEntry";
+import GuestInvitePanel from "./GuestInvitePanel";
 import SendRecapButton from "./SendRecapButton";
 import SSEListener from "./SSEListener";
 import { Link } from "@/i18n/navigation";
 import { updateSpacePrivacy } from "@/actions/space";
+import { getLocale } from "next-intl/server";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -53,6 +55,7 @@ export default async function MeetingPage({ params }: Props) {
           },
         },
       },
+      guests: { where: { revokedAt: null }, orderBy: { createdAt: "asc" } },
     },
   });
 
@@ -101,6 +104,19 @@ export default async function MeetingPage({ params }: Props) {
     where: { organisationId: org.id },
     include: { user: { select: { id: true, name: true } } },
   });
+
+  // Invités ponctuels (#31) : gérables par l'hôte de la réunion ou un admin de l'org.
+  const isHost = meeting.createdById === session.user.id;
+  const canManageGuests = isHost || isAdmin;
+  const locale = await getLocale().catch(() => "fr");
+  const guestBaseUrl = process.env.AUTH_URL ?? "http://localhost:3000";
+  const guestList = meeting.guests.map((g) => ({
+    id: g.id,
+    email: g.email,
+    name: g.name,
+    entered: !!g.userId,
+    link: `${guestBaseUrl}/${locale}/guest/${g.token}`,
+  }));
 
   return (
     <AppShell>
@@ -427,6 +443,13 @@ export default async function MeetingPage({ params }: Props) {
         )}
       </div>
       </UnsavedOutputProvider>
+
+      {/* Invités ponctuels — hôte de la réunion ou admin, tant que la réunion n'est pas close */}
+      {canManageGuests && meeting.status !== "closed" && (
+        <div className="mt-4">
+          <GuestInvitePanel meetingId={meeting.id} guests={guestList} />
+        </div>
+      )}
     </AppShell>
   );
 }

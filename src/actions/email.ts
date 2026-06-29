@@ -37,6 +37,7 @@ export async function sendMeetingRecap(
         orderBy: { order: "asc" },
         include: { outputs: { orderBy: { createdAt: "asc" } } },
       },
+      guests: { where: { revokedAt: null }, select: { email: true } },
     },
   });
 
@@ -49,7 +50,10 @@ export async function sendMeetingRecap(
     include: { user: { select: { email: true } } },
   });
 
-  const emails = members.map((m) => m.user.email).filter(Boolean) as string[];
+  // Destinataires : membres de l'org + invités ponctuels de la réunion (#31).
+  const memberEmails = members.map((m) => m.user.email).filter(Boolean) as string[];
+  const guestEmails = meeting.guests.map((g) => g.email).filter(Boolean);
+  const emails = Array.from(new Set([...memberEmails, ...guestEmails]));
   if (emails.length === 0) {
     return { ok: false, error: "Aucun destinataire trouvé" };
   }

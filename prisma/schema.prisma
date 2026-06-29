@@ -26,6 +26,8 @@ model User {
   assignedOutputs  Output[]             @relation("OutputAssignee")
   superAdmin       SuperAdmin?
   joinRequests     JoinRequest[]
+  hostedMeetings   Meeting[]            @relation("MeetingHost")
+  meetingGuests    MeetingGuest[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -197,13 +199,36 @@ model Meeting {
   status          MeetingStatus @default(draft)
   isPrivate       Boolean?      // null = hérite de l'espace, true/false = override
   openedAt        DateTime?
+  createdById     String?       // hôte de la réunion (créateur) — peut inviter des invités ponctuels
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
-  space       Space        @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  space       Space          @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  host        User?          @relation("MeetingHost", fields: [createdById], references: [id], onDelete: SetNull)
   agendaItems AgendaItem[]
+  guests      MeetingGuest[]
 
   @@index([spaceId])
+}
+
+// Invité ponctuel à une réunion : accès par lien/jeton, sans compte ni
+// appartenance à l'organisation (retour de test #31). Ne consomme pas de siège.
+model MeetingGuest {
+  id        String    @id @default(cuid())
+  meetingId String
+  email     String
+  name      String?
+  token     String    @unique @default(cuid())
+  userId    String?   // User léger créé à la première entrée (pour l'authorship des points)
+  expiresAt DateTime?
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  meeting Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  user    User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([meetingId, email])
+  @@index([meetingId])
 }
 
 enum ItemStatus {
