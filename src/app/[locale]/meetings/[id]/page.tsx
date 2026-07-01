@@ -15,9 +15,11 @@ import {
   jumpToItem,
   updateMeetingLink,
   updateMeetingPrivacy,
+  passScribe,
 } from "@/actions/meeting";
-import { addOutput } from "@/actions/output";
+import { addOutput, updateOutput, deleteOutput } from "@/actions/output";
 import { OutputEntry, UnsavedOutputProvider, GuardedNavForm } from "./OutputEntry";
+import OutputList from "./OutputList";
 import GuestInvitePanel from "./GuestInvitePanel";
 import SendRecapButton from "./SendRecapButton";
 import SSEListener from "./SSEListener";
@@ -81,6 +83,10 @@ export default async function MeetingPage({ params }: Props) {
   const pendingItems = meeting.agendaItems.filter((i) => i.status === "pending");
   const doneItems = meeting.agendaItems.filter((i) => i.status === "done");
 
+  // Numérotation stable des points, dans l'ordre de l'ordre du jour (retour #32) :
+  // permet de compter les points et de les citer par leur numéro.
+  const itemNumbers = new Map(meeting.agendaItems.map((it, i) => [it.id, i + 1] as const));
+
   const addItem = addAgendaItem.bind(null, meeting.id);
   const open = openMeeting.bind(null, meeting.id);
   const next = nextItem.bind(null, meeting.id, activeItem?.id ?? "");
@@ -104,6 +110,16 @@ export default async function MeetingPage({ params }: Props) {
     where: { organisationId: org.id },
     include: { user: { select: { id: true, name: true } } },
   });
+  const memberOptions = orgMembers.map((m) => ({ userId: m.userId, name: m.user.name ?? m.user.id }));
+
+  // Scribe (retour #32) : seul le scribe saisit/édite les outputs. scribeId null
+  // (réunion héritée) = pas de restriction, tout le monde peut écrire.
+  const scribeId = meeting.scribeId;
+  const isActualScribe = !!scribeId && scribeId === session.user.id;
+  const isScribe = !scribeId || isActualScribe;
+  const scribeName = orgMembers.find((m) => m.userId === scribeId)?.user.name ?? null;
+  const canManageScribe = isActualScribe || isAdmin;
+  const pass = passScribe.bind(null, meeting.id);
 
   // Invités ponctuels (#31) : gérables par l'hôte de la réunion ou un admin de l'org.
   const isHost = meeting.createdById === session.user.id;
@@ -245,6 +261,7 @@ export default async function MeetingPage({ params }: Props) {
                     disabled={meeting.status !== "open"}
                     className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm text-gray-600 line-through hover:bg-gray-800 hover:text-gray-400 transition-colors disabled:cursor-default disabled:hover:bg-transparent disabled:hover:text-gray-600"
                   >
+                    <span className="w-4 shrink-0 text-right text-[10px] tabular-nums text-gray-600">{itemNumbers.get(item.id)}</span>
                     <AuthorAvatar name={item.author.name} image={item.author.image} size="xs" />
                     <span className="flex-1 truncate">{item.title}</span>
                   </button>
@@ -253,6 +270,7 @@ export default async function MeetingPage({ params }: Props) {
             })}
             {activeItem && (
               <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-950 border border-indigo-800">
+                <span className="w-4 shrink-0 text-right text-[10px] tabular-nums text-indigo-300">{itemNumbers.get(activeItem.id)}</span>
                 <AuthorAvatar name={activeItem.author.name} image={activeItem.author.image} size="xs" />
                 <span className="flex-1 truncate text-sm font-semibold text-white">▶ {activeItem.title}</span>
                 <ItemChrono activatedAt={activeItem.updatedAt.toISOString()} />
@@ -267,6 +285,7 @@ export default async function MeetingPage({ params }: Props) {
                     disabled={meeting.status !== "open"}
                     className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors disabled:cursor-default disabled:hover:bg-transparent disabled:hover:text-gray-300"
                   >
+                    <span className="w-4 shrink-0 text-right text-[10px] tabular-nums text-gray-600">{itemNumbers.get(item.id)}</span>
                     <AuthorAvatar name={item.author.name} image={item.author.image} size="xs" />
                     <span className="flex-1 truncate">{item.title}</span>
                   </button>
@@ -319,7 +338,10 @@ export default async function MeetingPage({ params }: Props) {
             <>
               <div className="rounded-xl bg-gray-900 border border-indigo-900 p-6">
                 <div className="flex items-start justify-between gap-4">
-                  <h2 className="text-2xl font-bold text-white leading-tight">{activeItem.title}</h2>
+                  <div className="min-w-0">
+                    <div className="text-xs font-medium text-indigo-400/70 mb-1">Point n°{itemNumbers.get(activeItem.id)}</div>
+                    <h2 className="text-2xl font-bold text-white leading-tight">{activeItem.title}</h2>
+                  </div>
                   <div className="flex items-center gap-2 shrink-0 mt-0.5">
                     <AuthorAvatar name={activeItem.author.name} image={activeItem.author.image} size="sm" />
                     <span className="text-xs text-gray-500">{activeItem.author.name}</span>
@@ -327,34 +349,70 @@ export default async function MeetingPage({ params }: Props) {
                 </div>
               </div>
 
-              {activeItem.outputs.length > 0 && (
-                <div className="rounded-xl bg-gray-900 border border-gray-800 p-4 space-y-3">
-                  {activeItem.outputs.map((output) => (
-                    <div key={output.id} className="flex gap-3 items-start">
-                      <OutputTypeBadge type={output.type} />
-                      <div className="flex-1">
-                        <p className="text-sm text-gray-200 leading-relaxed">{output.content}</p>
-                        {(output.assignee || output.dueDate) && (
-                          <p className="text-xs text-gray-500 mt-0.5">
-                            {output.assignee && `→ ${output.assignee.name}`}
-                            {output.dueDate && ` · ${new Date(output.dueDate).toLocaleDateString("fr-FR")}`}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <OutputEntry
-                key={activeItem.id}
-                addOutput={addOutput}
-                itemId={activeItem.id}
+              <OutputList
+                key={`list-${activeItem.id}`}
+                outputs={activeItem.outputs.map((o) => ({
+                  id: o.id,
+                  type: o.type,
+                  content: o.content,
+                  assigneeId: o.assigneeId,
+                  assigneeName: o.assignee?.name ?? null,
+                  dueDate: o.dueDate ? o.dueDate.toISOString().slice(0, 10) : null,
+                }))}
+                members={memberOptions}
                 showActions={f.actions}
                 showProjects={f.projects}
                 showGovernance={f.governance}
-                members={orgMembers.map((m) => ({ userId: m.userId, name: m.user.name ?? m.user.id }))}
+                canEdit={isScribe}
+                updateOutput={updateOutput}
+                deleteOutput={deleteOutput}
               />
+
+              {/* Scribe (retour #32) : qui tient le stylo + passage de relais */}
+              <div className="flex items-center justify-between gap-3 flex-wrap text-xs">
+                <span className="text-gray-500">
+                  ✍️ Scribe : <span className="text-gray-300">{scribeName ?? "non défini"}</span>
+                </span>
+                {canManageScribe && memberOptions.length > 1 && (
+                  <form action={pass} className="flex items-center gap-2">
+                    <select
+                      name="scribeId"
+                      defaultValue=""
+                      required
+                      className="rounded-lg bg-gray-800 border border-gray-700 px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500"
+                    >
+                      <option value="" disabled>Passer le relais à…</option>
+                      {memberOptions
+                        .filter((m) => m.userId !== scribeId)
+                        .map((m) => (
+                          <option key={m.userId} value={m.userId}>{m.name}</option>
+                        ))}
+                    </select>
+                    <button
+                      type="submit"
+                      className="rounded-lg border border-gray-700 px-2.5 py-1 text-gray-300 hover:border-indigo-600 hover:text-white transition-colors"
+                    >
+                      Passer
+                    </button>
+                  </form>
+                )}
+              </div>
+
+              {isScribe ? (
+                <OutputEntry
+                  key={activeItem.id}
+                  addOutput={addOutput}
+                  itemId={activeItem.id}
+                  showActions={f.actions}
+                  showProjects={f.projects}
+                  showGovernance={f.governance}
+                  members={memberOptions}
+                />
+              ) : (
+                <div className="rounded-xl bg-gray-900 border border-gray-800 p-4 text-sm text-gray-500">
+                  Seul le scribe{scribeName ? ` (${scribeName})` : ""} peut saisir les outputs de ce point.
+                </div>
+              )}
 
               <div className="flex justify-end">
                 <GuardedNavForm action={pendingItems.length > 0 ? next : close}>
@@ -388,7 +446,7 @@ export default async function MeetingPage({ params }: Props) {
               `${meeting.agendaItems.length} point${meeting.agendaItems.length !== 1 ? "s" : ""} traité${meeting.agendaItems.length !== 1 ? "s" : ""}`,
               "",
               ...meeting.agendaItems.filter((i) => i.outputs.length > 0).flatMap((item) => [
-                `• ${item.title}`,
+                `${itemNumbers.get(item.id)}. ${item.title}`,
                 ...item.outputs.map((o) => `  [${OUTPUT_TYPE_LABELS[o.type] ?? o.type}] ${o.content}${o.assignee ? ` → ${o.assignee.name}` : ""}`),
                 "",
               ]),
@@ -410,7 +468,7 @@ export default async function MeetingPage({ params }: Props) {
                     <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Récapitulatif des outputs</p>
                     {meeting.agendaItems.filter((i) => i.outputs.length > 0).map((item) => (
                       <div key={item.id} className="space-y-2">
-                        <p className="text-sm font-medium text-gray-300">{item.title}</p>
+                        <p className="text-sm font-medium text-gray-300">{itemNumbers.get(item.id)}. {item.title}</p>
                         {item.outputs.map((o) => (
                           <div key={o.id} className="flex gap-3 items-start pl-4">
                             <OutputTypeBadge type={o.type} />

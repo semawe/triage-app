@@ -27,6 +27,7 @@ model User {
   superAdmin       SuperAdmin?
   joinRequests     JoinRequest[]
   hostedMeetings   Meeting[]            @relation("MeetingHost")
+  scribedMeetings  Meeting[]            @relation("MeetingScribe")
   meetingGuests    MeetingGuest[]
 
   createdAt DateTime @default(now())
@@ -200,11 +201,13 @@ model Meeting {
   isPrivate       Boolean?      // null = hérite de l'espace, true/false = override
   openedAt        DateTime?
   createdById     String?       // hôte de la réunion (créateur) — peut inviter des invités ponctuels
+  scribeId        String?       // scribe : seul autorisé à saisir/éditer les outputs (retour #32). Défini à l'ouverture (l'ouvreur par défaut), transmissible.
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
   space       Space          @relation(fields: [spaceId], references: [id], onDelete: Cascade)
   host        User?          @relation("MeetingHost", fields: [createdById], references: [id], onDelete: SetNull)
+  scribe      User?          @relation("MeetingScribe", fields: [scribeId], references: [id], onDelete: SetNull)
   agendaItems AgendaItem[]
   guests      MeetingGuest[]
 

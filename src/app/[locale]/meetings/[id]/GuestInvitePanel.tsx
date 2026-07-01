@@ -21,14 +21,31 @@ export default function GuestInvitePanel({
   const invite = inviteGuestToMeeting.bind(null, meetingId);
   const [state, formAction, pending] = useActionState(invite, null);
   const [copied, setCopied] = useState<string | null>(null);
+  // Replié par défaut, plus discret (retour #32) : on ne déplie qu'au clic.
+  const [open, setOpen] = useState(false);
 
   return (
     <section className="rounded-xl bg-gray-900 border border-gray-800 overflow-hidden">
-      <div className="px-5 py-3 border-b border-gray-800">
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-          Invités ponctuels
-        </p>
-      </div>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="w-full flex items-center justify-between gap-3 px-5 py-3 text-left hover:bg-gray-800/40 transition-colors"
+      >
+        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+          Inviter un membre extérieur
+          {guests.length > 0 && (
+            <span className="ml-2 rounded-full bg-gray-800 px-2 py-0.5 text-[10px] text-gray-300 normal-case tracking-normal">
+              {guests.length}
+            </span>
+          )}
+        </span>
+        <span className="text-gray-500 text-xs">{open ? "▾" : "▸"}</span>
+      </button>
+
+      {open && (
+        <>
+          <div className="border-t border-gray-800" />
 
       {guests.length > 0 && (
         <div className="divide-y divide-gray-800">
@@ -107,6 +124,8 @@ export default function GuestInvitePanel({
           sans compte ni accès au reste de l&apos;organisation.
         </p>
       </div>
+        </>
+      )}
     </section>
   );
 }

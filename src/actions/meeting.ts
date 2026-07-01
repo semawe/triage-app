@@ -50,6 +50,7 @@ export async function createMeeting(formData: FormData) {
       title: title || null,
       status: "draft",
       createdById: session.user.id,
+      scribeId: session.user.id, // scribe par défaut = créateur ; redéfini à l'ouverture si besoin
     },
   });
 
@@ -119,7 +120,8 @@ export async function addAgendaItem(meetingId: string, formData: FormData) {
 }
 
 export async function openMeeting(meetingId: string) {
-  if (!(await requireMeetingAccess(meetingId))) return;
+  const ctx = await requireMeetingAccess(meetingId);
+  if (!ctx) return;
 
   const firstItem = await prisma.agendaItem.findFirst({
     where: { meetingId },
@@ -128,7 +130,12 @@ export async function openMeeting(meetingId: string) {
 
   await prisma.meeting.update({
     where: { id: meetingId },
-    data: { status: "open", openedAt: new Date() },
+    data: {
+      status: "open",
+      openedAt: new Date(),
+      // Scribe par défaut = l'ouvreur, sauf s'il est déjà défini (retour #32).
+      ...(ctx.meeting.scribeId ? {} : { scribeId: ctx.session.user.id }),
+    },
   });
 
   if (firstItem) {
@@ -184,6 +191,41 @@ export async function nextItem(meetingId: string, currentItemId: string) {
       data: { status: "closed" },
     });
   }
+
+  revalidatePath("/", "layout");
+  broadcast(meetingId);
+}
+
+/**
+ * Passage de relais du scribe (retour #32). Le scribe courant peut céder le stylo ;
+ * un admin de l'org peut le réassigner (utile si le scribe a quitté la réunion).
+ * Le nouveau scribe doit être membre de l'organisation de la réunion.
+ */
+export async function passScribe(meetingId: string, formData: FormData) {
+  const ctx = await requireMeetingAccess(meetingId);
+  if (!ctx) return;
+
+  const isAdmin = ctx.membership.role === "admin";
+  const isCurrentScribe = ctx.meeting.scribeId === ctx.session.user.id;
+  if (!isAdmin && !isCurrentScribe) return;
+
+  const newScribeId = formData.get("scribeId") as string;
+  if (!newScribeId) return;
+
+  const member = await prisma.organisationMember.findUnique({
+    where: {
+      organisationId_userId: {
+        organisationId: ctx.meeting.space.organisationId,
+        userId: newScribeId,
+      },
+    },
+  });
+  if (!member) return;
+
+  await prisma.meeting.update({
+    where: { id: meetingId },
+    data: { scribeId: newScribeId },
+  });
 
   revalidatePath("/", "layout");
   broadcast(meetingId);
