@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, Link } from "@/i18n/navigation";
 
 export type VizUser = { id: string; name: string | null; image: string | null };
@@ -199,6 +199,24 @@ function RoleNode({
   );
 }
 
+function CopyLinkButton() {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      onClick={() => {
+        navigator.clipboard.writeText(window.location.href).then(() => {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 1500);
+        });
+      }}
+      className="text-xs text-gray-600 hover:text-gray-300 transition-colors"
+      title="Copier le lien vers cette fiche"
+    >
+      {copied ? "✓ Copié" : "⧉ Copier le lien"}
+    </button>
+  );
+}
+
 function DrawerAvatar({ user }: { user: VizUser }) {
   if (user.image) {
     // eslint-disable-next-line @next/next/no-img-element
@@ -213,6 +231,7 @@ function DrawerAvatar({ user }: { user: VizUser }) {
 
 export default function CircleViz({
   spaces, roles, currentUserId, brandColor, title, governanceHref, upHref,
+  initialSelection = null,
 }: {
   spaces: VizSpace[];
   roles: VizRole[];
@@ -221,9 +240,30 @@ export default function CircleViz({
   title: string;
   governanceHref: string | null;
   upHref: string | null;
+  initialSelection?: { kind: "space" | "role"; id: string } | null;
 }) {
-  const [selected, setSelected] = useState<Selection>(null);
+  const [selected, setSelected] = useState<Selection>(() => {
+    if (initialSelection?.kind === "space") {
+      const space = spaces.find((s) => s.id === initialSelection.id);
+      if (space) return { kind: "space", space };
+    } else if (initialSelection?.kind === "role") {
+      const role = roles.find((r) => r.id === initialSelection.id);
+      if (role) return { kind: "role", role };
+    }
+    return null;
+  });
   const router = useRouter();
+
+  // La sélection est reflétée dans l'URL (?circle= / ?role=) : un rôle ou un
+  // cercle sélectionné devient un lien partageable, sans navigation.
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    url.searchParams.delete("circle");
+    url.searchParams.delete("role");
+    if (selected?.kind === "space") url.searchParams.set("circle", selected.space.id);
+    if (selected?.kind === "role") url.searchParams.set("role", selected.role.id);
+    window.history.replaceState(null, "", url.toString());
+  }, [selected]);
 
   const circles = spaces.filter((s) => s.type === "circle");
   const instances = spaces.filter((s) => s.type === "instance");
@@ -405,10 +445,13 @@ export default function CircleViz({
                   Rôle
                 </span>
               )}
-              <button onClick={() => setSelected(null)}
-                className="text-gray-600 hover:text-gray-300 transition-colors leading-none text-lg" title="Fermer">
-                ×
-              </button>
+              <div className="flex items-center gap-3">
+                <CopyLinkButton />
+                <button onClick={() => setSelected(null)}
+                  className="text-gray-600 hover:text-gray-300 transition-colors leading-none text-lg" title="Fermer">
+                  ×
+                </button>
+              </div>
             </div>
 
             <h3 className="text-base font-semibold text-white leading-snug">

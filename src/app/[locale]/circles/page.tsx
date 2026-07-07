@@ -7,7 +7,7 @@ import CircleViz from "./CircleViz";
 
 type Props = {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ view?: string; parent?: string }>;
+  searchParams: Promise<{ view?: string; parent?: string; circle?: string }>;
 };
 
 const TYPE_LABELS: Record<string, string> = {
@@ -24,7 +24,7 @@ const TYPE_COLORS: Record<string, string> = {
 
 export default async function CirclesPage({ params, searchParams }: Props) {
   const { locale } = await params;
-  const { view, parent } = await searchParams;
+  const { view, parent, circle: selCircle } = await searchParams;
 
   // Anciennes URLs `/circles?parent=<id>` : l'intérieur d'un cercle vit
   // désormais sur sa page canonique.
@@ -108,6 +108,7 @@ export default async function CirclesPage({ params, searchParams }: Props) {
             title={org.name}
             governanceHref={null}
             upHref={null}
+            initialSelection={selCircle ? { kind: "space", id: selCircle } : null}
           />
         </div>
       )}
