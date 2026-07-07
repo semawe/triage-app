@@ -152,6 +152,7 @@ model Space {
   name             String
   type             SpaceType
   purpose          String?   @db.Text
+  strategy         String?   @db.Text // heuristiques de priorisation du cercle ("stratégie de cercle" Holacracy)
   domains          String[]
   accountabilities String[]
   isPrivate        Boolean   @default(false)
@@ -165,11 +166,25 @@ model Space {
   members        SpaceMember[]
   meetings       Meeting[]
   roles          Role[]
+  policies       Policy[]
   indicators     Indicator[]
   checklistItems ChecklistItem[]
   projects       Project[]
 
   @@index([organisationId])
+}
+
+model Policy {
+  id        String   @id @default(cuid())
+  spaceId   String
+  title     String
+  body      String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  space Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  @@index([spaceId])
 }
 
 enum SpaceRole {
