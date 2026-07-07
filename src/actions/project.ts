@@ -20,6 +20,16 @@ export async function createProject(spaceId: string, formData: FormData) {
   revalidatePath("/", "layout");
 }
 
+/**
+ * Variante pour la page /projects : l'espace est choisi dans le formulaire.
+ * Même garde que createProject (admin org ou lead de l'espace visé).
+ */
+export async function createProjectInSpace(formData: FormData) {
+  const spaceId = (formData.get("spaceId") as string)?.trim();
+  if (!spaceId) return;
+  await createProject(spaceId, formData);
+}
+
 export async function updateProject(projectId: string, formData: FormData) {
   const project = await prisma.project.findUnique({ where: { id: projectId } });
   if (!project) return;

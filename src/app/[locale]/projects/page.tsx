@@ -2,222 +2,237 @@ import { requireOrg } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import AppShell from "@/components/AppShell";
-import { toggleOutputDone } from "@/actions/output";
+import { createProjectInSpace, updateProjectStatus, deleteProject } from "@/actions/project";
 import { hasFeature } from "@/lib/features";
 import { Link } from "@/i18n/navigation";
+import type { ProjectStatus } from "@/generated/prisma";
+
+const STATUSES: { key: ProjectStatus; label: string; accent: string }[] = [
+  { key: "active", label: "En cours", accent: "border-green-800" },
+  { key: "on_hold", label: "En pause", accent: "border-yellow-800" },
+  { key: "done", label: "Terminé", accent: "border-gray-700" },
+];
 
 export default async function ProjectsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ filter?: string; space?: string }>;
+  searchParams: Promise<{ space?: string }>;
 }) {
   const { org, session, membership } = await requireOrg();
 
   if (!hasFeature(org, "projects")) notFound();
 
-  const { filter, space: spaceFilter } = await searchParams;
-  const showDone = filter === "done";
-  const showAll = filter === "all" && membership.role === "admin";
+  const { space: spaceFilter } = await searchParams;
+  const isAdmin = membership.role === "admin";
 
-  const spaces = await prisma.space.findMany({
-    where: { organisationId: org.id },
-    orderBy: { name: "asc" },
-  });
-
-  const outputs = await prisma.output.findMany({
-    where: {
-      type: "project",
-      ...(showAll ? {} : { assigneeId: session.user.id }),
-      ...(showDone ? {} : { isDone: false }),
-      ...(spaceFilter ? { item: { meeting: { spaceId: spaceFilter } } } : {}),
-      item: { meeting: { space: { organisationId: org.id } } },
-    },
-    include: {
-      assignee: { select: { name: true, image: true } },
-      item: {
-        include: {
-          meeting: { include: { space: { select: { id: true, name: true } } } },
-        },
+  const [spaces, projects, leadMemberships] = await Promise.all([
+    prisma.space.findMany({
+      where: { organisationId: org.id },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
+    }),
+    prisma.project.findMany({
+      where: {
+        space: { organisationId: org.id },
+        ...(spaceFilter ? { spaceId: spaceFilter } : {}),
       },
-    },
-    orderBy: [{ isDone: "asc" }, { dueDate: "asc" }, { createdAt: "desc" }],
-  });
+      include: { space: { select: { id: true, name: true } } },
+      orderBy: [{ updatedAt: "desc" }],
+    }),
+    prisma.spaceMember.findMany({
+      where: { userId: session.user.id, role: "lead", space: { organisationId: org.id } },
+      select: { spaceId: true },
+    }),
+  ]);
 
-  const open = outputs.filter((o) => !o.isDone);
-  const done = outputs.filter((o) => o.isDone);
+  // Espaces où l'utilisateur peut créer un projet : tous pour un admin,
+  // sinon ceux dont il est lead (même règle que l'onglet Synchro).
+  const leadSpaceIds = new Set(leadMemberships.map((m) => m.spaceId));
+  const creatableSpaces = isAdmin ? spaces : spaces.filter((s) => leadSpaceIds.has(s.id));
+  const canCreate = creatableSpaces.length > 0;
+  const defaultSpaceId =
+    spaceFilter && creatableSpaces.some((s) => s.id === spaceFilter)
+      ? spaceFilter
+      : creatableSpaces[0]?.id;
+
+  const columns = STATUSES.map((st) => ({
+    ...st,
+    projects: projects.filter((p) => p.status === st.key),
+  }));
 
   return (
     <AppShell>
-      <div className="mb-8 flex items-center justify-between flex-wrap gap-4">
+      <div className="mb-6 flex items-center justify-between flex-wrap gap-4">
         <h1 className="text-2xl font-bold text-white">Projets</h1>
 
-        <div className="flex items-center gap-3 flex-wrap">
-          {/* Filter by space */}
-          <div className="flex rounded-lg border border-gray-800 overflow-hidden text-xs">
+        {/* Filtre par espace */}
+        {spaces.length > 1 && (
+          <div className="flex rounded-lg border border-gray-800 overflow-hidden text-xs flex-wrap">
             <Link
-              href={buildUrl(showAll, showDone, undefined)}
+              href="/projects"
               className={`px-3 py-1.5 ${!spaceFilter ? "bg-indigo-900/60 text-indigo-300 font-medium" : "text-gray-500 hover:text-gray-300"}`}
             >
-              Tous espaces
+              Tous
             </Link>
             {spaces.map((s) => (
               <Link
                 key={s.id}
-                href={buildUrl(showAll, showDone, s.id)}
+                href={`/projects?space=${s.id}`}
                 className={`px-3 py-1.5 ${spaceFilter === s.id ? "bg-indigo-900/60 text-indigo-300 font-medium" : "text-gray-500 hover:text-gray-300"}`}
               >
                 {s.name}
               </Link>
             ))}
           </div>
-
-          {/* Mine / all / done */}
-          {membership.role === "admin" && (
-            <div className="flex rounded-lg border border-gray-800 overflow-hidden text-xs">
-              <Link
-                href={buildUrl(false, false, spaceFilter)}
-                className={`px-3 py-1.5 ${!showAll && !showDone ? "bg-indigo-900/60 text-indigo-300 font-medium" : "text-gray-500 hover:text-gray-300"}`}
-              >
-                Les miens
-              </Link>
-              <Link
-                href={buildUrl(true, false, spaceFilter)}
-                className={`px-3 py-1.5 ${showAll ? "bg-indigo-900/60 text-indigo-300 font-medium" : "text-gray-500 hover:text-gray-300"}`}
-              >
-                Toute l&apos;org
-              </Link>
-              <Link
-                href={buildUrl(false, true, spaceFilter)}
-                className={`px-3 py-1.5 ${showDone ? "bg-indigo-900/60 text-indigo-300 font-medium" : "text-gray-500 hover:text-gray-300"}`}
-              >
-                Terminés
-              </Link>
-            </div>
-          )}
-        </div>
+        )}
       </div>
 
-      {outputs.length === 0 && (
-        <p className="mt-16 text-center text-gray-500">
-          Aucun projet{showDone ? " terminé" : " en cours"}.
-        </p>
-      )}
-
-      {open.length > 0 && (
-        <div className="mb-8">
-          <h2 className="mb-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-            En cours · {open.length}
-          </h2>
-          <div className="space-y-2">
-            {open.map((o) => <ProjectRow key={o.id} output={o} />)}
-          </div>
+      {/* Création — visible en permanence quand on a le droit */}
+      {canCreate && (
+        <div className="mb-6 rounded-xl bg-gray-900 border border-gray-800 p-4">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+            + Nouveau projet
+          </p>
+          <form action={createProjectInSpace} className="flex gap-2 flex-wrap items-end">
+            <input
+              name="name"
+              required
+              placeholder="Nom du projet"
+              className="flex-1 min-w-48 rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500"
+            />
+            <input
+              name="description"
+              placeholder="Description (optionnel)"
+              className="flex-1 min-w-48 rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500"
+            />
+            <select
+              name="spaceId"
+              defaultValue={defaultSpaceId}
+              className="rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
+            >
+              {creatableSpaces.map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+            <button
+              type="submit"
+              className="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors whitespace-nowrap"
+            >
+              Créer
+            </button>
+          </form>
         </div>
       )}
 
-      {(showDone || done.length > 0) && done.length > 0 && (
-        <div>
-          <h2 className="mb-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-            Terminés · {done.length}
-          </h2>
-          <div className="space-y-2 opacity-60">
-            {done.map((o) => <ProjectRow key={o.id} output={o} />)}
-          </div>
+      {/* État vide */}
+      {projects.length === 0 && (
+        <div className="mt-12 text-center space-y-2">
+          <p className="text-3xl">🚧</p>
+          <p className="text-gray-400 text-sm">
+            Aucun projet{spaceFilter ? " dans cet espace" : ""} pour l&apos;instant.
+          </p>
+          {canCreate ? (
+            <p className="text-xs text-gray-600">
+              Crée le premier avec le formulaire ci-dessus — il apparaîtra dans la colonne « En cours ».
+            </p>
+          ) : (
+            <p className="text-xs text-gray-600">
+              Les projets sont créés par les leaders d&apos;espace ou les admins, ici ou depuis
+              l&apos;onglet Synchro d&apos;un cercle.
+            </p>
+          )}
         </div>
       )}
 
-      {open.length > 0 && !showDone && done.length > 0 && (
-        <p className="mt-4 text-center text-xs text-gray-600">
-          {done.length} projet{done.length > 1 ? "s" : ""} terminé{done.length > 1 ? "s" : ""} ·{" "}
-          <Link href={buildUrl(showAll, true, spaceFilter)} className="text-indigo-500 hover:text-indigo-300">
-            Voir
-          </Link>
-        </p>
+      {/* Kanban */}
+      {projects.length > 0 && (
+        <div className="grid gap-4 md:grid-cols-3 items-start">
+          {columns.map((col) => (
+            <div key={col.key} className={`rounded-xl bg-gray-900 border ${col.accent} overflow-hidden ${col.key === "done" ? "opacity-80" : ""}`}>
+              <div className="px-4 py-3 border-b border-gray-800 flex items-center justify-between">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{col.label}</p>
+                <span className="text-xs text-gray-600 tabular-nums">{col.projects.length}</span>
+              </div>
+              <div className="p-2 space-y-2 min-h-16">
+                {col.projects.length === 0 && (
+                  <p className="px-3 py-4 text-xs text-gray-700 text-center">—</p>
+                )}
+                {col.projects.map((p) => (
+                  <ProjectCard
+                    key={p.id}
+                    project={p}
+                    canManage={isAdmin || leadSpaceIds.has(p.spaceId)}
+                    showSpace={!spaceFilter}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       )}
     </AppShell>
   );
 }
 
-function buildUrl(all: boolean, done: boolean, space: string | undefined): string {
-  const params = new URLSearchParams();
-  if (all) params.set("filter", "all");
-  else if (done) params.set("filter", "done");
-  if (space) params.set("space", space);
-  const qs = params.toString();
-  return `/projects${qs ? `?${qs}` : ""}`;
-}
-
-function ProjectRow({
-  output: o,
+function ProjectCard({
+  project: p,
+  canManage,
+  showSpace,
 }: {
-  output: {
+  project: {
     id: string;
-    content: string;
-    isDone: boolean;
-    dueDate: Date | null;
-    assignee: { name: string | null; image: string | null } | null;
-    item: {
-      meeting: {
-        id: string;
-        date: Date;
-        title: string | null;
-        space: { id: string; name: string };
-      };
-    };
+    name: string;
+    description: string | null;
+    status: ProjectStatus;
+    space: { id: string; name: string };
   };
+  canManage: boolean;
+  showSpace: boolean;
 }) {
-  const toggle = toggleOutputDone.bind(null, o.id);
-  const meetingDate = o.item.meeting.date.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
-  const meetingLabel = o.item.meeting.title ?? `Triage · ${meetingDate}`;
-  const isOverdue = o.dueDate && !o.isDone && new Date(o.dueDate) < new Date();
-
   return (
-    <div className="flex items-start gap-4 rounded-xl bg-gray-900 border border-gray-800 px-5 py-4">
-      <form action={toggle} className="mt-0.5">
-        <button
-          type="submit"
-          className={`h-5 w-5 rounded border flex items-center justify-center shrink-0 transition-colors ${
-            o.isDone
-              ? "bg-emerald-900 border-emerald-700 text-emerald-300"
-              : "border-gray-600 hover:border-indigo-500"
-          }`}
-          title={o.isDone ? "Rouvrir" : "Marquer terminé"}
-        >
-          {o.isDone && <span className="text-xs">✓</span>}
-        </button>
-      </form>
-
-      <div className="flex-1 min-w-0">
-        <p className={`text-sm text-white leading-snug ${o.isDone ? "line-through text-gray-500" : ""}`}>
-          {o.content}
-        </p>
-        <div className="flex items-center gap-3 mt-1 flex-wrap">
+    <div className="rounded-lg bg-gray-800/60 border border-gray-800 px-3 py-2.5 space-y-1.5">
+      <p className={`text-sm font-medium leading-snug ${p.status === "done" ? "text-gray-500 line-through" : "text-white"}`}>
+        {p.name}
+      </p>
+      {p.description && (
+        <p className="text-xs text-gray-500 leading-snug">{p.description}</p>
+      )}
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        {showSpace ? (
           <Link
-            href={`/spaces/${o.item.meeting.space.id}`}
+            href={`/spaces/${p.space.id}?tab=synchro`}
             className="text-xs text-gray-600 hover:text-gray-400 transition-colors"
           >
-            {o.item.meeting.space.name}
+            {p.space.name}
           </Link>
-          <span className="text-gray-700">·</span>
-          <Link
-            href={`/meetings/${o.item.meeting.id}`}
-            className="text-xs text-gray-600 hover:text-gray-400 transition-colors"
-          >
-            {meetingLabel}
-          </Link>
-          {o.dueDate && (
-            <span className={`text-xs ${isOverdue ? "text-red-400" : "text-gray-500"}`}>
-              {isOverdue && "⚠ "}Échéance : {new Date(o.dueDate).toLocaleDateString("fr-FR")}
-            </span>
-          )}
-          {o.assignee && (
-            <span className="text-xs text-gray-600">→ {o.assignee.name}</span>
-          )}
-        </div>
+        ) : <span />}
+        {canManage && (
+          <div className="flex gap-1 text-[11px]">
+            {STATUSES.filter((s) => s.key !== p.status).map((s) => (
+              <form key={s.key} action={updateProjectStatus.bind(null, p.id, s.key)}>
+                <button
+                  type="submit"
+                  className="px-1.5 py-0.5 rounded text-gray-600 hover:text-gray-300 hover:bg-gray-700 transition-colors"
+                  title={`Passer en « ${s.label} »`}
+                >
+                  → {s.label}
+                </button>
+              </form>
+            ))}
+            {p.status === "done" && (
+              <form action={deleteProject.bind(null, p.id)}>
+                <button
+                  type="submit"
+                  className="px-1.5 py-0.5 rounded text-gray-700 hover:text-red-400 transition-colors"
+                  title="Supprimer définitivement"
+                >
+                  ✕
+                </button>
+              </form>
+            )}
+          </div>
+        )}
       </div>
-
-      <span className="shrink-0 rounded-md px-2 py-0.5 text-xs font-medium bg-orange-900 text-orange-300">
-        Projet
-      </span>
     </div>
   );
 }
