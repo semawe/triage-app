@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 
 export default async function HomePage() {
   const session = await auth();
-  if (session) redirect("/meetings");
+  if (session) redirect("/me");
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
