@@ -209,29 +209,17 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
             </p>
           )}
 
-          {vizSpaces.length === 0 && vizRoles.length === 0 ? (
-            <div className="rounded-xl border border-gray-800 bg-gray-900 px-5 py-12 text-center">
-              <p className="text-sm text-gray-600">
-                Aucun sous-cercle ni rôle dans {space.name}.
-              </p>
-              {canManage && (
-                <p className="mt-1 text-xs text-gray-700">
-                  Crée un sous-cercle ci-dessous, ou un rôle depuis l&apos;onglet Gouvernance.
-                </p>
-              )}
-            </div>
-          ) : (
-            <div className="rounded-xl border border-gray-800 bg-gray-900 overflow-hidden" style={{ height: "min(560px, calc(100vh - 280px))" }}>
-              <CircleViz
-                spaces={vizSpaces}
-                roles={vizRoles}
-                currentUserId={session.user.id}
-                brandColor={org.primaryColor ?? "#6366f1"}
-                title={space.name}
-                governanceHref={`/circles/${id}?tab=gouvernance`}
-              />
-            </div>
-          )}
+          <div className="rounded-xl border border-gray-800 bg-gray-900 overflow-hidden" style={{ height: "min(560px, calc(100vh - 280px))" }}>
+            <CircleViz
+              spaces={vizSpaces}
+              roles={vizRoles}
+              currentUserId={session.user.id}
+              brandColor={org.primaryColor ?? "#6366f1"}
+              title={space.name}
+              governanceHref={`/circles/${id}?tab=gouvernance`}
+              upHref={space.parentId ? `/circles/${space.parentId}` : "/circles"}
+            />
+          </div>
 
           {/* Création de sous-cercle */}
           {canManage && (

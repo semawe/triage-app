@@ -212,7 +212,7 @@ function DrawerAvatar({ user }: { user: VizUser }) {
 }
 
 export default function CircleViz({
-  spaces, roles, currentUserId, brandColor, title, governanceHref,
+  spaces, roles, currentUserId, brandColor, title, governanceHref, upHref,
 }: {
   spaces: VizSpace[];
   roles: VizRole[];
@@ -220,6 +220,7 @@ export default function CircleViz({
   brandColor: string;
   title: string;
   governanceHref: string | null;
+  upHref: string | null;
 }) {
   const [selected, setSelected] = useState<Selection>(null);
   const router = useRouter();
@@ -268,6 +269,23 @@ export default function CircleViz({
   const selectedSpaceId = selected?.kind === "space" ? selected.space.id : null;
   const selectedRoleId = selected?.kind === "role" ? selected.role.id : null;
 
+  // 1er clic = sélection (panneau de détail), 2e clic sur le même nœud = entrer.
+  function handleSpaceClick(space: VizSpace) {
+    if (selectedSpaceId === space.id) openSpace(space);
+    else setSelected({ kind: "space", space });
+  }
+
+  function handleRoleClick(role: VizRole) {
+    if (selectedRoleId === role.id && governanceHref) router.push(governanceHref);
+    else setSelected({ kind: "role", role });
+  }
+
+  // Membrane : referme le panneau s'il est ouvert, sinon remonte d'un niveau.
+  function handleMembraneClick() {
+    if (selected) setSelected(null);
+    else if (upHref) router.push(upHref);
+  }
+
   const sidebarSections: { label: string; items: VizSpace[] }[] = [
     { label: "Cercles", items: circles },
     { label: "Instances", items: instances },
@@ -282,7 +300,7 @@ export default function CircleViz({
           <div key={label}>
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-1 px-1">{label}</p>
             {items.map((s) => (
-              <button key={s.id} onClick={() => setSelected({ kind: "space", space: s })}
+              <button key={s.id} onClick={() => handleSpaceClick(s)}
                 onDoubleClick={() => openSpace(s)}
                 className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm transition-colors text-left ${
                   selectedSpaceId === s.id ? "bg-gray-800 text-gray-100" : "text-gray-400 hover:bg-gray-800 hover:text-gray-200"
@@ -298,7 +316,7 @@ export default function CircleViz({
           <>
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-4 px-1">Rôles</p>
             {roles.map((r) => (
-              <button key={r.id} onClick={() => setSelected({ kind: "role", role: r })}
+              <button key={r.id} onClick={() => handleRoleClick(r)}
                 className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm transition-colors text-left ${
                   selectedRoleId === r.id ? "bg-gray-800 text-gray-100" : "text-gray-400 hover:bg-gray-800 hover:text-gray-200"
                 }`}>
@@ -315,13 +333,22 @@ export default function CircleViz({
       <div className="flex-1 relative flex items-center justify-center p-4 min-w-0 min-h-0">
         <svg viewBox="0 0 500 500"
           style={{ width: "min(500px, 100%)", height: "min(500px, calc(100vh - 260px))" }}>
-          {/* Membrane du cercle courant : cliquer dessus désélectionne */}
+          {/* Membrane du cercle courant : referme le panneau, sinon remonte d'un niveau */}
           <circle cx={250} cy={250} r={238}
             fill={`${brandColor}06`} stroke={`${brandColor}25`} strokeWidth={1.5}
-            onClick={() => setSelected(null)}
+            onClick={handleMembraneClick}
+            style={!selected && upHref ? { cursor: "zoom-out" } : undefined}
           />
           <text x={250} y={484} textAnchor="middle" fill={`${brandColor}33`} fontSize={9}
             fontFamily="-apple-system,BlinkMacSystemFont,sans-serif" pointerEvents="none">{title}</text>
+
+          {nS === 0 && nR === 0 && (
+            <text x={250} y={250} textAnchor="middle" dominantBaseline="middle"
+              fill="#475569" fontSize={11}
+              fontFamily="-apple-system,BlinkMacSystemFont,sans-serif" pointerEvents="none">
+              Aucun sous-cercle ni rôle
+            </text>
+          )}
 
           {spaces.map((space, i) => (
             <SpaceNode key={space.id} space={space}
@@ -329,7 +356,7 @@ export default function CircleViz({
               color={colorMap.get(space.id)!}
               isMe={space.leader?.id === currentUserId}
               isSelected={selectedSpaceId === space.id}
-              onClick={() => setSelected({ kind: "space", space })}
+              onClick={() => handleSpaceClick(space)}
               onOpen={() => openSpace(space)}
             />
           ))}
@@ -339,7 +366,7 @@ export default function CircleViz({
               x={rolePositions[ri].x} y={rolePositions[ri].y} r={roleR}
               isMe={role.holders.some((h) => h.id === currentUserId)}
               isSelected={selectedRoleId === role.id}
-              onClick={() => setSelected({ kind: "role", role })}
+              onClick={() => handleRoleClick(role)}
             />
           ))}
         </svg>
@@ -349,7 +376,8 @@ export default function CircleViz({
           <div className="absolute top-3 right-3 text-[10px] text-gray-700 space-y-0.5 text-right pointer-events-none">
             <p>- - anneau = sous-cercles</p>
             {roles.length > 0 && <p><span style={{ color: `${ROLE_COLOR}88` }}>●</span> = rôle de ce cercle</p>}
-            <p>clic = détails · double-clic = ouvrir</p>
+            <p>1ᵉʳ clic = détails · 2ᵉ clic = entrer</p>
+            {upHref && <p>clic sur la membrane = remonter</p>}
           </div>
         )}
       </div>
@@ -412,8 +440,11 @@ export default function CircleViz({
                   onClick={() => openSpace(selected.space)}
                   className="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors"
                 >
-                  Ouvrir {selected.space.type === "circle" ? "le cercle" : selected.space.type === "instance" ? "l'instance" : "le projet"} →
+                  Entrer dans {selected.space.type === "circle" ? "le cercle" : selected.space.type === "instance" ? "l'instance" : "le projet"} →
                 </button>
+                <p className="text-[11px] text-gray-600 text-center">
+                  ou cliquer une 2ᵉ fois sur le cercle dans la carte
+                </p>
               </>
             ) : (
               <>

@@ -107,6 +107,7 @@ export default async function CirclesPage({ params, searchParams }: Props) {
             brandColor={org.primaryColor ?? "#6366f1"}
             title={org.name}
             governanceHref={null}
+            upHref={null}
           />
         </div>
       )}
