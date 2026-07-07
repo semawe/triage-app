@@ -207,7 +207,7 @@ export default async function MeetingPage({ params }: Props) {
       <div className="mb-6 flex items-start justify-between gap-4 flex-wrap">
         <div className="min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <Link href={`/spaces/${meeting.spaceId}`} className="text-xs font-medium text-gray-500 hover:text-gray-300 transition-colors uppercase tracking-wider">
+            <Link href={`/circles/${meeting.spaceId}`} className="text-xs font-medium text-gray-500 hover:text-gray-300 transition-colors uppercase tracking-wider">
               {meeting.space.name}
             </Link>
             {effectivePrivate && (
@@ -305,7 +305,7 @@ export default async function MeetingPage({ params }: Props) {
             ? <span className="text-orange-500/70">confidentiel</span>
             : <span className="text-green-600/70">public</span>
           } — modifiable depuis{" "}
-          <Link href={`/spaces/${meeting.spaceId}`} className="underline hover:text-gray-500">la page de l&apos;espace</Link>.
+          <Link href={`/circles/${meeting.spaceId}?tab=reunions`} className="underline hover:text-gray-500">la page du cercle</Link>.
         </div>
       )}
 

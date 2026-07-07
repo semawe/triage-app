@@ -6,14 +6,17 @@ import { canManageSpace } from "@/lib/authz";
 import { FEATURE_DEFAULTS, type FeatureKey } from "@/lib/features";
 import { revalidatePath } from "next/cache";
 
+// Autorisation : admin de l'org, ou lead du cercle parent (création d'un sous-cercle).
 export async function createSpace(formData: FormData) {
-  const { org } = await requireOrg();
+  const { session, org, membership } = await requireOrg();
+  const isAdmin = membership.role === "admin";
 
   const name = (formData.get("name") as string)?.trim();
   const type = formData.get("type") as string;
   const parentId = (formData.get("parentId") as string)?.trim() || null;
 
   if (!name || !type) return;
+  if (!isAdmin && !parentId) return;
 
   // Validate parentId belongs to same org
   if (parentId) {
@@ -21,6 +24,13 @@ export async function createSpace(formData: FormData) {
       where: { id: parentId, organisationId: org.id },
     });
     if (!parent) return;
+
+    if (!isAdmin) {
+      const callerMember = await prisma.spaceMember.findUnique({
+        where: { spaceId_userId: { spaceId: parentId, userId: session.user.id } },
+      });
+      if (callerMember?.role !== "lead") return;
+    }
   }
 
   await prisma.space.create({
@@ -36,14 +46,15 @@ export async function createSpace(formData: FormData) {
 }
 
 export async function deleteSpace(spaceId: string) {
-  const { org } = await requireOrg();
+  const { org, membership } = await requireOrg();
+  if (membership.role !== "admin") return;
 
   const space = await prisma.space.findFirst({
     where: { id: spaceId, organisationId: org.id },
-    include: { _count: { select: { meetings: true } } },
+    include: { _count: { select: { meetings: true, children: true, roles: true } } },
   });
 
-  if (!space || space._count.meetings > 0) return;
+  if (!space || space._count.meetings > 0 || space._count.children > 0 || space._count.roles > 0) return;
 
   await prisma.space.delete({ where: { id: spaceId } });
 

@@ -7,7 +7,6 @@ export type FeatureKey =
   | "pistes_panel"   // panneau 6 pistes GTD en réunion
   | "recap_email"    // bouton envoi CR email
   | "projector_mode" // mode projecteur
-  | "circle_view"    // visualisation graphique des cercles et instances
   | "sync_phase";    // phase de synchro (indicateurs, checklists, projets) avant le triage
 
 export const FEATURE_DEFAULTS: Record<FeatureKey, boolean> = {
@@ -19,7 +18,6 @@ export const FEATURE_DEFAULTS: Record<FeatureKey, boolean> = {
   pistes_panel: true,
   recap_email: true,
   projector_mode: true,
-  circle_view: true,
   sync_phase: false, // opt-in : change le flux d'ouverture de réunion
 };
 
@@ -55,10 +53,6 @@ export const FEATURE_LABELS: Record<FeatureKey, { label: string; description: st
   projector_mode: {
     label: "Mode projecteur",
     description: "Vue plein écran pour afficher la réunion en cours sur un écran partagé.",
-  },
-  circle_view: {
-    label: "Vue en cercles",
-    description: "Visualisation graphique des cercles et instances de l'organisation avec leurs leaders.",
   },
   sync_phase: {
     label: "Phase de synchro",

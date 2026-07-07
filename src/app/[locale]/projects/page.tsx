@@ -200,7 +200,7 @@ function ProjectCard({
       <div className="flex items-center justify-between gap-2 flex-wrap">
         {showSpace ? (
           <Link
-            href={`/spaces/${p.space.id}?tab=synchro`}
+            href={`/circles/${p.space.id}?tab=synchro`}
             className="text-xs text-gray-600 hover:text-gray-400 transition-colors"
           >
             {p.space.name}

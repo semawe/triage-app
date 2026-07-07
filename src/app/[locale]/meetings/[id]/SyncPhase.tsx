@@ -71,10 +71,10 @@ export default function SyncPhase({
 
       {isEmpty && (
         <div className="rounded-xl bg-gray-900 border border-gray-800 p-6 text-sm text-gray-500">
-          Rien à passer en revue pour cet espace. Les indicateurs, checklists et projets se
+          Rien à passer en revue pour ce cercle. Les indicateurs, checklists et projets se
           définissent depuis{" "}
-          <Link href={`/spaces/${spaceId}`} className="underline hover:text-gray-300">
-            la page de l&apos;espace
+          <Link href={`/circles/${spaceId}?tab=synchro`} className="underline hover:text-gray-300">
+            la page du cercle
           </Link>
           .
         </div>
@@ -181,7 +181,7 @@ export default function SyncPhase({
           <div className="px-4 py-3 border-b border-gray-800 flex items-center justify-between">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">🚧 Projets</p>
             <Link
-              href={`/spaces/${spaceId}`}
+              href={`/circles/${spaceId}?tab=synchro`}
               className="text-xs text-gray-600 hover:text-gray-400 transition-colors"
             >
               Gérer →

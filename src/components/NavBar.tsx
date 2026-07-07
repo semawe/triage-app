@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
@@ -55,16 +55,14 @@ export default function NavBar({
 }) {
   const pathname = usePathname();
   const locale = useLocale();
-  const router = useRouter();
   const [switching, startSwitch] = useTransition();
 
   const brandColor = activeOrg.primaryColor ?? "#6366f1";
 
   const navItems = [
     { key: "meetings", label: "Réunions", href: "/meetings", always: true },
-    { key: "spaces", label: "Espaces", href: "/spaces", always: true },
+    { key: "circles", label: "Cercles", href: "/circles", always: true },
     { key: "members", label: "Membres", href: "/members", always: true },
-    { key: "circles", label: "Cercles", href: "/circles", featureKey: "circle_view" as FeatureKey },
     { key: "actions", label: "Actions", href: "/actions", featureKey: "actions" as FeatureKey },
     { key: "projects", label: "Projets", href: "/projects", featureKey: "projects" as FeatureKey },
     ...(isOrgAdmin ? [{ key: "settings", label: "Paramètres", href: "/settings", always: true }] : []),
@@ -87,7 +85,7 @@ export default function NavBar({
   // Bottom nav items (mobile — 4 max)
   const bottomNavItems = [
     { key: "meetings", label: "Réunions", href: "/meetings" },
-    { key: "spaces", label: "Espaces", href: "/spaces" },
+    { key: "spaces", label: "Cercles", href: "/circles" },
     { key: "members", label: "Membres", href: "/members" },
     ...(isOrgAdmin ? [{ key: "settings", label: "Paramètres", href: "/settings" }] : []),
   ].slice(0, 4);

@@ -1,13 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, Link } from "@/i18n/navigation";
+
+export type VizUser = { id: string; name: string | null; image: string | null };
 
 export type VizSpace = {
   id: string;
   name: string;
   type: "circle" | "instance" | "project";
-  leader: { id: string; name: string | null; image: string | null } | null;
+  purpose: string | null;
+  leader: VizUser | null;
   childCount: number;
   roleCount: number;
 };
@@ -15,12 +18,26 @@ export type VizSpace = {
 export type VizRole = {
   id: string;
   name: string;
-  holder: { id: string; name: string | null; image: string | null } | null;
+  purpose: string | null;
+  domains: string[];
+  accountabilities: string[];
+  holders: VizUser[];
 };
+
+type Selection =
+  | { kind: "space"; space: VizSpace }
+  | { kind: "role"; role: VizRole }
+  | null;
 
 const ROLE_COLOR = "#f59e0b"; // ambre — distingue les rôles des cercles/instances
 
-const PALETTE: Record<"circle" | "instance" | "project", string[]> = {
+const TYPE_LABELS: Record<VizSpace["type"], string> = {
+  circle: "Cercle",
+  instance: "Instance",
+  project: "Projet",
+};
+
+const PALETTE: Record<VizSpace["type"], string[]> = {
   circle:   ["#6366f1","#8b5cf6","#a855f7","#7c3aed","#4f46e5","#6d28d9"],
   instance: ["#0ea5e9","#14b8a6","#06b6d4","#0284c7","#0891b2","#0d9488"],
   project:  ["#10b981","#22c55e","#84cc16","#16a34a","#15803d","#166534"],
@@ -62,7 +79,7 @@ function AvatarCircle({
   cx, cy, r, user, isMe, color,
 }: {
   cx: number; cy: number; r: number;
-  user: VizSpace["leader"]; isMe: boolean; color: string;
+  user: VizUser | null; isMe: boolean; color: string;
 }) {
   const clipId = `clip-${cx.toFixed(0)}-${cy.toFixed(0)}`;
   return (
@@ -72,7 +89,6 @@ function AvatarCircle({
       {user?.image ? (
         <>
           <defs><clipPath id={clipId}><circle cx={cx} cy={cy} r={r} /></clipPath></defs>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <image href={user.image} x={cx - r} y={cy - r} width={r * 2} height={r * 2} clipPath={`url(#${clipId})`} />
         </>
       ) : user ? (
@@ -91,10 +107,10 @@ function AvatarCircle({
 }
 
 function SpaceNode({
-  space, x, y, r, color, isMe, onEnter, onLeave, onClick,
+  space, x, y, r, color, isMe, isSelected, onClick, onOpen,
 }: {
   space: VizSpace; x: number; y: number; r: number; color: string;
-  isMe: boolean; onEnter: () => void; onLeave: () => void; onClick: () => void;
+  isMe: boolean; isSelected: boolean; onClick: () => void; onOpen: () => void;
 }) {
   const hasChildren = space.childCount > 0;
   const lines = splitLines(space.name, r > 80 ? 13 : r > 65 ? 11 : 9);
@@ -107,7 +123,7 @@ function SpaceNode({
   const firstName = space.leader?.name?.split(" ")[0] ?? "";
 
   return (
-    <g onClick={onClick} onMouseEnter={onEnter} onMouseLeave={onLeave} style={{ cursor: "pointer" }}>
+    <g onClick={onClick} onDoubleClick={onOpen} style={{ cursor: "pointer" }}>
       {/* Dashed outer ring = a des sous-espaces */}
       {hasChildren && (
         <circle cx={x} cy={y} r={r + 6}
@@ -115,7 +131,8 @@ function SpaceNode({
           strokeDasharray="4 3" opacity={0.35}
         />
       )}
-      <circle cx={x} cy={y} r={r} fill={`${color}1a`} stroke={color} strokeWidth={1.5} />
+      <circle cx={x} cy={y} r={r} fill={`${color}${isSelected ? "33" : "1a"}`}
+        stroke={color} strokeWidth={isSelected ? 3 : 1.5} />
 
       {lines.map((line, li) => (
         <text key={li} x={x} y={nameTopY + li * lh}
@@ -129,7 +146,7 @@ function SpaceNode({
       <text x={x} y={typeY} textAnchor="middle" dominantBaseline="hanging"
         fill={`${color}55`} fontSize={7}
         fontFamily="-apple-system,BlinkMacSystemFont,sans-serif" pointerEvents="none">
-        {space.type === "instance" ? "Instance" : "Cercle"}
+        {TYPE_LABELS[space.type]}
         {hasChildren ? `  ·  ${space.childCount}↗` : ""}
       </text>
 
@@ -146,13 +163,13 @@ function SpaceNode({
 }
 
 function RoleNode({
-  role, x, y, r, isMe, onEnter, onLeave, onClick,
+  role, x, y, r, isMe, isSelected, onClick,
 }: {
   role: VizRole; x: number; y: number; r: number;
-  isMe: boolean; onEnter: () => void; onLeave: () => void; onClick: () => void;
+  isMe: boolean; isSelected: boolean; onClick: () => void;
 }) {
   const showText = r >= 16;
-  const showAvatar = r >= 22 && !!role.holder;
+  const showAvatar = r >= 22 && role.holders.length > 0;
   const lines = showText ? splitLines(role.name, r > 34 ? 10 : 8) : [];
   const lh = 9;
   const totalH = lines.length * lh;
@@ -161,12 +178,12 @@ function RoleNode({
   const nameTopY = y - totalH / 2 - (showAvatar ? 5 : 0);
 
   return (
-    <g onClick={onClick} onMouseEnter={onEnter} onMouseLeave={onLeave} style={{ cursor: "pointer" }}>
-      {/* Zone de survol confortable pour les petites pastilles */}
+    <g onClick={onClick} style={{ cursor: "pointer" }}>
+      {/* Zone de clic confortable pour les petites pastilles */}
       {r < 8 && <circle cx={x} cy={y} r={8} fill="transparent" />}
       <circle cx={x} cy={y} r={r}
-        fill={isMe ? `${ROLE_COLOR}40` : `${ROLE_COLOR}14`}
-        stroke={ROLE_COLOR} strokeWidth={r < 8 ? 1 : 1.2} />
+        fill={isMe || isSelected ? `${ROLE_COLOR}40` : `${ROLE_COLOR}14`}
+        stroke={ROLE_COLOR} strokeWidth={isSelected ? 2.5 : r < 8 ? 1 : 1.2} />
       {lines.map((line, li) => (
         <text key={li} x={x} y={nameTopY + li * lh}
           textAnchor="middle" dominantBaseline="hanging"
@@ -176,37 +193,47 @@ function RoleNode({
         </text>
       ))}
       {showAvatar && (
-        <AvatarCircle cx={x} cy={avCy} r={avR} user={role.holder} isMe={isMe} color={ROLE_COLOR} />
+        <AvatarCircle cx={x} cy={avCy} r={avR} user={role.holders[0]} isMe={isMe} color={ROLE_COLOR} />
       )}
     </g>
   );
 }
 
+function DrawerAvatar({ user }: { user: VizUser }) {
+  if (user.image) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={user.image} alt={user.name ?? ""} className="h-6 w-6 rounded-full object-cover shrink-0" />;
+  }
+  return (
+    <span className="h-6 w-6 rounded-full bg-indigo-800 text-indigo-200 text-[10px] font-semibold flex items-center justify-center shrink-0">
+      {initials(user.name)}
+    </span>
+  );
+}
+
 export default function CircleViz({
-  spaces, roles, currentUserId, brandColor, orgName, parentId, parentSpaceId, upHref,
+  spaces, roles, currentUserId, brandColor, title, governanceHref,
 }: {
   spaces: VizSpace[];
   roles: VizRole[];
   currentUserId: string;
   brandColor: string;
-  orgName: string;
-  parentId: string | null;
-  parentSpaceId: string | null;
-  upHref: string | null;
+  title: string;
+  governanceHref: string | null;
 }) {
-  const [hovered, setHovered] = useState<VizSpace | null>(null);
-  const [hoveredRole, setHoveredRole] = useState<VizRole | null>(null);
+  const [selected, setSelected] = useState<Selection>(null);
   const router = useRouter();
 
   const circles = spaces.filter((s) => s.type === "circle");
   const instances = spaces.filter((s) => s.type === "instance");
+  const projects = spaces.filter((s) => s.type === "project");
   const nS = spaces.length;
   const nR = roles.length;
   const { ringR, itemR } = computeLayout(nS);
 
   // Les rôles occupent un anneau intérieur (ou l'anneau principal si le
   // cercle n'a pas de sous-espaces). Leur taille s'adapte au nombre : avec
-  // beaucoup de rôles ils deviennent des pastilles, le nom passe en infobulle.
+  // beaucoup de rôles ils deviennent des pastilles, le nom passe dans le panneau.
   const roleRingR = nS === 0 ? (nR <= 6 ? 120 : 150) : Math.max(64, ringR - itemR - 36);
   const roleR = Math.min(
     nS === 0 ? 56 : 30,
@@ -214,11 +241,11 @@ export default function CircleViz({
   );
 
   const colorMap = new Map<string, string>();
-  let ci = 0, ii = 0;
+  let ci = 0, ii = 0, pi = 0;
   for (const s of spaces) {
     if (s.type === "circle") colorMap.set(s.id, getColor(s, ci++));
     else if (s.type === "instance") colorMap.set(s.id, getColor(s, ii++));
-    else colorMap.set(s.id, getColor(s, 0));
+    else colorMap.set(s.id, getColor(s, pi++));
   }
 
   const positions = spaces.map((_, i) => {
@@ -234,68 +261,50 @@ export default function CircleViz({
     return { x: 250 + roleRingR * Math.cos(angle), y: 250 + roleRingR * Math.sin(angle) };
   });
 
-  function handleClick(space: VizSpace) {
-    if (space.childCount > 0) {
-      router.push(`/circles?parent=${space.id}`);
-    } else {
-      router.push(`/spaces/${space.id}`);
-    }
+  function openSpace(space: VizSpace) {
+    router.push(`/circles/${space.id}`);
   }
 
-  function handleRoleClick() {
-    // Les rôles se gèrent dans l'onglet gouvernance du cercle qui les porte.
-    if (parentSpaceId) router.push(`/spaces/${parentSpaceId}`);
-  }
+  const selectedSpaceId = selected?.kind === "space" ? selected.space.id : null;
+  const selectedRoleId = selected?.kind === "role" ? selected.role.id : null;
 
-  function goUp() {
-    if (upHref) router.push(upHref);
-  }
+  const sidebarSections: { label: string; items: VizSpace[] }[] = [
+    { label: "Cercles", items: circles },
+    { label: "Instances", items: instances },
+    { label: "Projets", items: projects },
+  ];
 
   return (
-    <div className="flex h-full min-h-0">
-      {/* Sidebar */}
-      <div className="w-48 shrink-0 border-r border-gray-800 overflow-y-auto bg-gray-900/40 p-3">
-        {parentId && (
-          <a href="/circles"
-            className="flex items-center gap-1.5 px-2 py-1.5 mb-3 rounded-lg text-xs text-gray-500 hover:bg-gray-800 hover:text-gray-300 transition-colors">
-            ← Racine
-          </a>
-        )}
-        {circles.length > 0 && (
-          <>
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-1 px-1">Cercles</p>
-            {circles.map((s) => (
-              <button key={s.id} onClick={() => handleClick(s)}
-                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm text-gray-400 hover:bg-gray-800 hover:text-gray-200 transition-colors text-left">
+    <div className="flex h-full min-h-0 relative">
+      {/* Sidebar — liste de navigation */}
+      <div className="w-48 shrink-0 border-r border-gray-800 overflow-y-auto bg-gray-900/40 p-3 hidden md:block">
+        {sidebarSections.map(({ label, items }) => items.length > 0 && (
+          <div key={label}>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-1 px-1">{label}</p>
+            {items.map((s) => (
+              <button key={s.id} onClick={() => setSelected({ kind: "space", space: s })}
+                onDoubleClick={() => openSpace(s)}
+                className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm transition-colors text-left ${
+                  selectedSpaceId === s.id ? "bg-gray-800 text-gray-100" : "text-gray-400 hover:bg-gray-800 hover:text-gray-200"
+                }`}>
                 <span className="w-2 h-2 rounded-full shrink-0" style={{ background: colorMap.get(s.id) }} />
                 <span className="truncate flex-1">{s.name}</span>
                 {s.childCount > 0 && <span className="text-xs text-gray-600 shrink-0">{s.childCount}↗</span>}
               </button>
             ))}
-          </>
-        )}
-        {instances.length > 0 && (
-          <>
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-4 px-1">Instances</p>
-            {instances.map((s) => (
-              <button key={s.id} onClick={() => handleClick(s)}
-                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm text-gray-400 hover:bg-gray-800 hover:text-gray-200 transition-colors text-left">
-                <span className="w-2 h-2 rounded-full shrink-0" style={{ background: colorMap.get(s.id) }} />
-                <span className="truncate flex-1">{s.name}</span>
-                {s.childCount > 0 && <span className="text-xs text-gray-600 shrink-0">{s.childCount}↗</span>}
-              </button>
-            ))}
-          </>
-        )}
+          </div>
+        ))}
         {roles.length > 0 && (
           <>
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-4 px-1">Rôles</p>
             {roles.map((r) => (
-              <button key={r.id} onClick={handleRoleClick}
-                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm text-gray-400 hover:bg-gray-800 hover:text-gray-200 transition-colors text-left">
+              <button key={r.id} onClick={() => setSelected({ kind: "role", role: r })}
+                className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm transition-colors text-left ${
+                  selectedRoleId === r.id ? "bg-gray-800 text-gray-100" : "text-gray-400 hover:bg-gray-800 hover:text-gray-200"
+                }`}>
                 <span className="w-2 h-2 rounded-full shrink-0" style={{ background: ROLE_COLOR }} />
                 <span className="truncate flex-1">{r.name}</span>
-                {r.holder && <span className="text-xs text-gray-600 shrink-0 truncate max-w-16">{r.holder.name?.split(" ")[0]}</span>}
+                {r.holders[0] && <span className="text-xs text-gray-600 shrink-0 truncate max-w-16">{r.holders[0].name?.split(" ")[0]}</span>}
               </button>
             ))}
           </>
@@ -305,68 +314,169 @@ export default function CircleViz({
       {/* SVG canvas */}
       <div className="flex-1 relative flex items-center justify-center p-4 min-w-0 min-h-0">
         <svg viewBox="0 0 500 500"
-          style={{ width: "min(500px, 100%)", height: "min(500px, calc(100vh - 220px))" }}>
-          {/* Membrane du cercle courant : cliquer dessus remonte d'un niveau */}
+          style={{ width: "min(500px, 100%)", height: "min(500px, calc(100vh - 260px))" }}>
+          {/* Membrane du cercle courant : cliquer dessus désélectionne */}
           <circle cx={250} cy={250} r={238}
             fill={`${brandColor}06`} stroke={`${brandColor}25`} strokeWidth={1.5}
-            onClick={goUp}
-            style={upHref ? { cursor: "zoom-out" } : undefined}
+            onClick={() => setSelected(null)}
           />
           <text x={250} y={484} textAnchor="middle" fill={`${brandColor}33`} fontSize={9}
-            fontFamily="-apple-system,BlinkMacSystemFont,sans-serif" pointerEvents="none">{orgName}</text>
+            fontFamily="-apple-system,BlinkMacSystemFont,sans-serif" pointerEvents="none">{title}</text>
 
           {spaces.map((space, i) => (
             <SpaceNode key={space.id} space={space}
               x={positions[i].x} y={positions[i].y} r={itemR}
               color={colorMap.get(space.id)!}
               isMe={space.leader?.id === currentUserId}
-              onEnter={() => setHovered(space)}
-              onLeave={() => setHovered(null)}
-              onClick={() => handleClick(space)}
+              isSelected={selectedSpaceId === space.id}
+              onClick={() => setSelected({ kind: "space", space })}
+              onOpen={() => openSpace(space)}
             />
           ))}
 
           {roles.map((role, ri) => (
             <RoleNode key={role.id} role={role}
               x={rolePositions[ri].x} y={rolePositions[ri].y} r={roleR}
-              isMe={role.holder?.id === currentUserId}
-              onEnter={() => setHoveredRole(role)}
-              onLeave={() => setHoveredRole(null)}
-              onClick={handleRoleClick}
+              isMe={role.holders.some((h) => h.id === currentUserId)}
+              isSelected={selectedRoleId === role.id}
+              onClick={() => setSelected({ kind: "role", role })}
             />
           ))}
         </svg>
 
-        {/* Tooltip */}
-        {hovered && (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-center pointer-events-none whitespace-nowrap">
-            <p className="text-sm font-semibold text-white">{hovered.name}</p>
-            <p className="text-xs text-gray-500 mt-0.5">
-              {hovered.type === "instance" ? "Instance" : "Cercle"}
-              {hovered.leader ? ` · Leader : ${hovered.leader.name}` : " · Sans leader"}
-              {hovered.childCount > 0 ? ` · ${hovered.childCount} sous-espace${hovered.childCount > 1 ? "s" : ""} → cliquer pour explorer` : " → cliquer pour ouvrir"}
-              {hovered.roleCount > 0 ? ` · ${hovered.roleCount} rôle${hovered.roleCount > 1 ? "s" : ""}` : ""}
-            </p>
-          </div>
-        )}
-        {!hovered && hoveredRole && (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-center pointer-events-none whitespace-nowrap">
-            <p className="text-sm font-semibold text-white">{hoveredRole.name}</p>
-            <p className="text-xs text-gray-500 mt-0.5">
-              Rôle{hoveredRole.holder ? ` · ${hoveredRole.holder.name}` : " · Non attribué"}
-              {" → cliquer pour la gouvernance"}
-            </p>
-          </div>
-        )}
-
         {/* Mini legend */}
-        <div className="absolute top-3 right-3 text-[10px] text-gray-700 space-y-0.5 text-right">
-          <p>- - anneau = sous-espaces</p>
-          {roles.length > 0 && <p><span style={{ color: `${ROLE_COLOR}88` }}>●</span> = rôle du cercle</p>}
-          <p>clic = explorer ou ouvrir</p>
-          {upHref && <p>clic sur la membrane = remonter</p>}
-        </div>
+        {!selected && (
+          <div className="absolute top-3 right-3 text-[10px] text-gray-700 space-y-0.5 text-right pointer-events-none">
+            <p>- - anneau = sous-cercles</p>
+            {roles.length > 0 && <p><span style={{ color: `${ROLE_COLOR}88` }}>●</span> = rôle de ce cercle</p>}
+            <p>clic = détails · double-clic = ouvrir</p>
+          </div>
+        )}
       </div>
+
+      {/* Panneau de détail */}
+      {selected && (
+        <div className="w-72 shrink-0 border-l border-gray-800 bg-gray-900 overflow-y-auto
+          max-md:absolute max-md:inset-y-0 max-md:right-0 max-md:z-10 max-md:shadow-2xl max-md:shadow-black/50">
+          <div className="p-4 space-y-4">
+            <div className="flex items-start justify-between gap-2">
+              {selected.kind === "space" ? (
+                <span
+                  className="rounded-full border px-2.5 py-0.5 text-xs font-medium"
+                  style={{
+                    color: colorMap.get(selected.space.id),
+                    borderColor: `${colorMap.get(selected.space.id)}55`,
+                    background: `${colorMap.get(selected.space.id)}1a`,
+                  }}
+                >
+                  {TYPE_LABELS[selected.space.type]}
+                </span>
+              ) : (
+                <span className="rounded-full border px-2.5 py-0.5 text-xs font-medium"
+                  style={{ color: ROLE_COLOR, borderColor: `${ROLE_COLOR}55`, background: `${ROLE_COLOR}1a` }}>
+                  Rôle
+                </span>
+              )}
+              <button onClick={() => setSelected(null)}
+                className="text-gray-600 hover:text-gray-300 transition-colors leading-none text-lg" title="Fermer">
+                ×
+              </button>
+            </div>
+
+            <h3 className="text-base font-semibold text-white leading-snug">
+              {selected.kind === "space" ? selected.space.name : selected.role.name}
+            </h3>
+
+            {selected.kind === "space" ? (
+              <>
+                {selected.space.purpose && (
+                  <p className="text-xs text-gray-400 italic leading-relaxed">{selected.space.purpose}</p>
+                )}
+                <div className="space-y-2">
+                  <p className="text-xs text-gray-600 font-medium uppercase tracking-wider">Leader</p>
+                  {selected.space.leader ? (
+                    <div className="flex items-center gap-2">
+                      <DrawerAvatar user={selected.space.leader} />
+                      <span className="text-sm text-gray-300">{selected.space.leader.name}</span>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-600 italic">Sans leader</p>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500">
+                  {selected.space.childCount} sous-cercle{selected.space.childCount !== 1 ? "s" : ""}
+                  {" · "}
+                  {selected.space.roleCount} rôle{selected.space.roleCount !== 1 ? "s" : ""}
+                </p>
+                <button
+                  onClick={() => openSpace(selected.space)}
+                  className="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors"
+                >
+                  Ouvrir {selected.space.type === "circle" ? "le cercle" : selected.space.type === "instance" ? "l'instance" : "le projet"} →
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <p className="text-xs text-gray-600 font-medium uppercase tracking-wider">
+                    Titulaire{selected.role.holders.length > 1 ? "s" : ""}
+                  </p>
+                  {selected.role.holders.length > 0 ? (
+                    <div className="space-y-1.5">
+                      {selected.role.holders.map((h) => (
+                        <div key={h.id} className="flex items-center gap-2">
+                          <DrawerAvatar user={h} />
+                          <span className="text-sm text-gray-300">{h.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-600 italic">Non attribué</p>
+                  )}
+                </div>
+                {selected.role.purpose && (
+                  <div className="space-y-1">
+                    <p className="text-xs text-gray-600 font-medium uppercase tracking-wider">Raison d&apos;être</p>
+                    <p className="text-xs text-gray-400 italic leading-relaxed">{selected.role.purpose}</p>
+                  </div>
+                )}
+                {selected.role.domains.length > 0 && (
+                  <div className="space-y-1">
+                    <p className="text-xs text-gray-600 font-medium uppercase tracking-wider">Domaines</p>
+                    <ul className="space-y-0.5">
+                      {selected.role.domains.map((d, i) => (
+                        <li key={i} className="text-xs text-gray-400 flex gap-2">
+                          <span className="text-gray-600 shrink-0">·</span>{d}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {selected.role.accountabilities.length > 0 && (
+                  <div className="space-y-1">
+                    <p className="text-xs text-gray-600 font-medium uppercase tracking-wider">Redevabilités</p>
+                    <ul className="space-y-0.5">
+                      {selected.role.accountabilities.map((a, i) => (
+                        <li key={i} className="text-xs text-gray-400 flex gap-2">
+                          <span className="text-gray-600 shrink-0">·</span>{a}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {governanceHref && (
+                  <Link
+                    href={governanceHref}
+                    className="block w-full rounded-lg border border-gray-700 px-4 py-2 text-sm font-medium text-gray-300 hover:border-gray-500 hover:text-white transition-colors text-center"
+                  >
+                    Gérer dans la gouvernance →
+                  </Link>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

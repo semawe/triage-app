@@ -206,7 +206,7 @@ export default async function MembersPage({
             {mySpaces.map((sm) => (
               <Link
                 key={sm.id}
-                href={`/spaces/${sm.space.id}`}
+                href={`/circles/${sm.space.id}`}
                 className="flex items-center justify-between rounded-xl bg-gray-900 border border-gray-800 px-5 py-3 hover:border-gray-700 transition-colors"
               >
                 <span className="text-sm text-white">{sm.space.name}</span>
