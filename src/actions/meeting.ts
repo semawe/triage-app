@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 import { broadcast } from "@/lib/sse";
+import { hasFeature } from "@/lib/features";
 
 function parseDatetimeLocal(value: string): Date {
   const [datePart, timePart = "00:00"] = value.split("T");
@@ -119,14 +120,22 @@ export async function addAgendaItem(meetingId: string, formData: FormData) {
   broadcast(meetingId);
 }
 
+async function activateFirstAgendaItem(meetingId: string) {
+  const firstItem = await prisma.agendaItem.findFirst({
+    where: { meetingId, status: "pending" },
+    orderBy: { order: "asc" },
+  });
+  if (firstItem) {
+    await prisma.agendaItem.update({
+      where: { id: firstItem.id },
+      data: { status: "active" },
+    });
+  }
+}
+
 export async function openMeeting(meetingId: string) {
   const ctx = await requireMeetingAccess(meetingId);
   if (!ctx) return;
-
-  const firstItem = await prisma.agendaItem.findFirst({
-    where: { meetingId },
-    orderBy: { order: "asc" },
-  });
 
   await prisma.meeting.update({
     where: { id: meetingId },
@@ -138,12 +147,31 @@ export async function openMeeting(meetingId: string) {
     },
   });
 
-  if (firstItem) {
-    await prisma.agendaItem.update({
-      where: { id: firstItem.id },
-      data: { status: "active" },
-    });
+  // Phase de synchro active → le triage ne démarre pas encore : les points
+  // restent pending jusqu'à completeSyncPhase. Sinon, comportement historique.
+  const syncPhase = hasFeature(ctx.meeting.space.organisation, "sync_phase", ctx.meeting.space);
+  if (!syncPhase) {
+    await activateFirstAgendaItem(meetingId);
   }
+
+  revalidatePath("/", "layout");
+  broadcast(meetingId);
+}
+
+/**
+ * Clôt la phase de synchro et démarre le triage (active le premier point).
+ * Ouverte à tout participant, comme nextItem.
+ */
+export async function completeSyncPhase(meetingId: string) {
+  const ctx = await requireMeetingAccess(meetingId);
+  if (!ctx) return;
+  if (ctx.meeting.status !== "open" || ctx.meeting.syncCompletedAt) return;
+
+  await prisma.meeting.update({
+    where: { id: meetingId },
+    data: { syncCompletedAt: new Date() },
+  });
+  await activateFirstAgendaItem(meetingId);
 
   revalidatePath("/", "layout");
   broadcast(meetingId);

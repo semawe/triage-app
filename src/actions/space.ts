@@ -2,6 +2,8 @@
 
 import { prisma } from "@/lib/prisma";
 import { requireOrg } from "@/lib/session";
+import { canManageSpace } from "@/lib/authz";
+import { FEATURE_DEFAULTS, type FeatureKey } from "@/lib/features";
 import { revalidatePath } from "next/cache";
 
 export async function createSpace(formData: FormData) {
@@ -44,6 +46,45 @@ export async function deleteSpace(spaceId: string) {
   if (!space || space._count.meetings > 0) return;
 
   await prisma.space.delete({ where: { id: spaceId } });
+
+  revalidatePath("/", "layout");
+}
+
+/**
+ * Override par-espace d'un module (feature flag). `enabled = null` efface
+ * l'override : l'espace retombe sur le réglage de l'organisation.
+ * Autorisation : admin de l'org OU lead de l'espace (comme la gouvernance).
+ */
+export async function updateSpaceFeature(
+  spaceId: string,
+  key: FeatureKey,
+  enabled: boolean | null
+) {
+  if (!(key in FEATURE_DEFAULTS)) return;
+
+  const auth = await canManageSpace(spaceId);
+  if (!auth.ok) return;
+
+  const raw = auth.space.features;
+  const current: Record<string, boolean> = {};
+  if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+    for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+      if (typeof v === "boolean") current[k] = v;
+    }
+  }
+
+  if (enabled === null) {
+    delete current[key];
+  } else {
+    current[key] = enabled;
+  }
+
+  // Toujours écrire l'objet (même vide) : `undefined` signifierait « ne pas
+  // mettre à jour » et l'effacement du dernier override ne serait pas persisté.
+  await prisma.space.update({
+    where: { id: spaceId },
+    data: { features: current },
+  });
 
   revalidatePath("/", "layout");
 }

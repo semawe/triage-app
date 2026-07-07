@@ -89,7 +89,17 @@ export const requireMeetingAccess = async (meetingId: string) => {
   const session = await requireAuth();
   const meeting = await prisma.meeting.findUnique({
     where: { id: meetingId },
-    include: { space: { select: { organisationId: true } } },
+    include: {
+      space: {
+        select: {
+          organisationId: true,
+          // features de l'espace + de l'org : résolution du flag sync_phase
+          // dans openMeeting sans requête supplémentaire.
+          features: true,
+          organisation: { select: { features: true } },
+        },
+      },
+    },
   });
   if (!meeting) return null;
 

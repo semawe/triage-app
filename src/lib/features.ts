@@ -7,7 +7,8 @@ export type FeatureKey =
   | "pistes_panel"   // panneau 6 pistes GTD en réunion
   | "recap_email"    // bouton envoi CR email
   | "projector_mode" // mode projecteur
-  | "circle_view";   // visualisation graphique des cercles et instances
+  | "circle_view"    // visualisation graphique des cercles et instances
+  | "sync_phase";    // phase de synchro (indicateurs, checklists, projets) avant le triage
 
 export const FEATURE_DEFAULTS: Record<FeatureKey, boolean> = {
   actions: true,
@@ -19,6 +20,7 @@ export const FEATURE_DEFAULTS: Record<FeatureKey, boolean> = {
   recap_email: true,
   projector_mode: true,
   circle_view: true,
+  sync_phase: false, // opt-in : change le flux d'ouverture de réunion
 };
 
 export const FEATURE_LABELS: Record<FeatureKey, { label: string; description: string }> = {
@@ -58,23 +60,44 @@ export const FEATURE_LABELS: Record<FeatureKey, { label: string; description: st
     label: "Vue en cercles",
     description: "Visualisation graphique des cercles et instances de l'organisation avec leurs leaders.",
   },
+  sync_phase: {
+    label: "Phase de synchro",
+    description:
+      "Revue des indicateurs, checklists et projets du cercle avant le triage (trame de la réunion tactique). Activable aussi espace par espace.",
+  },
 };
 
+function readFlag(raw: unknown, key: FeatureKey): boolean | undefined {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
+  const val = (raw as Record<string, unknown>)[key];
+  return typeof val === "boolean" ? val : undefined;
+}
+
+// Résolution : override de l'espace (si fourni) > réglage de l'org > défaut.
 export function hasFeature(
   org: { features: unknown },
-  key: FeatureKey
+  key: FeatureKey,
+  space?: { features: unknown } | null
 ): boolean {
-  const raw = org.features;
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
-    return FEATURE_DEFAULTS[key];
+  if (space) {
+    const overridden = readFlag(space.features, key);
+    if (overridden !== undefined) return overridden;
   }
-  const val = (raw as Record<string, unknown>)[key];
-  if (typeof val === "boolean") return val;
-  return FEATURE_DEFAULTS[key];
+  return readFlag(org.features, key) ?? FEATURE_DEFAULTS[key];
 }
 
 export function getOrgFeatures(org: { features: unknown }): Record<FeatureKey, boolean> {
   return Object.fromEntries(
     (Object.keys(FEATURE_DEFAULTS) as FeatureKey[]).map((k) => [k, hasFeature(org, k)])
+  ) as Record<FeatureKey, boolean>;
+}
+
+// Carte résolue pour un espace donné (override par espace pris en compte).
+export function getSpaceFeatures(
+  org: { features: unknown },
+  space: { features: unknown } | null
+): Record<FeatureKey, boolean> {
+  return Object.fromEntries(
+    (Object.keys(FEATURE_DEFAULTS) as FeatureKey[]).map((k) => [k, hasFeature(org, k, space)])
   ) as Record<FeatureKey, boolean>;
 }

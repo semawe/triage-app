@@ -13,6 +13,8 @@ import {
   removeRoleAssignment,
 } from "@/actions/governance";
 import { Link } from "@/i18n/navigation";
+import { hasFeature } from "@/lib/features";
+import SyncSettingsTab from "./SyncSettingsTab";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -39,6 +41,12 @@ export default async function SpaceDetailPage({ params, searchParams }: Props) {
         orderBy: [{ role: "asc" }, { createdAt: "asc" }],
       },
       meetings: { orderBy: { date: "desc" }, take: 30 },
+      indicators: {
+        orderBy: { order: "asc" },
+        include: { values: { orderBy: { recordedAt: "desc" }, take: 1 } },
+      },
+      checklistItems: { orderBy: { order: "asc" } },
+      projects: { orderBy: [{ status: "asc" }, { createdAt: "asc" }] },
       roles: {
         include: {
           assignments: {
@@ -78,10 +86,20 @@ export default async function SpaceDetailPage({ params, searchParams }: Props) {
   const setPrivateTrue = updateSpacePrivacy.bind(null, space.id, true);
   const setPrivateFalse = updateSpacePrivacy.bind(null, space.id, false);
 
+  // Phase de synchro : override espace lu tel quel (null = hérité de l'org).
+  const rawSpaceFeatures = space.features;
+  const syncOverride =
+    rawSpaceFeatures && typeof rawSpaceFeatures === "object" && !Array.isArray(rawSpaceFeatures) &&
+    typeof (rawSpaceFeatures as Record<string, unknown>).sync_phase === "boolean"
+      ? ((rawSpaceFeatures as Record<string, unknown>).sync_phase as boolean)
+      : null;
+  const orgSyncEnabled = hasFeature(org, "sync_phase");
+
   const tabs = [
     { key: "gouvernance", label: "Gouvernance" },
     { key: "reunions", label: `Réunions (${space.meetings.length})` },
     { key: "membres", label: `Membres (${space.members.length})` },
+    { key: "synchro", label: "Synchro" },
   ];
 
   return (
@@ -540,6 +558,29 @@ export default async function SpaceDetailPage({ params, searchParams }: Props) {
             </div>
           )}
         </div>
+      )}
+
+      {/* ── SYNCHRO ──────────────────────────────────────────────────────────── */}
+      {tab === "synchro" && (
+        <SyncSettingsTab
+          spaceId={space.id}
+          canManage={canManage}
+          syncOverride={syncOverride}
+          orgSyncEnabled={orgSyncEnabled}
+          indicators={space.indicators.map((ind) => ({
+            id: ind.id,
+            name: ind.name,
+            unit: ind.unit,
+            frequency: ind.frequency,
+            lastValue: ind.values[0]
+              ? { value: ind.values[0].value, recordedAt: ind.values[0].recordedAt }
+              : null,
+          }))}
+          checklistItems={space.checklistItems.map((c) => ({ id: c.id, title: c.title }))}
+          projects={space.projects.map((p) => ({
+            id: p.id, name: p.name, description: p.description, status: p.status,
+          }))}
+        />
       )}
     </AppShell>
   );

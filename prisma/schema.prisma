@@ -29,6 +29,8 @@ model User {
   hostedMeetings   Meeting[]            @relation("MeetingHost")
   scribedMeetings  Meeting[]            @relation("MeetingScribe")
   meetingGuests    MeetingGuest[]
+  indicatorValues  IndicatorValue[]
+  checklistChecks  ChecklistCheck[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -153,15 +155,19 @@ model Space {
   domains          String[]
   accountabilities String[]
   isPrivate        Boolean   @default(false)
+  features         Json? // override par-espace des modules (clé absente ou null = hérite de l'org)
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
-  organisation Organisation  @relation(fields: [organisationId], references: [id], onDelete: Cascade)
-  parent       Space?        @relation("SpaceChildren", fields: [parentId], references: [id], onDelete: SetNull)
-  children     Space[]       @relation("SpaceChildren")
-  members      SpaceMember[]
-  meetings     Meeting[]
-  roles        Role[]
+  organisation   Organisation    @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  parent         Space?          @relation("SpaceChildren", fields: [parentId], references: [id], onDelete: SetNull)
+  children       Space[]         @relation("SpaceChildren")
+  members        SpaceMember[]
+  meetings       Meeting[]
+  roles          Role[]
+  indicators     Indicator[]
+  checklistItems ChecklistItem[]
+  projects       Project[]
 
   @@index([organisationId])
 }
@@ -200,16 +206,19 @@ model Meeting {
   status          MeetingStatus @default(draft)
   isPrivate       Boolean?      // null = hérite de l'espace, true/false = override
   openedAt        DateTime?
+  syncCompletedAt DateTime?     // phase de synchro terminée (null + module actif = triage pas encore démarré)
   createdById     String?       // hôte de la réunion (créateur) — peut inviter des invités ponctuels
   scribeId        String?       // scribe : seul autorisé à saisir/éditer les outputs (retour #32). Défini à l'ouverture (l'ouvreur par défaut), transmissible.
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
-  space       Space          @relation(fields: [spaceId], references: [id], onDelete: Cascade)
-  host        User?          @relation("MeetingHost", fields: [createdById], references: [id], onDelete: SetNull)
-  scribe      User?          @relation("MeetingScribe", fields: [scribeId], references: [id], onDelete: SetNull)
-  agendaItems AgendaItem[]
-  guests      MeetingGuest[]
+  space           Space            @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  host            User?            @relation("MeetingHost", fields: [createdById], references: [id], onDelete: SetNull)
+  scribe          User?            @relation("MeetingScribe", fields: [scribeId], references: [id], onDelete: SetNull)
+  agendaItems     AgendaItem[]
+  guests          MeetingGuest[]
+  indicatorValues IndicatorValue[]
+  checklistChecks ChecklistCheck[]
 
   @@index([spaceId])
 }
@@ -347,4 +356,94 @@ model Output {
   assignee User?      @relation("OutputAssignee", fields: [assigneeId], references: [id])
 
   @@index([itemId])
+}
+
+// ── Phase de synchro (réunion tactique) ──────────────────────────────────────
+// Indicateurs, checklists et projets d'un espace, passés en revue avant le
+// triage quand le module sync_phase est actif (org ou override par espace).
+
+model Indicator {
+  id        String   @id @default(cuid())
+  spaceId   String
+  name      String
+  unit      String? // ex: "€", "%", "clients"
+  frequency String? // libre : "hebdo", "mensuel"…
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  space  Space            @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  values IndicatorValue[]
+
+  @@index([spaceId])
+}
+
+model IndicatorValue {
+  id          String   @id @default(cuid())
+  indicatorId String
+  meetingId   String
+  authorId    String
+  value       Float
+  note        String?  @db.Text
+  recordedAt  DateTime @default(now())
+
+  indicator Indicator @relation(fields: [indicatorId], references: [id], onDelete: Cascade)
+  meeting   Meeting   @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  author    User      @relation(fields: [authorId], references: [id])
+
+  @@unique([indicatorId, meetingId]) // un seul relevé par indicateur et par réunion (upsert)
+  @@index([indicatorId])
+  @@index([meetingId])
+}
+
+model ChecklistItem {
+  id        String   @id @default(cuid())
+  spaceId   String
+  title     String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  space  Space            @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  checks ChecklistCheck[]
+
+  @@index([spaceId])
+}
+
+// Coche d'un item de checklist pour une réunion donnée. Pas de ligne = non
+// coché : la checklist repart vierge à chaque réunion, sans job de reset.
+model ChecklistCheck {
+  id        String    @id @default(cuid())
+  itemId    String
+  meetingId String
+  isDone    Boolean   @default(false)
+  checkedBy String?
+  checkedAt DateTime?
+
+  item    ChecklistItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  meeting Meeting       @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  checker User?         @relation(fields: [checkedBy], references: [id], onDelete: SetNull)
+
+  @@unique([itemId, meetingId])
+  @@index([meetingId])
+}
+
+enum ProjectStatus {
+  active
+  on_hold
+  done
+}
+
+model Project {
+  id          String        @id @default(cuid())
+  spaceId     String
+  name        String
+  description String?       @db.Text
+  status      ProjectStatus @default(active)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  space Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  @@index([spaceId])
 }

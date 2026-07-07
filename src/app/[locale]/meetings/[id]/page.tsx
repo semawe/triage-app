@@ -21,6 +21,7 @@ import { addOutput, updateOutput, deleteOutput } from "@/actions/output";
 import { OutputEntry, UnsavedOutputProvider, GuardedNavForm } from "./OutputEntry";
 import OutputList from "./OutputList";
 import GuestInvitePanel from "./GuestInvitePanel";
+import SyncPhase from "./SyncPhase";
 import SendRecapButton from "./SendRecapButton";
 import SSEListener from "./SSEListener";
 import { Link } from "@/i18n/navigation";
@@ -33,16 +34,6 @@ export default async function MeetingPage({ params }: Props) {
   const { id } = await params;
   const { org, session, membership } = await requireOrg();
   const isAdmin = membership.role === "admin";
-  const f = {
-    confidentiality: hasFeature(org, "confidentiality"),
-    pistesPanel: hasFeature(org, "pistes_panel"),
-    recapEmail: hasFeature(org, "recap_email"),
-    projectorMode: hasFeature(org, "projector_mode"),
-    actions: hasFeature(org, "actions"),
-    governance: hasFeature(org, "governance"),
-    projects: hasFeature(org, "projects"),
-  };
-
   const meeting = await prisma.meeting.findUnique({
     where: { id },
     include: {
@@ -64,6 +55,18 @@ export default async function MeetingPage({ params }: Props) {
   if (!meeting) notFound();
   if (meeting.space.organisationId !== org.id) notFound();
 
+  const f = {
+    confidentiality: hasFeature(org, "confidentiality"),
+    pistesPanel: hasFeature(org, "pistes_panel"),
+    recapEmail: hasFeature(org, "recap_email"),
+    projectorMode: hasFeature(org, "projector_mode"),
+    actions: hasFeature(org, "actions"),
+    governance: hasFeature(org, "governance"),
+    projects: hasFeature(org, "projects"),
+    // Phase de synchro : override par espace pris en compte.
+    syncPhase: hasFeature(org, "sync_phase", meeting.space),
+  };
+
   // Privacy check (only when confidentiality feature is on)
   const isSpaceMember = meeting.space.members.some((m) => m.userId === session.user.id);
   const effectivePrivate = f.confidentiality && (meeting.isPrivate ?? meeting.space.isPrivate);
@@ -82,6 +85,69 @@ export default async function MeetingPage({ params }: Props) {
   const activeItem = meeting.agendaItems.find((i) => i.status === "active");
   const pendingItems = meeting.agendaItems.filter((i) => i.status === "pending");
   const doneItems = meeting.agendaItems.filter((i) => i.status === "done");
+
+  // Phase de synchro : réunion ouverte, module actif, triage pas encore démarré.
+  const inSyncPhase = meeting.status === "open" && f.syncPhase && !meeting.syncCompletedAt;
+
+  // Données de la revue de synchro (chargées seulement quand la phase est affichée).
+  let syncData: {
+    indicators: {
+      id: string; name: string; unit: string | null; frequency: string | null;
+      currentValue: { value: number; note: string | null } | null;
+      previousValue: { value: number; recordedAt: Date } | null;
+    }[];
+    checklist: { id: string; title: string; isDone: boolean; checkerName: string | null }[];
+    projects: { id: string; name: string; description: string | null; status: "active" | "on_hold" | "done" }[];
+  } | null = null;
+  if (inSyncPhase) {
+    const [indicators, checklistItems, projects] = await Promise.all([
+      prisma.indicator.findMany({
+        where: { spaceId: meeting.spaceId },
+        orderBy: { order: "asc" },
+        include: { values: { orderBy: { recordedAt: "desc" }, take: 5 } },
+      }),
+      prisma.checklistItem.findMany({
+        where: { spaceId: meeting.spaceId },
+        orderBy: { order: "asc" },
+        include: {
+          checks: {
+            where: { meetingId: meeting.id },
+            include: { checker: { select: { name: true } } },
+          },
+        },
+      }),
+      prisma.project.findMany({
+        where: { spaceId: meeting.spaceId, status: { not: "done" } },
+        orderBy: [{ status: "asc" }, { createdAt: "asc" }],
+      }),
+    ]);
+    syncData = {
+      indicators: indicators.map((ind) => {
+        const current = ind.values.find((v) => v.meetingId === meeting.id) ?? null;
+        const previous = ind.values.find((v) => v.meetingId !== meeting.id) ?? null;
+        return {
+          id: ind.id,
+          name: ind.name,
+          unit: ind.unit,
+          frequency: ind.frequency,
+          currentValue: current ? { value: current.value, note: current.note } : null,
+          previousValue: previous ? { value: previous.value, recordedAt: previous.recordedAt } : null,
+        };
+      }),
+      checklist: checklistItems.map((item) => {
+        const check = item.checks[0];
+        return {
+          id: item.id,
+          title: item.title,
+          isDone: check?.isDone ?? false,
+          checkerName: check?.checker?.name ?? null,
+        };
+      }),
+      projects: projects.map((p) => ({
+        id: p.id, name: p.name, description: p.description, status: p.status,
+      })),
+    };
+  }
 
   // Numérotation stable des points, dans l'ordre de l'ordre du jour (retour #32) :
   // permet de compter les points et de les citer par leur numéro.
@@ -333,8 +399,20 @@ export default async function MeetingPage({ params }: Props) {
             </div>
           )}
 
+          {/* OPEN + phase de synchro (avant le triage) */}
+          {inSyncPhase && syncData && (
+            <SyncPhase
+              meetingId={meeting.id}
+              spaceId={meeting.spaceId}
+              spaceName={meeting.space.name}
+              indicators={syncData.indicators}
+              checklist={syncData.checklist}
+              projects={syncData.projects}
+            />
+          )}
+
           {/* OPEN + active item */}
-          {meeting.status === "open" && activeItem && (
+          {meeting.status === "open" && !inSyncPhase && activeItem && (
             <>
               <div className="rounded-xl bg-gray-900 border border-indigo-900 p-6">
                 <div className="flex items-start justify-between gap-4">
@@ -428,7 +506,7 @@ export default async function MeetingPage({ params }: Props) {
           )}
 
           {/* OPEN + no active item */}
-          {meeting.status === "open" && !activeItem && (
+          {meeting.status === "open" && !inSyncPhase && !activeItem && (
             <div className="rounded-xl bg-gray-900 border border-gray-800 p-8 flex flex-col items-center justify-center gap-4">
               <p className="text-gray-400 text-sm">Tous les points ont été traités.</p>
               <form action={close}>
