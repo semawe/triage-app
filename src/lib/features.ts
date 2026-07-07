@@ -63,7 +63,7 @@ export const FEATURE_LABELS: Record<FeatureKey, { label: string; description: st
   sync_phase: {
     label: "Phase de synchro",
     description:
-      "Revue des indicateurs, checklists et projets du cercle avant le triage (trame de la réunion tactique). Activable aussi espace par espace.",
+      "Revue du cockpit du cercle (indicateurs, checklists, projets) avant le triage — trame de la réunion tactique. Activable aussi espace par espace.",
   },
 };
 

@@ -63,9 +63,9 @@ export default function SyncPhase({
     <div className="space-y-4">
       <div className="rounded-xl bg-gray-900 border border-teal-900 p-6">
         <div className="text-xs font-medium text-teal-400/70 mb-1">Phase de synchronisation</div>
-        <h2 className="text-2xl font-bold text-white leading-tight">Revue de {spaceName}</h2>
+        <h2 className="text-2xl font-bold text-white leading-tight">Cockpit de {spaceName}</h2>
         <p className="mt-1 text-sm text-gray-500">
-          Indicateurs, checklists et projets — passez en revue avant de démarrer le triage.
+          Indicateurs, checklists et projets — passez le cockpit en revue avant de démarrer le triage.
         </p>
       </div>
 

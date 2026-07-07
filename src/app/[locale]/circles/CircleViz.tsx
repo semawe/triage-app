@@ -12,6 +12,14 @@ export type VizSpace = {
   roleCount: number;
 };
 
+export type VizRole = {
+  id: string;
+  name: string;
+  holder: { id: string; name: string | null; image: string | null } | null;
+};
+
+const ROLE_COLOR = "#f59e0b"; // ambre — distingue les rôles des cercles/instances
+
 const PALETTE: Record<"circle" | "instance" | "project", string[]> = {
   circle:   ["#6366f1","#8b5cf6","#a855f7","#7c3aed","#4f46e5","#6d28d9"],
   instance: ["#0ea5e9","#14b8a6","#06b6d4","#0284c7","#0891b2","#0d9488"],
@@ -137,22 +145,73 @@ function SpaceNode({
   );
 }
 
+function RoleNode({
+  role, x, y, r, isMe, onEnter, onLeave, onClick,
+}: {
+  role: VizRole; x: number; y: number; r: number;
+  isMe: boolean; onEnter: () => void; onLeave: () => void; onClick: () => void;
+}) {
+  const showText = r >= 16;
+  const showAvatar = r >= 22 && !!role.holder;
+  const lines = showText ? splitLines(role.name, r > 34 ? 10 : 8) : [];
+  const lh = 9;
+  const totalH = lines.length * lh;
+  const avR = r > 34 ? 9 : 7;
+  const avCy = y + r - avR - 3;
+  const nameTopY = y - totalH / 2 - (showAvatar ? 5 : 0);
+
+  return (
+    <g onClick={onClick} onMouseEnter={onEnter} onMouseLeave={onLeave} style={{ cursor: "pointer" }}>
+      {/* Zone de survol confortable pour les petites pastilles */}
+      {r < 8 && <circle cx={x} cy={y} r={8} fill="transparent" />}
+      <circle cx={x} cy={y} r={r}
+        fill={isMe ? `${ROLE_COLOR}40` : `${ROLE_COLOR}14`}
+        stroke={ROLE_COLOR} strokeWidth={r < 8 ? 1 : 1.2} />
+      {lines.map((line, li) => (
+        <text key={li} x={x} y={nameTopY + li * lh}
+          textAnchor="middle" dominantBaseline="hanging"
+          fill={ROLE_COLOR} fontSize={r > 34 ? 8.5 : 7.5} fontWeight="600"
+          fontFamily="-apple-system,BlinkMacSystemFont,sans-serif" pointerEvents="none">
+          {line}
+        </text>
+      ))}
+      {showAvatar && (
+        <AvatarCircle cx={x} cy={avCy} r={avR} user={role.holder} isMe={isMe} color={ROLE_COLOR} />
+      )}
+    </g>
+  );
+}
+
 export default function CircleViz({
-  spaces, currentUserId, brandColor, orgName, parentId,
+  spaces, roles, currentUserId, brandColor, orgName, parentId, parentSpaceId, upHref,
 }: {
   spaces: VizSpace[];
+  roles: VizRole[];
   currentUserId: string;
   brandColor: string;
   orgName: string;
   parentId: string | null;
+  parentSpaceId: string | null;
+  upHref: string | null;
 }) {
   const [hovered, setHovered] = useState<VizSpace | null>(null);
+  const [hoveredRole, setHoveredRole] = useState<VizRole | null>(null);
   const router = useRouter();
 
   const circles = spaces.filter((s) => s.type === "circle");
   const instances = spaces.filter((s) => s.type === "instance");
-  const n = spaces.length;
-  const { ringR, itemR } = computeLayout(n);
+  const nS = spaces.length;
+  const nR = roles.length;
+  const { ringR, itemR } = computeLayout(nS);
+
+  // Les rôles occupent un anneau intérieur (ou l'anneau principal si le
+  // cercle n'a pas de sous-espaces). Leur taille s'adapte au nombre : avec
+  // beaucoup de rôles ils deviennent des pastilles, le nom passe en infobulle.
+  const roleRingR = nS === 0 ? (nR <= 6 ? 120 : 150) : Math.max(64, ringR - itemR - 36);
+  const roleR = Math.min(
+    nS === 0 ? 56 : 30,
+    Math.max(4, (2 * Math.PI * roleRingR) / (2.6 * Math.max(nR, 1)))
+  );
 
   const colorMap = new Map<string, string>();
   let ci = 0, ii = 0;
@@ -163,9 +222,16 @@ export default function CircleViz({
   }
 
   const positions = spaces.map((_, i) => {
-    if (n <= 1) return { x: 250, y: 250 };
-    const angle = -Math.PI / 2 + (2 * Math.PI * i) / n;
+    if (nS <= 1) return { x: 250, y: 250 };
+    const angle = -Math.PI / 2 + (2 * Math.PI * i) / nS;
     return { x: 250 + ringR * Math.cos(angle), y: 250 + ringR * Math.sin(angle) };
+  });
+
+  const rolePositions = roles.map((_, i) => {
+    if (nR <= 1 && nS === 0) return { x: 250, y: 250 };
+    // Décalage angulaire d'un demi-pas pour ne pas s'aligner sur les sous-espaces
+    const angle = -Math.PI / 2 + (2 * Math.PI * (i + 0.5)) / Math.max(nR, 1);
+    return { x: 250 + roleRingR * Math.cos(angle), y: 250 + roleRingR * Math.sin(angle) };
   });
 
   function handleClick(space: VizSpace) {
@@ -174,6 +240,15 @@ export default function CircleViz({
     } else {
       router.push(`/spaces/${space.id}`);
     }
+  }
+
+  function handleRoleClick() {
+    // Les rôles se gèrent dans l'onglet gouvernance du cercle qui les porte.
+    if (parentSpaceId) router.push(`/spaces/${parentSpaceId}`);
+  }
+
+  function goUp() {
+    if (upHref) router.push(upHref);
   }
 
   return (
@@ -212,16 +287,33 @@ export default function CircleViz({
             ))}
           </>
         )}
+        {roles.length > 0 && (
+          <>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-4 px-1">Rôles</p>
+            {roles.map((r) => (
+              <button key={r.id} onClick={handleRoleClick}
+                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm text-gray-400 hover:bg-gray-800 hover:text-gray-200 transition-colors text-left">
+                <span className="w-2 h-2 rounded-full shrink-0" style={{ background: ROLE_COLOR }} />
+                <span className="truncate flex-1">{r.name}</span>
+                {r.holder && <span className="text-xs text-gray-600 shrink-0 truncate max-w-16">{r.holder.name?.split(" ")[0]}</span>}
+              </button>
+            ))}
+          </>
+        )}
       </div>
 
       {/* SVG canvas */}
       <div className="flex-1 relative flex items-center justify-center p-4 min-w-0 min-h-0">
         <svg viewBox="0 0 500 500"
           style={{ width: "min(500px, 100%)", height: "min(500px, calc(100vh - 220px))" }}>
+          {/* Membrane du cercle courant : cliquer dessus remonte d'un niveau */}
           <circle cx={250} cy={250} r={238}
-            fill={`${brandColor}06`} stroke={`${brandColor}25`} strokeWidth={1.5} />
+            fill={`${brandColor}06`} stroke={`${brandColor}25`} strokeWidth={1.5}
+            onClick={goUp}
+            style={upHref ? { cursor: "zoom-out" } : undefined}
+          />
           <text x={250} y={484} textAnchor="middle" fill={`${brandColor}33`} fontSize={9}
-            fontFamily="-apple-system,BlinkMacSystemFont,sans-serif">{orgName}</text>
+            fontFamily="-apple-system,BlinkMacSystemFont,sans-serif" pointerEvents="none">{orgName}</text>
 
           {spaces.map((space, i) => (
             <SpaceNode key={space.id} space={space}
@@ -231,6 +323,16 @@ export default function CircleViz({
               onEnter={() => setHovered(space)}
               onLeave={() => setHovered(null)}
               onClick={() => handleClick(space)}
+            />
+          ))}
+
+          {roles.map((role, ri) => (
+            <RoleNode key={role.id} role={role}
+              x={rolePositions[ri].x} y={rolePositions[ri].y} r={roleR}
+              isMe={role.holder?.id === currentUserId}
+              onEnter={() => setHoveredRole(role)}
+              onLeave={() => setHoveredRole(null)}
+              onClick={handleRoleClick}
             />
           ))}
         </svg>
@@ -247,11 +349,22 @@ export default function CircleViz({
             </p>
           </div>
         )}
+        {!hovered && hoveredRole && (
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-center pointer-events-none whitespace-nowrap">
+            <p className="text-sm font-semibold text-white">{hoveredRole.name}</p>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Rôle{hoveredRole.holder ? ` · ${hoveredRole.holder.name}` : " · Non attribué"}
+              {" → cliquer pour la gouvernance"}
+            </p>
+          </div>
+        )}
 
         {/* Mini legend */}
         <div className="absolute top-3 right-3 text-[10px] text-gray-700 space-y-0.5 text-right">
           <p>- - anneau = sous-espaces</p>
+          {roles.length > 0 && <p><span style={{ color: `${ROLE_COLOR}88` }}>●</span> = rôle du cercle</p>}
           <p>clic = explorer ou ouvrir</p>
+          {upHref && <p>clic sur la membrane = remonter</p>}
         </div>
       </div>
     </div>

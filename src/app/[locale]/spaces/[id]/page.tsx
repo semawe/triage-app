@@ -99,7 +99,7 @@ export default async function SpaceDetailPage({ params, searchParams }: Props) {
     { key: "gouvernance", label: "Gouvernance" },
     { key: "reunions", label: `Réunions (${space.meetings.length})` },
     { key: "membres", label: `Membres (${space.members.length})` },
-    { key: "synchro", label: "Synchro" },
+    { key: "synchro", label: "Cockpit" },
   ];
 
   return (
@@ -118,6 +118,15 @@ export default async function SpaceDetailPage({ params, searchParams }: Props) {
           <span className="text-xs text-orange-400 border border-orange-900 rounded-full px-2.5 py-0.5">
             Confidentiel
           </span>
+        )}
+        {hasFeature(org, "circle_view") && (
+          <Link
+            href={`/circles${space.parentId ? `?parent=${space.parentId}` : ""}`}
+            className="ml-auto text-xs text-gray-500 hover:text-gray-300 transition-colors"
+            title="Voir ce cercle dans la carte des cercles"
+          >
+            ⬡ Carte des cercles
+          </Link>
         )}
       </div>
 

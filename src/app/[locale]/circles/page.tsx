@@ -39,6 +39,28 @@ export default async function CirclesPage({ searchParams }: Props) {
       })
     : null;
 
+  // Rôles du cercle courant : dessinés dans la carte aux côtés des sous-espaces
+  // (un cercle contient ses sous-cercles ET ses rôles).
+  const roles = parentSpace
+    ? await prisma.role.findMany({
+        where: { spaceId: parentSpace.id },
+        include: {
+          assignments: {
+            where: { endDate: null },
+            include: { user: { select: { id: true, name: true, image: true } } },
+            take: 1,
+          },
+        },
+        orderBy: { name: "asc" },
+      })
+    : [];
+
+  const vizRoles = roles.map((r) => ({
+    id: r.id,
+    name: r.name,
+    holder: r.assignments[0]?.user ?? null,
+  }));
+
   const vizSpaces = spaces.map((s) => ({
     id: s.id,
     name: s.name,
@@ -87,11 +109,11 @@ export default async function CirclesPage({ searchParams }: Props) {
           </p>
         </div>
 
-        {vizSpaces.length === 0 ? (
+        {vizSpaces.length === 0 && vizRoles.length === 0 ? (
           <div className="flex-1 rounded-xl border border-gray-800 bg-gray-900 flex items-center justify-center">
             <p className="text-sm text-gray-600">
               {parentSpace
-                ? `Aucun sous-espace dans ${parentSpace.name}.`
+                ? `Aucun sous-espace ni rôle dans ${parentSpace.name}.`
                 : "Aucun espace. Créez-en depuis la page Espaces."}
             </p>
           </div>
@@ -99,10 +121,19 @@ export default async function CirclesPage({ searchParams }: Props) {
           <div className="flex-1 min-h-0 rounded-xl border border-gray-800 bg-gray-900 overflow-hidden">
             <CircleViz
               spaces={vizSpaces}
+              roles={vizRoles}
               currentUserId={session.user.id}
               brandColor={org.primaryColor ?? "#6366f1"}
               orgName={parentSpace?.name ?? org.name}
               parentId={parentId ?? null}
+              parentSpaceId={parentSpace?.id ?? null}
+              upHref={
+                parentId
+                  ? parentSpace?.parent
+                    ? `/circles?parent=${parentSpace.parent.id}`
+                    : "/circles"
+                  : null
+              }
             />
           </div>
         )}
