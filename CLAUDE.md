@@ -50,9 +50,25 @@ Meeting               (id, space_id, title?, link?, date, durationMinutes?, open
 AgendaItem            (id, meeting_id, author_id, title, order, status: pending|active|done)
 Output                (id, item_id, type: note|action|decision|project|governance, content,
                        assignee_id, due_date, isDone)
+Indicator             (id, space_id, name, unit?, frequency?, order)  — cockpit du cercle
+IndicatorValue        (id, indicator_id, meeting_id, author_id, value, note?, recordedAt)
+                      — un relevé par (indicateur, réunion), upsert ; historisé
+ChecklistItem         (id, space_id, title, order)  — checklist récurrente du cercle
+ChecklistCheck        (id, item_id, meeting_id, isDone, checkedBy?, checkedAt?)
+                      — coche par réunion ; pas de ligne = non coché (vierge à chaque réunion)
+Project               (id, space_id, name, description?, status: active|on_hold|done)
+ProjectTask           (id, project_id, title, status: todo|doing|done, assignee_id?,
+                       due_date?, order)  — Kanban des tâches d'un projet (/projects/[id])
 PendingInvite         (id, org_id, role, token, expiresAt)
 JoinRequest           (id, user_id, org_id, status: pending|approved|rejected)
 ```
+
+Vocabulaire (retour Aliocha 07/07) : « **cockpit** » = les éléments du cercle
+(indicateurs, checklists, projets — onglet Cockpit d'un cercle) ; « **phase de
+synchro** » = le moment de la réunion tactique où on relève le cockpit, avant
+le triage. `Meeting.syncCompletedAt` gate le triage quand le module `sync_phase`
+est actif (flag org + override par espace via `Space.features`, résolution
+espace > org > défaut dans `hasFeature(org, key, space?)`).
 
 Index FK explicites (migration `add_fk_indexes`) sur les chemins chauds :
 `OrganisationMember.userId`, `Space.organisationId`, `Meeting.spaceId`,
@@ -67,15 +83,20 @@ src/
   lib/session.ts        # requireAuth() / requireOrg() / requireMeetingAccess() /
                         # requireSuperAdmin() / isSuperAdmin() — gardes d'autorisation
   lib/stripe.ts         # Client Stripe lazy + isOrgAccessible() (trial/active)
-  lib/features.ts       # Feature flags par org (FeatureKey, hasFeature)
+  lib/features.ts       # Feature flags par org + override par espace (hasFeature(org, key, space?))
+  lib/authz.ts          # canManageSpace() — admin org OU lead d'espace (gouvernance + cockpit)
   lib/email.ts          # Envoi SMTP (nodemailer)
   lib/sse.ts            # Broker SSE in-process (subscribe/unsubscribe/broadcast)
   actions/org.ts        # createOrg, switchOrg, updateOrgBranding/Domain/Feature
-  actions/meeting.ts    # CRUD réunion + facilitation — toutes gardées par requireMeetingAccess()
+  actions/meeting.ts    # CRUD réunion + facilitation + completeSyncPhase — gardés par requireMeetingAccess()
   actions/output.ts     # addOutput, toggleOutputDone — gardés par requireMeetingAccess()
-  actions/space.ts      # createSpace, deleteSpace, updateSpacePrivacy
+  actions/space.ts      # createSpace, deleteSpace, updateSpacePrivacy, updateSpaceFeature
   actions/member.ts     # membres org + invitations (token/email) + membres d'espace
   actions/governance.ts # rôles, attributions, purpose/domains/accountabilities (canManageSpace)
+  actions/indicator.ts  # CRUD indicateurs (canManageSpace) + logIndicatorValue (participants)
+  actions/checklist.ts  # CRUD checklist (canManageSpace) + toggleChecklistCheck (participants)
+  actions/project.ts    # CRUD projets (canManageSpace) — Kanban /projects
+  actions/projectTask.ts # CRUD tâches de projet (canManageSpace) — Kanban /projects/[id]
   actions/join.ts       # requestJoin / approve / reject (auto-join par domaine)
   actions/billing.ts    # Stripe checkout, portail client, sièges
   actions/admin.ts      # super-admin plateforme (gardé par requireSuperAdmin)
@@ -110,7 +131,9 @@ prisma/schema.prisma    # Schéma complet (voir section ci-dessus)
 - **Phase 2** ✅ : Améliorations facilitation — chrono, jump-to-item, avatars, pistes Holacracy, programmation avancée ; UI mobile + PWA ; Stripe Billing (abonnement par siège) ; super-admin plateforme
 - **Phase 3** ✅ : Espaces/Rôles — cercles/projets/instances, hiérarchie, rôles + attributions, membres d'espace, confidentialité ; invitations (token/email), auto-join par domaine, demandes d'adhésion ; compte-rendu email
 - **Phase 4** 🔶 : Temps réel (SSE) ✅ ; Export Notion + Google Drive — à faire
-- **Reste à faire** (constats d'audit du 25/06, tâches Notion projet) : tests + CI, auth de la route SSE, `.env.example`, factorisation des gardes, uniformisation des erreurs. Phase synchro (indicateurs, check-in tactique) : post-V1.
+- **Phase synchro** ✅ (07/07) : module `sync_phase` opt-in — revue du cockpit (indicateurs historisés, checklists recochées par réunion, projets) avant le triage ; actions `indicator.ts`/`checklist.ts`/`project.ts`, garde partagée `src/lib/authz.ts` (canManageSpace)
+- **Projets** ✅ (07-10/07) : entité Project + Kanban `/projects` (3 colonnes par statut, filtre par espace, création directe) ; ProjectTask + Kanban des tâches `/projects/[id]` ; migration des anciens outputs « project » en cartes
+- **Reste à faire** (constats d'audit du 25/06, tâches Notion projet) : tests + CI, auth de la route SSE, `.env.example`, uniformisation des erreurs.
 
 ## Base de données — dev
 
