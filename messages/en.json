@@ -15,9 +15,43 @@
   "nav": {
     "home": "Home",
     "meetings": "Meetings",
+    "circles": "Circles",
     "spaces": "Spaces",
     "members": "Members",
-    "roles": "Roles"
+    "roles": "Roles",
+    "actions": "Actions",
+    "projects": "Projects",
+    "settings": "Settings",
+    "admin": "Admin",
+    "more": "More",
+    "search": "Search",
+    "signOut": "Sign out"
+  },
+  "search": {
+    "placeholder": "Circles, roles, members, meetings…",
+    "empty": "No results",
+    "hint": "↑↓ navigate · Enter open · Esc close",
+    "groups": {
+      "circles": "Circles",
+      "roles": "Roles",
+      "members": "Members",
+      "meetings": "Meetings"
+    }
+  },
+  "me": {
+    "greeting": "Hello {name}",
+    "myRoles": "My roles",
+    "myCircles": "My circles",
+    "myActions": "My actions",
+    "upcomingMeetings": "Meetings",
+    "noRoles": "No role assigned yet.",
+    "noCircles": "You are not a member of any circle yet.",
+    "noActions": "No pending action. 🎉",
+    "noMeetings": "No upcoming meeting.",
+    "allActions": "All my actions →",
+    "allMeetings": "All meetings →",
+    "vacant": "Vacant",
+    "live": "Live"
   },
   "space": {
     "type": {

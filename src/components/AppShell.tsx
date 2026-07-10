@@ -2,6 +2,7 @@ import { isSuperAdmin, requireOrg } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { getOrgFeatures } from "@/lib/features";
 import NavBar from "./NavBar";
+import CommandPalette from "./CommandPalette";
 
 export default async function AppShell({ children }: { children: React.ReactNode }) {
   const { session, org, membership, allOrgs } = await requireOrg();
@@ -39,6 +40,7 @@ export default async function AppShell({ children }: { children: React.ReactNode
         features={features}
         isOrgAdmin={membership.role === "admin"}
       />
+      <CommandPalette />
       <main className="flex-1 px-4 py-8 pb-24 md:pb-8">
         <div className="mx-auto max-w-6xl">{children}</div>
       </main>

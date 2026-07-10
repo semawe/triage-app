@@ -19,7 +19,7 @@ import SyncSettingsTab from "./SyncSettingsTab";
 
 type Props = {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; circle?: string; role?: string }>;
 };
 
 const TYPE_LABELS: Record<string, string> = {
@@ -31,7 +31,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 export default async function CircleDetailPage({ params, searchParams }: Props) {
   const { id } = await params;
-  const { tab = "apercu" } = await searchParams;
+  const { tab = "apercu", circle: selCircle, role: selRole } = await searchParams;
   const { session, org, membership } = await requireOrg();
 
   const space = await prisma.space.findFirst({
@@ -218,6 +218,11 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
               title={space.name}
               governanceHref={`/circles/${id}?tab=gouvernance`}
               upHref={space.parentId ? `/circles/${space.parentId}` : "/circles"}
+              initialSelection={
+                selRole ? { kind: "role", id: selRole }
+                : selCircle ? { kind: "space", id: selCircle }
+                : null
+              }
             />
           </div>
 
