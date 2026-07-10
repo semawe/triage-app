@@ -40,10 +40,11 @@ User                  (id, email, name, image)
 OrganisationMember    (org_id, user_id, role: admin|member)
 SuperAdmin            (user_id)  — admin plateforme, voir /admin
 Space                 (id, org_id, parentId?, name, type: circle|project|instance,
-                       purpose?, domains[], accountabilities[], isPrivate)
+                       purpose?, strategy?, domains[], accountabilities[], isPrivate)
 SpaceMember           (space_id, user_id, role: lead|member)
 Role                  (id, space_id, name, purpose?, domains[], accountabilities[])
 RoleAssignment        (id, role_id, user_id, startDate, endDate?)
+Policy                (id, space_id, title, body)  — règle de gouvernance rattachée à un cercle
 Meeting               (id, space_id, title?, link?, date, durationMinutes?, openedAt?,
                        isPrivate?, status: draft|open|closed)
 AgendaItem            (id, meeting_id, author_id, title, order, status: pending|active|done)
@@ -133,6 +134,7 @@ Migration : `npx prisma migrate dev --name <nom>`
 - **Auto-déploiement par webhook** : tout push sur `main` déclenche `webhook-server.js` → `deploy/deploy-triage-app.sh` (git pull → `npm ci --ignore-scripts` → `prisma migrate deploy` → build atomique `.next-build`→`.next` → `pm2 reload`). **Pas besoin de SSH pour déployer**, mais c'est `migrate deploy` (pas `dev`) qui tourne en prod.
 - **RAM limitée** : `next build` (Turbopack) sature la mémoire. Deux garde-fous en place : (1) swap de 6 Go (`/swapfile` + `/swapfile_deploy`, dans `/etc/fstab`) — la compilation déborde dessus ; (2) `SKIP_BUILD_CHECKS=1` dans le script de déploiement saute le type-check intégré (OOM), couvert en amont par `tsc --noEmit`. Ne pas retirer ces garde-fous sans alternative.
 - **Vérif post-deploy** : `https://triapp.fr/fr` → 200, et `pm2 list` (uptime de `triage-app` récent = reload effectif).
+- **Script Node ponctuel en prod** (migration de données, vérif ad hoc) : `debian` a un sudo passwordless vers l'utilisateur `triageapp` (`sudo -u triageapp <cmd>`, pas besoin du mot de passe sudo générique). Déposer le script dans `/tmp` (pas besoin d'écrire dans `/home/debian/triage-app`, appartient à `triageapp`), puis : `sudo -u triageapp bash -c 'cd /home/debian/triage-app && set -a && source .env.local && set +a && node /tmp/mon-script.js'`. Dans le script, importer le client Prisma et `@prisma/adapter-pg` par chemin absolu vers `/home/debian/triage-app/...` (le script n'a pas son propre `node_modules`). Toujours nettoyer `/tmp` après usage.
 
 ## Autonomie
 
