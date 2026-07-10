@@ -31,6 +31,7 @@ model User {
   meetingGuests    MeetingGuest[]
   indicatorValues  IndicatorValue[]
   checklistChecks  ChecklistCheck[]
+  assignedProjectTasks ProjectTask[] @relation("ProjectTaskAssignee")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -458,7 +459,33 @@ model Project {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
-  space Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  space Space         @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  tasks ProjectTask[]
 
   @@index([spaceId])
+}
+
+// Kanban des tâches à l'intérieur d'un projet (2e niveau, distinct du Kanban
+// des projets lui-même — retour d'Aliocha du 2026-07-10).
+enum ProjectTaskStatus {
+  todo
+  doing
+  done
+}
+
+model ProjectTask {
+  id         String            @id @default(cuid())
+  projectId  String
+  title      String
+  status     ProjectTaskStatus @default(todo)
+  assigneeId String?
+  dueDate    DateTime?
+  order      Int               @default(0)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  project  Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignee User?   @relation("ProjectTaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+
+  @@index([projectId])
 }

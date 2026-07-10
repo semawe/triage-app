@@ -191,9 +191,12 @@ function ProjectCard({
 }) {
   return (
     <div className="rounded-lg bg-gray-800/60 border border-gray-800 px-3 py-2.5 space-y-1.5">
-      <p className={`text-sm font-medium leading-snug ${p.status === "done" ? "text-gray-500 line-through" : "text-white"}`}>
+      <Link
+        href={`/projects/${p.id}`}
+        className={`block text-sm font-medium leading-snug hover:underline ${p.status === "done" ? "text-gray-500 line-through" : "text-white"}`}
+      >
         {p.name}
-      </p>
+      </Link>
       {p.description && (
         <p className="text-xs text-gray-500 leading-snug">{p.description}</p>
       )}
