@@ -90,7 +90,8 @@ src/
   actions/org.ts        # createOrg, switchOrg, updateOrgBranding/Domain/Feature
   actions/meeting.ts    # CRUD réunion + facilitation + completeSyncPhase — gardés par requireMeetingAccess()
   actions/output.ts     # addOutput, toggleOutputDone — gardés par requireMeetingAccess()
-  actions/space.ts      # createSpace, deleteSpace, updateSpacePrivacy, updateSpaceFeature
+  actions/space.ts      # createSpace (admin ou lead du parent), deleteSpace (admin,
+                        # bloqué si enfants/rôles/réunions), updateSpacePrivacy, updateSpaceFeature
   actions/member.ts     # membres org + invitations (token/email) + membres d'espace
   actions/governance.ts # rôles, attributions, purpose/domains/accountabilities (canManageSpace)
   actions/indicator.ts  # CRUD indicateurs (canManageSpace) + logIndicatorValue (participants)
@@ -101,16 +102,20 @@ src/
   actions/billing.ts    # Stripe checkout, portail client, sièges
   actions/admin.ts      # super-admin plateforme (gardé par requireSuperAdmin)
   actions/email.ts      # sendMeetingRecap (compte-rendu aux membres)
+  actions/search.ts     # searchOrg — recherche transverse (cercles, rôles, membres,
+                        # réunions avec filtre de confidentialité) pour la palette Cmd+K
   i18n/*                # routing, navigation, request (next-intl, fr/en)
   proxy.ts              # next-intl middleware (remplace middleware.ts, convention Next.js 16)
   app/api/
     auth/[...nextauth]  # handlers NextAuth
     stripe/webhook      # webhook Stripe (signature vérifiée)
     events/[meetingId]  # flux SSE
-  app/[locale]/         # layout, login, setup, meetings (+[id], projector), spaces (+[id]),
-                        # circles, members, projects, actions, settings, billing-wall,
+  app/[locale]/         # layout, login, setup, me (accueil personnel), meetings (+[id],
+                        # projector), circles (+[id] — page canonique d'un cercle),
+                        # members, projects (+[id]), actions, settings, billing-wall,
                         # join-request, invite/[token], admin (+org/[orgId]), mentions-legales
-  components/           # AppShell, NavBar
+                        # NB : spaces et spaces/[id] = simples redirections vers circles
+  components/           # AppShell, NavBar, CommandPalette (Cmd+K)
 messages/fr.json, en.json
 prisma/schema.prisma    # Schéma complet (voir section ci-dessus)
 ```
@@ -133,6 +138,7 @@ prisma/schema.prisma    # Schéma complet (voir section ci-dessus)
 - **Phase 4** 🔶 : Temps réel (SSE) ✅ ; Export Notion + Google Drive — à faire
 - **Phase synchro** ✅ (07/07) : module `sync_phase` opt-in — revue du cockpit (indicateurs historisés, checklists recochées par réunion, projets) avant le triage ; actions `indicator.ts`/`checklist.ts`/`project.ts`, garde partagée `src/lib/authz.ts` (canManageSpace)
 - **Projets** ✅ (07-10/07) : entité Project + Kanban `/projects` (3 colonnes par statut, filtre par espace, création directe) ; ProjectTask + Kanban des tâches `/projects/[id]` ; migration des anciens outputs « project » en cartes
+- **Refonte navigation** ✅ (07-10/07, PR #7) : fusion Espaces→Cercles — `/circles/[id]` page canonique d'un cercle (fil d'Ariane complet, onglets Aperçu/Gouvernance/Réunions/Membres/Cockpit), carte SVG = navigation principale (1ᵉʳ clic = panneau de détail, 2ᵉ clic = entrer, clic membrane = remonter), sélection adressable (`?circle=`/`?role=` — un rôle a une URL partageable), palette Cmd+K (`CommandPalette` + `actions/search.ts`), accueil personnel `/me` (rôles, cercles, actions, réunions — page d'atterrissage), bottom nav mobile avec feuille « Plus », nav i18n fr/en ; flag `circle_view` supprimé (la carte est devenue le socle)
 - **Reste à faire** (constats d'audit du 25/06, tâches Notion projet) : tests + CI, auth de la route SSE, `.env.example`, uniformisation des erreurs.
 
 ## Base de données — dev
