@@ -2,7 +2,9 @@
 
 App web de facilitation du triage Holacracy (et réunions collaboratives en général).
 Open source, licence AGPL-3.0. Repo GitHub public : `semawe/triage-app`.
-Projet porté par **Heterostasia** (société en voie de création).
+Projet porté par **Heterostasia** (SAS, RCS Grenoble 108 072 919, immatriculée le
+31/07/2026 — éditrice déclarée du service dans les mentions légales depuis cette date,
+en remplacement de La Fabrique des Alpes).
 Domaine de déploiement : **triapp.fr** (réservé sur OVH, compte La Fabrique des Alpes).
 
 ## Contexte produit

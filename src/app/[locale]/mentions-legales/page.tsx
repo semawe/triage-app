@@ -17,13 +17,14 @@ export default function MentionsLegalesPage() {
             Éditeur du site
           </h2>
           <div className="text-sm text-gray-300 space-y-1">
-            <p className="font-medium text-white">La Fabrique des Alpes</p>
+            <p className="font-medium text-white">Heterostasia</p>
             <p>
-              Société par actions simplifiée à associé unique (SASU) au capital
-              de 50&nbsp;000&nbsp;€
+              Société par actions simplifiée (SAS) au capital de
+              38&nbsp;000&nbsp;€
             </p>
-            <p>Siège social : 8 allée de la Colline, 38100 Grenoble</p>
-            <p>SIRET : 510 866 254 00079 — RCS Grenoble</p>
+            <p>Siège social : 1 rue des Pins, 38100 Grenoble</p>
+            <p>SIREN : 108 072 919 — RCS Grenoble</p>
+            <p>TVA intracommunautaire : FR 52 108 072 919</p>
             <p>
               Contact :{" "}
               <a
@@ -40,7 +41,10 @@ export default function MentionsLegalesPage() {
           <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
             Directeur de la publication
           </h2>
-          <p className="text-sm text-gray-300">Aliocha Iordanoff</p>
+          <p className="text-sm text-gray-300">
+            Aliocha Iordanoff, représentant de La Fabrique des Alpes,
+            présidente de Heterostasia
+          </p>
         </section>
 
         <section className="mb-8">
