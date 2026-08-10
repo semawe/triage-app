@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache";
 import { getLocale } from "next-intl/server";
 import { broadcast } from "@/lib/sse";
 import { hasFeature } from "@/lib/features";
+import type { Prisma } from "@/generated/prisma";
 
 function parseDatetimeLocal(value: string): Date {
   const [datePart, timePart = "00:00"] = value.split("T");
@@ -25,10 +26,16 @@ export async function createMeeting(formData: FormData) {
   const title = (formData.get("title") as string)?.trim() || null;
   if (!spaceId || !dateStr) return;
 
-  // L'appelant doit être membre de l'organisation de l'espace cible.
+  // L'appelant doit être membre de l'organisation de l'espace cible, et voir
+  // cet espace : on ne crée pas une réunion dans un cercle privé dont on
+  // n'est pas membre.
   const space = await prisma.space.findUnique({
     where: { id: spaceId },
-    select: { organisationId: true },
+    select: {
+      organisationId: true,
+      isPrivate: true,
+      organisation: { select: { features: true } },
+    },
   });
   if (!space) return;
   const membership = await prisma.organisationMember.findUnique({
@@ -40,6 +47,18 @@ export async function createMeeting(formData: FormData) {
     },
   });
   if (!membership) return;
+
+  if (
+    space.isPrivate &&
+    hasFeature(space.organisation, "confidentiality") &&
+    membership.role !== "admin"
+  ) {
+    const spaceMember = await prisma.spaceMember.findUnique({
+      where: { spaceId_userId: { spaceId, userId: session.user.id } },
+      select: { userId: true },
+    });
+    if (!spaceMember) return;
+  }
 
   const durationMinutes = durationStr ? parseInt(durationStr, 10) : null;
 
@@ -99,6 +118,13 @@ export async function addAgendaItem(meetingId: string, formData: FormData) {
   const participant = await resolveParticipant(meetingId);
   if (!participant) return;
 
+  // Le formulaire est masqué après la clôture, mais l'action reste appelable.
+  const meeting = await prisma.meeting.findUnique({
+    where: { id: meetingId },
+    select: { status: true },
+  });
+  if (!meeting || meeting.status === "closed") return;
+
   const title = (formData.get("title") as string)?.trim();
   if (!title) return;
 
@@ -120,13 +146,34 @@ export async function addAgendaItem(meetingId: string, formData: FormData) {
   broadcast(meetingId);
 }
 
-async function activateFirstAgendaItem(meetingId: string) {
-  const firstItem = await prisma.agendaItem.findFirst({
+type Tx = Prisma.TransactionClient;
+
+/**
+ * Sérialise les transitions d'agenda d'une réunion.
+ *
+ * Les enchaînements « lire l'état → écrire l'état suivant » n'étaient pas
+ * transactionnels : deux facilitateurs cliquant en même temps pouvaient activer
+ * deux points à la fois. Le verrou pessimiste sur la ligne réunion met les
+ * transitions concurrentes à la queue leu leu (l'index partiel unique
+ * `agenda_one_active_per_meeting` sert de dernier filet côté base).
+ */
+async function withMeetingLock<T>(
+  meetingId: string,
+  fn: (tx: Tx) => Promise<T>
+): Promise<T> {
+  return prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM "Meeting" WHERE id = ${meetingId} FOR UPDATE`;
+    return fn(tx);
+  });
+}
+
+async function activateFirstAgendaItem(tx: Tx, meetingId: string) {
+  const firstItem = await tx.agendaItem.findFirst({
     where: { meetingId, status: "pending" },
     orderBy: { order: "asc" },
   });
   if (firstItem) {
-    await prisma.agendaItem.update({
+    await tx.agendaItem.update({
       where: { id: firstItem.id },
       data: { status: "active" },
     });
@@ -151,7 +198,10 @@ export async function openMeeting(meetingId: string) {
   // restent pending jusqu'à completeSyncPhase. Sinon, comportement historique.
   const syncPhase = hasFeature(ctx.meeting.space.organisation, "sync_phase", ctx.meeting.space);
   if (!syncPhase) {
-    await activateFirstAgendaItem(meetingId);
+    await withMeetingLock(meetingId, async (tx) => {
+      const already = await tx.agendaItem.count({ where: { meetingId, status: "active" } });
+      if (already === 0) await activateFirstAgendaItem(tx, meetingId);
+    });
   }
 
   revalidatePath("/", "layout");
@@ -167,11 +217,21 @@ export async function completeSyncPhase(meetingId: string) {
   if (!ctx) return;
   if (ctx.meeting.status !== "open" || ctx.meeting.syncCompletedAt) return;
 
-  await prisma.meeting.update({
-    where: { id: meetingId },
-    data: { syncCompletedAt: new Date() },
+  await withMeetingLock(meetingId, async (tx) => {
+    // Relecture sous verrou : deux clics simultanés lisaient tous deux
+    // `syncCompletedAt = null` et activaient chacun un point.
+    const fresh = await tx.meeting.findUnique({
+      where: { id: meetingId },
+      select: { status: true, syncCompletedAt: true },
+    });
+    if (!fresh || fresh.status !== "open" || fresh.syncCompletedAt) return;
+
+    await tx.meeting.update({
+      where: { id: meetingId },
+      data: { syncCompletedAt: new Date() },
+    });
+    await activateFirstAgendaItem(tx, meetingId);
   });
-  await activateFirstAgendaItem(meetingId);
 
   revalidatePath("/", "layout");
   broadcast(meetingId);
@@ -182,13 +242,15 @@ export async function jumpToItem(meetingId: string, targetItemId: string) {
 
   // targetItemId doit appartenir à cette réunion (sinon on activerait
   // un point d'une autre réunion via un id arbitraire).
-  await prisma.agendaItem.updateMany({
-    where: { meetingId, status: "active" },
-    data: { status: "pending" },
-  });
-  await prisma.agendaItem.updateMany({
-    where: { id: targetItemId, meetingId },
-    data: { status: "active" },
+  await withMeetingLock(meetingId, async (tx) => {
+    await tx.agendaItem.updateMany({
+      where: { meetingId, status: "active" },
+      data: { status: "pending" },
+    });
+    await tx.agendaItem.updateMany({
+      where: { id: targetItemId, meetingId },
+      data: { status: "active" },
+    });
   });
 
   revalidatePath("/", "layout");
@@ -198,27 +260,32 @@ export async function jumpToItem(meetingId: string, targetItemId: string) {
 export async function nextItem(meetingId: string, currentItemId: string) {
   if (!(await requireMeetingAccess(meetingId))) return;
 
-  await prisma.agendaItem.updateMany({
-    where: { id: currentItemId, meetingId },
-    data: { status: "done" },
-  });
-
-  const next = await prisma.agendaItem.findFirst({
-    where: { meetingId, status: "pending" },
-    orderBy: { order: "asc" },
-  });
-
-  if (next) {
-    await prisma.agendaItem.update({
-      where: { id: next.id },
-      data: { status: "active" },
+  await withMeetingLock(meetingId, async (tx) => {
+    // Conditionné sur `active` : un second clic concurrent ne fait rien plutôt
+    // que d'avancer une deuxième fois l'ordre du jour.
+    const closed = await tx.agendaItem.updateMany({
+      where: { id: currentItemId, meetingId, status: "active" },
+      data: { status: "done" },
     });
-  } else {
-    await prisma.meeting.update({
-      where: { id: meetingId },
-      data: { status: "closed" },
+    if (closed.count === 0) return;
+
+    const next = await tx.agendaItem.findFirst({
+      where: { meetingId, status: "pending" },
+      orderBy: { order: "asc" },
     });
-  }
+
+    if (next) {
+      await tx.agendaItem.update({
+        where: { id: next.id },
+        data: { status: "active" },
+      });
+    } else {
+      await tx.meeting.update({
+        where: { id: meetingId },
+        data: { status: "closed" },
+      });
+    }
+  });
 
   revalidatePath("/", "layout");
   broadcast(meetingId);

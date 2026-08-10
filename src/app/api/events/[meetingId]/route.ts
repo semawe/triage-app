@@ -1,5 +1,6 @@
 import { type NextRequest } from "next/server";
 import { subscribe, unsubscribe } from "@/lib/sse";
+import { resolveParticipant } from "@/lib/guest";
 
 export const dynamic = "force-dynamic";
 
@@ -8,6 +9,15 @@ export async function GET(
   { params }: { params: Promise<{ meetingId: string }> }
 ) {
   const { meetingId } = await params;
+
+  // La route était ouverte à l'anonyme et sur n'importe quel id : chaque
+  // connexion créait une entrée permanente dans le broker et un timer de ping.
+  // `resolveParticipant` couvre les deux identités légitimes (membre de l'org,
+  // invité porteur de jeton) et vérifie au passage l'existence de la réunion.
+  const participant = await resolveParticipant(meetingId);
+  if (!participant) {
+    return new Response("Unauthorized", { status: 401 });
+  }
 
   let ctrl: ReadableStreamDefaultController<Uint8Array>;
   let pingInterval: ReturnType<typeof setInterval>;

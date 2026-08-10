@@ -1,4 +1,5 @@
 import { requireOrg } from "@/lib/session";
+import { viewerFrom, visibleSpaceWhere } from "@/lib/visibility";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import AppShell from "@/components/AppShell";
@@ -18,22 +19,25 @@ export default async function ProjectsPage({
 }: {
   searchParams: Promise<{ space?: string }>;
 }) {
-  const { org, session, membership } = await requireOrg();
+  const ctx = await requireOrg();
+  const { org, session, membership } = ctx;
 
   if (!hasFeature(org, "projects")) notFound();
 
   const { space: spaceFilter } = await searchParams;
   const isAdmin = membership.role === "admin";
+  // Les projets d'un cercle privé étaient listés pour toute l'organisation.
+  const viewer = viewerFrom(ctx);
 
   const [spaces, projects, leadMemberships] = await Promise.all([
     prisma.space.findMany({
-      where: { organisationId: org.id },
+      where: visibleSpaceWhere(viewer),
       orderBy: { name: "asc" },
       select: { id: true, name: true },
     }),
     prisma.project.findMany({
       where: {
-        space: { organisationId: org.id },
+        space: visibleSpaceWhere(viewer),
         ...(spaceFilter ? { spaceId: spaceFilter } : {}),
       },
       include: { space: { select: { id: true, name: true } } },

@@ -14,6 +14,7 @@ import {
 } from "@/actions/governance";
 import { Link } from "@/i18n/navigation";
 import { hasFeature } from "@/lib/features";
+import { isMeetingPrivate, viewerFrom, visibleSpaceWhere } from "@/lib/visibility";
 import CircleViz from "../CircleViz";
 import SyncSettingsTab from "./SyncSettingsTab";
 
@@ -32,10 +33,15 @@ const STATUS_LABELS: Record<string, string> = {
 export default async function CircleDetailPage({ params, searchParams }: Props) {
   const { id } = await params;
   const { tab = "apercu", circle: selCircle, role: selRole } = await searchParams;
-  const { session, org, membership } = await requireOrg();
+  const ctx = await requireOrg();
+  const { session, org, membership } = ctx;
+  const viewer = viewerFrom(ctx);
 
+  // Confidentialité : le cloisonnement ne portait que sur l'onglet Réunions,
+  // alors que gouvernance, membres, cockpit et projets étaient déjà chargés
+  // et rendus. Le filtre est désormais dans le `where` : rien n'est lu.
   const space = await prisma.space.findFirst({
-    where: { id, organisationId: org.id },
+    where: { id, ...visibleSpaceWhere(viewer) },
     include: {
       members: {
         include: { user: { select: { id: true, name: true, email: true, image: true } } },
@@ -49,6 +55,7 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
       checklistItems: { orderBy: { order: "asc" } },
       projects: { orderBy: [{ status: "asc" }, { createdAt: "asc" }] },
       children: {
+        where: visibleSpaceWhere(viewer),
         include: {
           members: {
             where: { role: "lead" },
@@ -71,7 +78,26 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
     },
   });
 
-  if (!space) notFound();
+  if (!space) {
+    // Distinguer « n'existe pas » de « confidentiel » : même écran que la page
+    // réunion, plutôt qu'un 404 qui laisse croire à un lien mort.
+    const exists = await prisma.space.findFirst({
+      where: { id, organisationId: org.id },
+      select: { name: true },
+    });
+    if (!exists) notFound();
+    return (
+      <AppShell>
+        <div className="mt-24 text-center space-y-3">
+          <p className="text-3xl">🔒</p>
+          <p className="text-white font-semibold">Cercle confidentiel</p>
+          <p className="text-sm text-gray-500">
+            Réservé aux membres de {exists.name}.
+          </p>
+        </div>
+      </AppShell>
+    );
+  }
 
   // Fil d'Ariane : chaîne complète des ancêtres, calculée sur l'ensemble
   // des espaces de l'org (peu nombreux) plutôt qu'en N requêtes récursives.
@@ -93,6 +119,11 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
   const isSpaceLead = callerMembership?.role === "lead";
   const canManage = isAdmin || isSpaceLead;
   const canSeeMeetings = !space.isPrivate || isAdmin || !!callerMembership;
+  // Réunion marquée privée dans un espace public : l'override était ignoré ici.
+  const visibleMeetings = space.meetings.filter(
+    (m) =>
+      !isMeetingPrivate(m, space, viewer.enabled) || isAdmin || !!callerMembership
+  );
 
   const orgMembers = await prisma.organisationMember.findMany({
     where: { organisationId: org.id },
@@ -103,9 +134,9 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
   const spaceMemberIds = new Set(space.members.map((m) => m.userId));
   const addableMembers = orgMembers.filter((m) => !spaceMemberIds.has(m.userId));
 
-  const openMeetings = space.meetings.filter((m) => m.status === "open");
-  const draftMeetings = space.meetings.filter((m) => m.status === "draft");
-  const closedMeetings = space.meetings.filter((m) => m.status === "closed");
+  const openMeetings = visibleMeetings.filter((m) => m.status === "open");
+  const draftMeetings = visibleMeetings.filter((m) => m.status === "draft");
+  const closedMeetings = visibleMeetings.filter((m) => m.status === "closed");
 
   const updateGovernance = updateSpaceGovernance.bind(null, space.id);
   const addRole = createRole.bind(null, space.id);
@@ -146,7 +177,7 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
   const tabs = [
     { key: "apercu", label: "Aperçu" },
     { key: "gouvernance", label: "Gouvernance" },
-    { key: "reunions", label: `Réunions (${space.meetings.length})` },
+    { key: "reunions", label: `Réunions (${visibleMeetings.length})` },
     { key: "membres", label: `Membres (${space.members.length})` },
     { key: "synchro", label: "Cockpit" },
   ];
@@ -563,7 +594,7 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
 
           <div className="mb-3 flex items-center justify-between">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-              {space.meetings.length} réunion{space.meetings.length !== 1 ? "s" : ""}
+              {visibleMeetings.length} réunion{visibleMeetings.length !== 1 ? "s" : ""}
             </p>
             <Link href="/meetings" className="text-xs text-indigo-400 hover:text-indigo-300">
               + Nouvelle
@@ -574,7 +605,7 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
             <div className="rounded-xl bg-gray-900 border border-gray-800 px-5 py-8 text-center">
               <p className="text-sm text-gray-600">Réunions confidentielles — réservées aux membres.</p>
             </div>
-          ) : space.meetings.length === 0 ? (
+          ) : visibleMeetings.length === 0 ? (
             <div className="rounded-xl bg-gray-900 border border-gray-800 px-5 py-8 text-center">
               <p className="text-sm text-gray-600">Aucune réunion dans ce cercle.</p>
             </div>

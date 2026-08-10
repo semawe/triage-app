@@ -25,7 +25,12 @@ export function unsubscribe(
   meetingId: string,
   ctrl: ReadableStreamDefaultController<Uint8Array>
 ) {
-  sseClients.get(meetingId)?.delete(ctrl);
+  const clients = sseClients.get(meetingId);
+  if (!clients) return;
+  clients.delete(ctrl);
+  // La clé restait dans la Map après le départ du dernier client : la mémoire
+  // du processus croissait d'une entrée par réunion vue, sans jamais retomber.
+  if (clients.size === 0) sseClients.delete(meetingId);
 }
 
 export function broadcast(meetingId: string) {
@@ -39,4 +44,5 @@ export function broadcast(meetingId: string) {
       clients.delete(ctrl);
     }
   }
+  if (clients.size === 0) sseClients.delete(meetingId);
 }

@@ -1,4 +1,4 @@
-import { requireOrg } from "@/lib/session";
+import { requireOrgForBilling } from "@/lib/session";
 import { notFound } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import { updateOrgBranding, updateOrgFeature, updateOrgDomain } from "@/actions/org";
@@ -21,7 +21,7 @@ export default async function SettingsPage({
 }: {
   searchParams: Promise<{ org?: string; billing?: string }>;
 }) {
-  const { allOrgs } = await requireOrg();
+  const { allOrgs } = await requireOrgForBilling();
 
   // Only orgs where the current user is admin
   const adminOrgs = allOrgs.filter((o) => o.role === "admin");
@@ -42,7 +42,7 @@ export default async function SettingsPage({
   const statusInfo = STATUS_LABELS[org.subscriptionStatus] ?? STATUS_LABELS.trial;
 
   return (
-    <AppShell>
+    <AppShell allowSuspended>
       <div className="mb-8 flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold text-white">Paramètres</h1>

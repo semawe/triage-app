@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getLocale } from "next-intl/server";
 import { cookies } from "next/headers";
+import { newToken } from "@/lib/tokens";
 
 /**
  * Autorise l'appelant à gérer les invités d'une réunion : hôte (créateur) ou
@@ -37,10 +38,13 @@ export async function inviteGuestToMeeting(
   // Lien valable tant que la réunion n'est pas close (filet : 7 jours).
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
+  // Ré-invitation après révocation : un jeton neuf à chaque fois. Sinon la
+  // révocation était réversible avec l'ancien lien, encore aux mains de qui
+  // l'avait obtenu.
   const guest = await prisma.meetingGuest.upsert({
     where: { meetingId_email: { meetingId, email } },
-    create: { meetingId, email, name, expiresAt },
-    update: { name, revokedAt: null, expiresAt },
+    create: { meetingId, email, name, expiresAt, token: newToken() },
+    update: { name, revokedAt: null, expiresAt, token: newToken() },
   });
 
   const locale = await getLocale().catch(() => "fr");

@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { getLocale } from "next-intl/server";
 import { cookies } from "next/headers";
 import { isOrgAccessible } from "./stripe";
+import { isMeetingPrivate } from "./visibility";
+import { hasFeature } from "./features";
 import type { Session } from "next-auth";
 
 type AuthSession = Session & { user: { id: string } };
@@ -18,7 +20,14 @@ export const requireAuth = cache(async (): Promise<AuthSession> => {
   return session as AuthSession;
 });
 
-export const requireOrg = cache(async () => {
+/**
+ * Contexte organisation de l'appelant.
+ *
+ * `allowSuspended` lève UNIQUEMENT le mur de facturation, jamais un contrôle
+ * d'appartenance : réservé aux pages et actions qui servent à régulariser
+ * l'abonnement (Paramètres › Facturation). Partout ailleurs, `requireOrg()`.
+ */
+const loadOrg = cache(async (allowSuspended: boolean) => {
   const session = await requireAuth();
 
   const allMemberships = await prisma.organisationMember.findMany({
@@ -65,10 +74,18 @@ export const requireOrg = cache(async () => {
 
   const org = membership.organisation;
 
-  // Redirect to billing wall if subscription expired (skip for super admins checked later)
-  if (!isOrgAccessible(org) && membership.role !== "admin") {
-    const locale = await getLocale().catch(() => "fr");
-    redirect(`/${locale}/billing-wall`);
+  // Abonnement expiré : mur de facturation pour TOUS les rôles. Un admin n'est pas
+  // exempté — il régularise via Paramètres › Facturation, qui passe par
+  // `requireOrgForBilling()`. Seuls les super-admins plateforme traversent le mur.
+  if (!allowSuspended && !isOrgAccessible(org)) {
+    const sa = await prisma.superAdmin.findUnique({
+      where: { userId: session.user.id },
+      select: { userId: true },
+    });
+    if (!sa) {
+      const locale = await getLocale().catch(() => "fr");
+      redirect(`/${locale}/billing-wall`);
+    }
   }
 
   return {
@@ -79,10 +96,16 @@ export const requireOrg = cache(async () => {
   };
 });
 
+export const requireOrg = () => loadOrg(false);
+
+/** Variante tolérant un abonnement suspendu — pages et actions de facturation seulement. */
+export const requireOrgForBilling = () => loadOrg(true);
+
 /**
  * Garde d'autorisation pour les mutations liées à une réunion.
  * Vérifie que l'appelant est membre de l'organisation dont relève la réunion
- * (indépendamment de l'org active du cookie), et renvoie null sinon.
+ * (indépendamment de l'org active du cookie), ET qu'il a le droit de la voir
+ * si elle est confidentielle. Renvoie null sinon.
  * Les Server Actions appellent ce helper en tête et `return` si null.
  */
 export const requireMeetingAccess = async (meetingId: string) => {
@@ -93,6 +116,7 @@ export const requireMeetingAccess = async (meetingId: string) => {
       space: {
         select: {
           organisationId: true,
+          isPrivate: true,
           // features de l'espace + de l'org : résolution du flag sync_phase
           // dans openMeeting sans requête supplémentaire.
           features: true,
@@ -112,6 +136,25 @@ export const requireMeetingAccess = async (meetingId: string) => {
     },
   });
   if (!membership) return null;
+
+  // Confidentialité : appartenance à l'org insuffisante sur une réunion privée.
+  // Y accèdent l'admin de l'org, les membres de l'espace, et l'hôte de la réunion.
+  const confidentiality = hasFeature(meeting.space.organisation, "confidentiality");
+  if (
+    isMeetingPrivate(meeting, meeting.space, confidentiality) &&
+    membership.role !== "admin"
+  ) {
+    const isHost = meeting.createdById === session.user.id;
+    if (!isHost) {
+      const spaceMember = await prisma.spaceMember.findUnique({
+        where: {
+          spaceId_userId: { spaceId: meeting.spaceId, userId: session.user.id },
+        },
+        select: { userId: true },
+      });
+      if (!spaceMember) return null;
+    }
+  }
 
   return { session, meeting, membership };
 };

@@ -1,4 +1,5 @@
 import { requireOrg } from "@/lib/session";
+import { viewerFrom, visibleSpaceWhere } from "@/lib/visibility";
 import { prisma } from "@/lib/prisma";
 import AppShell from "@/components/AppShell";
 import { createSpace, deleteSpace } from "@/actions/space";
@@ -30,12 +31,14 @@ export default async function CirclesPage({ params, searchParams }: Props) {
   // désormais sur sa page canonique.
   if (parent) redirect({ href: `/circles/${parent}`, locale });
 
-  const { org, session, membership } = await requireOrg();
+  const ctx = await requireOrg();
+  const { org, session, membership } = ctx;
   const isAdmin = membership.role === "admin";
   const showList = view === "list";
 
+  // Carte et liste : un cercle privé ne figure que pour ses membres et les admins.
   const spaces = await prisma.space.findMany({
-    where: { organisationId: org.id },
+    where: visibleSpaceWhere(viewerFrom(ctx)),
     include: {
       members: {
         where: { role: "lead" },

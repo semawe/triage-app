@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { requireOrg } from "@/lib/session";
+import { viewerFrom, visibleMeetingWhere, visibleSpaceWhere } from "@/lib/visibility";
 
 export type SearchResults = {
   circles: { id: string; name: string; type: string }[];
@@ -16,19 +17,22 @@ export async function searchOrg(query: string): Promise<SearchResults> {
   const q = query.trim();
   if (q.length < 2) return EMPTY;
 
-  const { session, org, membership } = await requireOrg();
-  const isAdmin = membership.role === "admin";
+  const ctx = await requireOrg();
+  const { org } = ctx;
+  const viewer = viewerFrom(ctx);
   const contains = { contains: q, mode: "insensitive" as const };
 
-  const [spaces, roles, members, meetings, mySpaceMemberships] = await Promise.all([
+  // Espaces et rôles étaient rendus sans filtre de confidentialité : la palette
+  // révélait le nom d'un cercle privé, ses rôles et leurs titulaires.
+  const [spaces, roles, members, meetings] = await Promise.all([
     prisma.space.findMany({
-      where: { organisationId: org.id, name: contains },
+      where: { ...visibleSpaceWhere(viewer), name: contains },
       select: { id: true, name: true, type: true },
       orderBy: { name: "asc" },
       take: 6,
     }),
     prisma.role.findMany({
-      where: { space: { organisationId: org.id }, name: contains },
+      where: { space: visibleSpaceWhere(viewer), name: contains },
       include: {
         space: { select: { id: true, name: true } },
         assignments: {
@@ -50,24 +54,14 @@ export async function searchOrg(query: string): Promise<SearchResults> {
     }),
     prisma.meeting.findMany({
       where: {
-        space: { organisationId: org.id },
-        OR: [{ title: contains }, { space: { name: contains } }],
+        ...visibleMeetingWhere(viewer),
+        AND: [{ OR: [{ title: contains }, { space: { name: contains } }] }],
       },
-      include: { space: { select: { id: true, name: true, isPrivate: true } } },
+      include: { space: { select: { id: true, name: true } } },
       orderBy: { date: "desc" },
-      take: 20,
-    }),
-    prisma.spaceMember.findMany({
-      where: { userId: session.user.id, space: { organisationId: org.id } },
-      select: { spaceId: true },
+      take: 5,
     }),
   ]);
-
-  const mySpaceIds = new Set(mySpaceMemberships.map((m) => m.spaceId));
-  const visibleMeetings = meetings.filter((m) => {
-    const effectivePrivate = m.isPrivate ?? m.space.isPrivate;
-    return !effectivePrivate || isAdmin || mySpaceIds.has(m.spaceId);
-  });
 
   return {
     circles: spaces,
@@ -84,7 +78,7 @@ export async function searchOrg(query: string): Promise<SearchResults> {
       email: m.user.email,
       image: m.user.image,
     })),
-    meetings: visibleMeetings.slice(0, 5).map((m) => ({
+    meetings: meetings.map((m) => ({
       id: m.id,
       title: m.title,
       spaceName: m.space.name,

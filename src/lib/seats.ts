@@ -1,4 +1,5 @@
 import { prisma } from "./prisma";
+import type { Prisma } from "@/generated/prisma";
 
 /**
  * Nombre de sièges consommés par une organisation = membres actuels
@@ -6,10 +7,13 @@ import { prisma } from "./prisma";
  * Compter les invitations en attente empêche d'émettre plusieurs invitations
  * sous la limite qui, une fois toutes acceptées, la dépasseraient.
  */
-export async function consumedSeats(orgId: string): Promise<number> {
+export async function consumedSeats(
+  orgId: string,
+  client: Prisma.TransactionClient | typeof prisma = prisma
+): Promise<number> {
   const [members, pendingInvites] = await Promise.all([
-    prisma.organisationMember.count({ where: { organisationId: orgId } }),
-    prisma.pendingInvite.count({
+    client.organisationMember.count({ where: { organisationId: orgId } }),
+    client.pendingInvite.count({
       where: { orgId, expiresAt: { gt: new Date() } },
     }),
   ]);

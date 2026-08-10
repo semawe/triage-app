@@ -1,4 +1,4 @@
-import { requireOrg } from "@/lib/session";
+import { requireOrgForBilling } from "@/lib/session";
 import { notFound } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import { prisma } from "@/lib/prisma";
@@ -10,7 +10,7 @@ export default async function BillingInfoPage({
 }: {
   searchParams: Promise<{ org?: string; saved?: string; vat?: string }>;
 }) {
-  const { allOrgs } = await requireOrg();
+  const { allOrgs } = await requireOrgForBilling();
 
   // Réservé aux admins (le contact de facturation est forcément un admin de l'org)
   const adminOrgs = allOrgs.filter((o) => o.role === "admin");
@@ -28,7 +28,7 @@ export default async function BillingInfoPage({
   const labelCls = "text-xs text-gray-500";
 
   return (
-    <AppShell>
+    <AppShell allowSuspended>
       <div className="mb-8 flex items-center gap-3 flex-wrap">
         <Link
           href={`/settings?org=${org.id}`}

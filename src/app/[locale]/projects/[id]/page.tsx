@@ -1,4 +1,5 @@
 import { requireOrg } from "@/lib/session";
+import { viewerFrom, visibleSpaceWhere } from "@/lib/visibility";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import AppShell from "@/components/AppShell";
@@ -21,12 +22,13 @@ const TASK_STATUSES: { key: ProjectTaskStatus; label: string; accent: string }[]
 
 export default async function ProjectDetailPage({ params }: Props) {
   const { id } = await params;
-  const { org, session, membership } = await requireOrg();
+  const ctx = await requireOrg();
+  const { org, session, membership } = ctx;
 
   if (!hasFeature(org, "projects")) notFound();
 
   const project = await prisma.project.findFirst({
-    where: { id, space: { organisationId: org.id } },
+    where: { id, space: visibleSpaceWhere(viewerFrom(ctx)) },
     include: {
       space: { select: { id: true, name: true } },
       tasks: {

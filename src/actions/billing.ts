@@ -1,8 +1,8 @@
 "use server";
 
-import { stripe, PRICE_PER_SEAT_EUR_CENTS } from "@/lib/stripe";
+import { stripe, PRICE_PER_SEAT_EUR_CENTS, MAX_SEATS } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
-import { requireOrg } from "@/lib/session";
+import { requireOrgForBilling } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getLocale } from "next-intl/server";
@@ -31,8 +31,16 @@ async function ensureStripeCustomer(orgId: string): Promise<string> {
 
 /** Lance une session Stripe Checkout pour s'abonner */
 export async function createCheckoutSession(seats: number) {
-  const { org, membership } = await requireOrg();
+  const { org, membership } = await requireOrgForBilling();
   if (membership.role !== "admin") return;
+
+  // Le nombre de sièges arrive du client : `updateSeats` refusait déjà de
+  // descendre sous l'effectif, le checkout ne validait rien. Une org de 40
+  // membres pouvait donc s'abonner à 1 siège.
+  const members = await prisma.organisationMember.count({
+    where: { organisationId: org.id },
+  });
+  if (!Number.isInteger(seats) || seats < members || seats > MAX_SEATS) return;
 
   const locale = await getLocale().catch(() => "fr");
   const customerId = await ensureStripeCustomer(org.id);
@@ -81,7 +89,7 @@ export async function createCheckoutSession(seats: number) {
 
 /** Ouvre le portail self-service Stripe (changer CB, voir factures, annuler) */
 export async function createCustomerPortalSession() {
-  const { org, membership } = await requireOrg();
+  const { org, membership } = await requireOrgForBilling();
   if (membership.role !== "admin") return;
   if (!org.stripeCustomerId) return;
 
@@ -102,7 +110,7 @@ export async function createCustomerPortalSession() {
  * Réservé aux admins. La sauvegarde locale réussit même si Stripe est indisponible.
  */
 export async function updateBillingInfo(formData: FormData) {
-  const { org, membership } = await requireOrg();
+  const { org, membership } = await requireOrgForBilling();
   if (membership.role !== "admin") return;
 
   const get = (k: string) => {
@@ -171,7 +179,7 @@ export async function updateSeatsForm(formData: FormData) {
 
 /** Met à jour le nombre de sièges (modifie l'abonnement Stripe) */
 export async function updateSeats(seats: number) {
-  const { org, membership } = await requireOrg();
+  const { org, membership } = await requireOrgForBilling();
   if (membership.role !== "admin") return;
   if (!org.stripeSubId) return;
 
@@ -180,7 +188,7 @@ export async function updateSeats(seats: number) {
   const members = await prisma.organisationMember.count({
     where: { organisationId: org.id },
   });
-  if (seats < members) return;
+  if (!Number.isInteger(seats) || seats < members || seats > MAX_SEATS) return;
 
   const sub = await stripe.subscriptions.retrieve(org.stripeSubId);
   const itemId = sub.items.data[0]?.id;

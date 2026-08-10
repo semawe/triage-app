@@ -18,6 +18,8 @@ export const stripe: Stripe = new Proxy({} as Stripe, {
 
 export const PRICE_PER_SEAT_EUR_CENTS = 200; // 2,00 €
 export const TRIAL_DAYS = 14;
+/** Borne haute des sièges facturables — garde-fou sur une valeur venue du client. */
+export const MAX_SEATS = 1000;
 
 /** Vérifie si une organisation a accès (trial valide, active, ou admin override) */
 export function isOrgAccessible(org: {

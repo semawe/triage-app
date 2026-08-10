@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { jumpToItem, nextItem, closeMeeting } from "@/actions/meeting";
+import { viewerFrom, visibleMeetingWhere } from "@/lib/visibility";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -19,10 +20,13 @@ const OUTPUT_TYPE_LABELS: Record<string, string> = {
 
 export default async function ProjectorPage({ params }: Props) {
   const { id } = await params;
-  const { org } = await requireOrg();
+  const ctx = await requireOrg();
+  const { org } = ctx;
 
-  const meeting = await prisma.meeting.findUnique({
-    where: { id },
+  // Même règle de confidentialité que la page réunion : le mode projecteur
+  // affichait l'ordre du jour et les outputs à tout membre de l'org.
+  const meeting = await prisma.meeting.findFirst({
+    where: { id, ...visibleMeetingWhere(viewerFrom(ctx)) },
     include: {
       space: true,
       agendaItems: {

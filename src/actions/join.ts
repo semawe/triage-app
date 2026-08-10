@@ -39,20 +39,30 @@ export async function approveJoinRequest(requestId: string): Promise<void> {
   const req = await prisma.joinRequest.findUnique({ where: { id: requestId } });
   if (!req || req.organisationId !== org.id) return;
 
-  // Garde de siège : ne pas approuver au-delà de la limite (membres + invitations en attente)
-  if ((await consumedSeats(org.id)) >= org.seatCount) {
+  // Garde de siège dans la même transaction que l'écriture : le comptage et
+  // l'insertion étaient disjoints, deux approbations simultanées passaient
+  // toutes deux sous la limite.
+  let seatsFull = false;
+  await prisma.$transaction(
+    async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "Organisation" WHERE id = ${org.id} FOR UPDATE`;
+      if ((await consumedSeats(org.id, tx)) >= org.seatCount) {
+        seatsFull = true;
+        return;
+      }
+      await tx.joinRequest.update({ where: { id: requestId }, data: { status: "approved" } });
+      await tx.organisationMember.upsert({
+        where: { organisationId_userId: { organisationId: org.id, userId: req.userId } },
+        create: { organisationId: org.id, userId: req.userId, role: "member" },
+        update: {},
+      });
+    }
+  );
+
+  if (seatsFull) {
     const locale = await getLocale().catch(() => "fr");
     redirect(`/${locale}/members?error=seats-full`);
   }
-
-  await prisma.$transaction([
-    prisma.joinRequest.update({ where: { id: requestId }, data: { status: "approved" } }),
-    prisma.organisationMember.upsert({
-      where: { organisationId_userId: { organisationId: org.id, userId: req.userId } },
-      create: { organisationId: org.id, userId: req.userId, role: "member" },
-      update: {},
-    }),
-  ]);
 
   revalidatePath("/[locale]/members", "page");
 }

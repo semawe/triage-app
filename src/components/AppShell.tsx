@@ -1,11 +1,20 @@
-import { isSuperAdmin, requireOrg } from "@/lib/session";
+import { isSuperAdmin, requireOrg, requireOrgForBilling } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { getOrgFeatures } from "@/lib/features";
 import NavBar from "./NavBar";
 import CommandPalette from "./CommandPalette";
 
-export default async function AppShell({ children }: { children: React.ReactNode }) {
-  const { session, org, membership, allOrgs } = await requireOrg();
+export default async function AppShell({
+  children,
+  allowSuspended = false,
+}: {
+  children: React.ReactNode;
+  /** Écrans de régularisation de l'abonnement uniquement (Paramètres › Facturation). */
+  allowSuspended?: boolean;
+}) {
+  const { session, org, membership, allOrgs } = allowSuspended
+    ? await requireOrgForBilling()
+    : await requireOrg();
 
   const sa = await isSuperAdmin(session.user.id);
   const features = getOrgFeatures(org);

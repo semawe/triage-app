@@ -7,6 +7,7 @@ import { getLocale } from "next-intl/server";
 import { redirect } from "next/navigation";
 import { sendEmail } from "@/lib/email";
 import { consumedSeats, seatLimitMessage } from "@/lib/seats";
+import { newToken } from "@/lib/tokens";
 
 export async function updateMemberRole(
   memberId: string,
@@ -77,17 +78,19 @@ export async function generateInvite(
   const { org, membership } = await requireOrg();
   if (membership.role !== "admin") return { url: "" };
 
-  // Seat check (membres + invitations en attente)
-  if ((await consumedSeats(org.id)) >= org.seatCount) {
-    return { url: "", error: seatLimitMessage(org.seatCount) };
-  }
-
   const role = (formData.get("role") as "admin" | "member") ?? "member";
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
-  const invite = await prisma.pendingInvite.create({
-    data: { orgId: org.id, role, expiresAt },
+  // Comptage et création dans la même transaction verrouillée : deux émissions
+  // simultanées passaient toutes deux la garde du dernier siège.
+  const invite = await prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM "Organisation" WHERE id = ${org.id} FOR UPDATE`;
+    if ((await consumedSeats(org.id, tx)) >= org.seatCount) return null;
+    return tx.pendingInvite.create({
+      data: { orgId: org.id, role, expiresAt, token: newToken() },
+    });
   });
+  if (!invite) return { url: "", error: seatLimitMessage(org.seatCount) };
 
   const locale = await getLocale().catch(() => "fr");
   return { url: `${process.env.AUTH_URL ?? "http://localhost:3000"}/${locale}/invite/${invite.token}` };
@@ -105,15 +108,17 @@ export async function sendInviteByEmail(
 
   if (!email || !email.includes("@")) return { ok: false, error: "Adresse email invalide." };
 
-  // Seat check (membres + invitations en attente)
-  if ((await consumedSeats(org.id)) >= org.seatCount) {
-    return { ok: false, error: seatLimitMessage(org.seatCount) };
-  }
-
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-  const invite = await prisma.pendingInvite.create({
-    data: { orgId: org.id, role, expiresAt },
+  // Invitation nominative : le lien ne vaut que pour cette adresse (il circule
+  // par transfert, historique, capture — surtout quand il confère `admin`).
+  const invite = await prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM "Organisation" WHERE id = ${org.id} FOR UPDATE`;
+    if ((await consumedSeats(org.id, tx)) >= org.seatCount) return null;
+    return tx.pendingInvite.create({
+      data: { orgId: org.id, role, expiresAt, email, token: newToken() },
+    });
   });
+  if (!invite) return { ok: false, error: seatLimitMessage(org.seatCount) };
 
   const locale = await getLocale().catch(() => "fr");
   const baseUrl = process.env.AUTH_URL ?? "http://localhost:3000";
@@ -122,14 +127,14 @@ export async function sendInviteByEmail(
 
   const result = await sendEmail({
     to: [email],
-    subject: `Invitation à rejoindre ${org.name} sur Triage App`,
+    subject: `Invitation à rejoindre ${org.name.replace(/[\r\n]+/g, " ")} sur Triage App`,
     html: `
       <div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:24px">
         <h2 style="color:#1f2937;margin-bottom:8px">Tu es invité(e) sur Triage App</h2>
-        <p style="color:#4b5563">Tu as été invité(e) à rejoindre l'organisation <strong>${org.name}</strong> en tant que <strong>${roleLabel}</strong>.</p>
+        <p style="color:#4b5563">Tu as été invité(e) à rejoindre l'organisation <strong>${escapeHtml(org.name)}</strong> en tant que <strong>${roleLabel}</strong>.</p>
         <p style="margin:24px 0">
           <a href="${inviteUrl}" style="background:#4f46e5;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">
-            Rejoindre ${org.name} →
+            Rejoindre ${escapeHtml(org.name)} →
           </a>
         </p>
         <p style="color:#9ca3af;font-size:13px">Ce lien est valable 7 jours. Si tu n'es pas à l'origine de cette demande, ignore cet email.</p>
@@ -149,6 +154,14 @@ export async function acceptInvite(token: string) {
   if (!invite || invite.expiresAt < new Date()) {
     // La page d'invitation rend l'état « invalide ou expiré »
     redirect(`/${locale}/invite/${token}`);
+  }
+
+  // Invitation nominative : elle ne vaut que pour l'adresse destinataire.
+  // Sans ce contrôle, un lien transféré confère le rôle (y compris `admin`)
+  // à quiconque l'ouvre avec son propre compte Google.
+  const callerEmail = (session.user.email ?? "").trim().toLowerCase();
+  if (invite.email && invite.email !== callerEmail) {
+    redirect(`/${locale}/invite/${token}?wrong-account=1`);
   }
 
   const already = await prisma.organisationMember.findUnique({
@@ -297,4 +310,13 @@ export async function superAdminCreateOrg(formData: FormData) {
   }
 
   revalidatePath("/", "layout");
+}
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
