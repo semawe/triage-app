@@ -157,6 +157,7 @@ Connexion locale via tunnel SSH :
 ssh -N -L 15432:localhost:5432 -i ~/.ssh/<your-key> <user>@<vps-ip> &
 ```
 Note : le réseau domicile peut bloquer ce tunnel — utiliser un hotspot ou VPN si nécessaire.
+Pour **lire** la base de prod, ne pas passer par là : utiliser le rôle en lecture seule `triageapp_prod_lecture` (§ Déploiement).
 
 Migration : `npx prisma migrate dev --name <nom>`
 
@@ -166,7 +167,13 @@ Migration : `npx prisma migrate dev --name <nom>`
 - **Auto-déploiement par webhook** : tout push sur `main` déclenche `webhook-server.js` → `deploy/deploy-triage-app.sh` (git pull → `npm ci --ignore-scripts` → `prisma migrate deploy` → build atomique `.next-build`→`.next` → `pm2 reload`). **Pas besoin de SSH pour déployer**, mais c'est `migrate deploy` (pas `dev`) qui tourne en prod.
 - **RAM limitée** : `next build` (Turbopack) sature la mémoire. Deux garde-fous en place : (1) swap de 6 Go (`/swapfile` + `/swapfile_deploy`, dans `/etc/fstab`) — la compilation déborde dessus ; (2) `SKIP_BUILD_CHECKS=1` dans le script de déploiement saute le type-check intégré (OOM), couvert en amont par `tsc --noEmit`. Ne pas retirer ces garde-fous sans alternative.
 - **Vérif post-deploy** : `https://triapp.fr/fr` → 200, et `pm2 list` (uptime de `triage-app` récent = reload effectif).
-- **Script Node ponctuel en prod** (migration de données, vérif ad hoc) : `debian` a un sudo passwordless vers l'utilisateur `triageapp` (`sudo -u triageapp <cmd>`, pas besoin du mot de passe sudo générique). Déposer le script dans `/tmp` (pas besoin d'écrire dans `/home/debian/triage-app`, appartient à `triageapp`), puis : `sudo -u triageapp bash -c 'cd /home/debian/triage-app && set -a && source .env.local && set +a && node /tmp/mon-script.js'`. Dans le script, importer le client Prisma et `@prisma/adapter-pg` par chemin absolu vers `/home/debian/triage-app/...` (le script n'a pas son propre `node_modules`). Toujours nettoyer `/tmp` après usage.
+- **Lecture de la base de prod (voie normale pour diagnostiquer)** : rôle PostgreSQL dédié **en lecture seule** `triageapp_prod_lecture` (CONNECT, USAGE, SELECT, plus `ALTER DEFAULT PRIVILEGES` pour que les tables des migrations futures restent lisibles — aucune écriture, volontairement). Son mot de passe vit dans le `~/.pgpass` de `debian` sur la box (mode 600) : `psql` le trouve seul, aucun secret à manipuler.
+  ```bash
+  ssh -i ~/.ssh/id_semawe_vps2 debian@145.239.55.58 'psql -h 127.0.0.1 -U triageapp_prod_lecture -d triageapp_prod -At -c "SELECT 1"'
+  ```
+  Pour une requête à guillemets imbriqués, passer le SQL par un fichier et `psql -f -`. Entrée Bitwarden « triage-app — PostgreSQL lecture seule », collection *Infrastructure & API*.
+- **Script Node ponctuel en prod** (migration de données, écriture ad hoc) : **`debian` n'a plus de sudo passwordless vers `triageapp`.** Depuis le lot A3 du durcissement du 09/08/2026, l'entrée `(elearning, triageapp, ofqualiopi) NOPASSWD: ALL` a été retirée de `debian` et donnée à l'identité de service `deploybot` (`/etc/sudoers.d/deploybot`), réservée à la chaîne de déploiement. Un `sudo -u triageapp <cmd>` depuis `debian` réclame donc le mot de passe sudo, qui vit dans Bitwarden et relève d'Aliocha : une session Claude ne peut pas exécuter ce genre de script seule — **passer par le rôle de lecture ci-dessus pour tout diagnostic**, et demander à Aliocha pour une écriture. Vérifiable par `ssh -i ~/.ssh/id_semawe_vps2 debian@145.239.55.58 'sudo -n -l'`. Détail et preuves dans `~/dev/apps/erp/docs/deploiement-vps.md` (lots A3 et A4), image de référence des sudoers dans `~/dev/ovh/infra-monitoring/scripts/vps-rebuild/reference-145.239.55.58/`.
+  Recette une fois le mot de passe fourni : déposer le script dans `/tmp` (pas besoin d'écrire dans `/home/debian/triage-app`, appartient à `triageapp`), puis `sudo -u triageapp bash -c 'cd /home/debian/triage-app && set -a && source .env.local && set +a && node /tmp/mon-script.js'`. Dans le script, importer le client Prisma et `@prisma/adapter-pg` par chemin absolu vers `/home/debian/triage-app/...` (le script n'a pas son propre `node_modules`). Toujours nettoyer `/tmp` après usage.
 
 ## Autonomie
 
