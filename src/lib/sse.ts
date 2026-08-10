@@ -3,13 +3,39 @@
 
 const g = global as typeof global & {
   _sseClients?: Map<string, Set<ReadableStreamDefaultController<Uint8Array>>>;
+  _sseCountByUser?: Map<string, number>;
 };
 
 if (!g._sseClients) {
   g._sseClients = new Map();
 }
+if (!g._sseCountByUser) {
+  g._sseCountByUser = new Map();
+}
 
 export const sseClients = g._sseClients;
+
+/**
+ * Un flux SSE immobilise une connexion et un timer pour toute sa durée. La route
+ * est authentifiée, mais un compte légitime peut encore en ouvrir autant qu'il
+ * veut : ce plafond borne le coût par utilisateur sur un processus unique.
+ */
+const MAX_STREAMS_PER_USER = 8;
+const streamCount = g._sseCountByUser;
+
+/** Réserve un flux pour cet utilisateur, ou refuse si le plafond est atteint. */
+export function acquireStreamSlot(userId: string): boolean {
+  const current = streamCount.get(userId) ?? 0;
+  if (current >= MAX_STREAMS_PER_USER) return false;
+  streamCount.set(userId, current + 1);
+  return true;
+}
+
+export function releaseStreamSlot(userId: string) {
+  const current = streamCount.get(userId) ?? 0;
+  if (current <= 1) streamCount.delete(userId);
+  else streamCount.set(userId, current - 1);
+}
 
 const encoder = new TextEncoder();
 

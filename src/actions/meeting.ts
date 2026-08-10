@@ -339,6 +339,13 @@ export async function closeMeeting(meetingId: string) {
     data: { status: "closed" },
   });
 
+  // Un lien invité vaut pour une réunion : il cesse de valoir quand elle est
+  // close (il restait sinon actif jusqu'à son expiration de 7 jours).
+  await prisma.meetingGuest.updateMany({
+    where: { meetingId, revokedAt: null },
+    data: { revokedAt: new Date() },
+  });
+
   revalidatePath("/", "layout");
   broadcast(meetingId);
 }

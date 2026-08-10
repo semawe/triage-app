@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Client Prisma généré : ni écrit ni relu à la main, il produisait à lui
+    // seul l'essentiel des 593 erreurs qui rendaient `npm run lint` inutilisable.
+    "src/generated/**",
   ]),
 ]);
 

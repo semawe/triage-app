@@ -141,7 +141,8 @@ prisma/schema.prisma    # Schéma complet (voir section ci-dessus)
 - **Phase synchro** ✅ (07/07) : module `sync_phase` opt-in — revue du cockpit (indicateurs historisés, checklists recochées par réunion, projets) avant le triage ; actions `indicator.ts`/`checklist.ts`/`project.ts`, garde partagée `src/lib/authz.ts` (canManageSpace)
 - **Projets** ✅ (07-10/07) : entité Project + Kanban `/projects` (3 colonnes par statut, filtre par espace, création directe) ; ProjectTask + Kanban des tâches `/projects/[id]` ; migration des anciens outputs « project » en cartes
 - **Refonte navigation** ✅ (07-10/07, PR #7) : fusion Espaces→Cercles — `/circles/[id]` page canonique d'un cercle (fil d'Ariane complet, onglets Aperçu/Gouvernance/Réunions/Membres/Cockpit), carte SVG = navigation principale (1ᵉʳ clic = panneau de détail, 2ᵉ clic = entrer, clic membrane = remonter), sélection adressable (`?circle=`/`?role=` — un rôle a une URL partageable), palette Cmd+K (`CommandPalette` + `actions/search.ts`), accueil personnel `/me` (rôles, cercles, actions, réunions — page d'atterrissage), bottom nav mobile avec feuille « Plus », nav i18n fr/en ; flag `circle_view` supprimé (la carte est devenue le socle)
-- **Reste à faire** (constats d'audit du 25/06, tâches Notion projet) : tests + CI, auth de la route SSE, `.env.example`, uniformisation des erreurs.
+- **Durcissement sécurité** ✅ (10/08, revue adverse) : cloisonnement effectif des espaces privés (`src/lib/visibility.ts`), autorisation du compte-rendu, sièges et mur de facturation, webhook Stripe idempotent, jetons CSPRNG et invitations nominatives, route SSE authentifiée, transitions d'agenda transactionnelles ; suite de tests Vitest + CI GitHub Actions
+- **Reste à faire** : `.env.example`, uniformisation des erreurs.
 
 ## Base de données — dev
 
@@ -187,3 +188,25 @@ Le prix catalogue est en **HT** (site B2B). Standard : **2 € HT/siège/mois �
 - Pas de `console.log` laissés en prod
 - Variables d'environnement dans `.env.local` (gitignorée) — jamais en clair dans le code
 - Prisma migrations : toujours via `prisma migrate dev`, **jamais `db push`, même en dev** (un `db push` non enregistré a fait dériver la base de l'historique — réconcilié manuellement le 25/06/2026)
+
+## Tests
+
+Suite d'intégration Vitest sous `tests/`, exécutée contre une vraie base PostgreSQL
+(les gardes d'autorisation ne se testent pas à coups de mocks). `tests/setup.ts`
+simule la seule chose indisponible hors requête HTTP : l'identité de l'appelant
+(`actAs()`), les cookies, et les fonctions Next qui lèvent (`redirect`, `notFound`).
+
+```bash
+createdb triageapp_test && DATABASE_URL="postgresql://aliocha@localhost:5432/triageapp_test" npx prisma migrate deploy
+DATABASE_URL="postgresql://aliocha@localhost:5432/triageapp_test" npm test
+```
+
+Couverture actuelle — les invariants de sécurité issus de la revue adverse du
+10/08/2026 : cloisonnement des espaces et réunions privés, autorisation et
+destinataires du compte-rendu, sièges au checkout et mur de facturation, jetons
+d'invitation nominatifs et révocation d'invités, invariants sous concurrence.
+Toute correction de sécurité s'accompagne du test qui échoue sans elle : la
+contre-épreuve (rejouer la suite sur le code d'avant) fait partie du travail.
+
+CI GitHub Actions (`.github/workflows/ci.yml`) : type-check, lint et tests sur
+chaque PR et chaque push sur `main`, avec un service PostgreSQL 16.

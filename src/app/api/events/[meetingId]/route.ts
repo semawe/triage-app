@@ -1,5 +1,5 @@
 import { type NextRequest } from "next/server";
-import { subscribe, unsubscribe } from "@/lib/sse";
+import { acquireStreamSlot, releaseStreamSlot, subscribe, unsubscribe } from "@/lib/sse";
 import { resolveParticipant } from "@/lib/guest";
 
 export const dynamic = "force-dynamic";
@@ -17,6 +17,10 @@ export async function GET(
   const participant = await resolveParticipant(meetingId);
   if (!participant) {
     return new Response("Unauthorized", { status: 401 });
+  }
+
+  if (!acquireStreamSlot(participant.userId)) {
+    return new Response("Too many streams", { status: 429 });
   }
 
   let ctrl: ReadableStreamDefaultController<Uint8Array>;
@@ -39,6 +43,7 @@ export async function GET(
       req.signal.addEventListener("abort", () => {
         clearInterval(pingInterval);
         unsubscribe(meetingId, ctrl);
+        releaseStreamSlot(participant.userId);
         try { ctrl.close(); } catch { /* already closed */ }
       });
     },
