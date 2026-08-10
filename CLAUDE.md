@@ -29,7 +29,7 @@ Cible : organisations Holacracy et non-Holacracy, distribué librement.
 - **Server Actions** pour toutes les mutations (pas d'API REST), sauf 3 routes : auth NextAuth, webhook Stripe, flux SSE
 - **Stripe** — abonnement par siège (2 € HT/utilisateur/mois → 2,40 € TTC, TVA via `STRIPE_TAX_RATE_ID` ; tarif asso via code promo `ASSO`, voir § Facturation), `src/lib/stripe.ts` + webhook `src/app/api/stripe/webhook/route.ts`
 - **nodemailer** (SMTP) — invitations et comptes-rendus email, `src/lib/email.ts`
-- **Server-Sent Events** (temps réel) ✅ — broker in-process `src/lib/sse.ts` (mono-instance PM2), route `src/app/api/events/[meetingId]/route.ts`
+- **Server-Sent Events** (temps réel) ✅ — broker in-process `src/lib/sse.ts` (**mono-instance**, contrainte inchangée depuis le passage à systemd), route `src/app/api/events/[meetingId]/route.ts`
 - **Déploiement** : VPS OVH, systemd (`triage-app.service`) + Nginx (même instance que of-qualiopi) — PM2 abandonné le 09/08/2026, cf. § Déploiement
 
 ## Schéma de données (Prisma)
@@ -175,6 +175,8 @@ Migration : `npx prisma migrate dev --name <nom>`
   3. `ssh … 'systemctl show -p ActiveEnterTimestamp triage-app'` — redémarrage récent = bascule effective (**pas** `pm2 list`, vide depuis le passage à systemd) ;
   4. `https://triapp.fr/fr` → 200.
 
+  **Deux merges rapprochés cassent un build** : deux webhooks qui se chevauchent lancent deux `npm ci` sur le même `node_modules`, et la compilation en cours meurt sur un module fantôme — observé le 10/08/2026 : `Build error occurred / Error: Cannot find module '../../../lib/is-interception-route-rewrite'`. Sans gravité en soi, le `set -euo pipefail` du script empêchant la bascule d'un build incomplet (la prod reste sur l'ancien `.next`), mais le déploiement est perdu : **laisser un déploiement finir avant de merger le suivant** (`tail -1` du journal = `=== Deploy OK ===`). Une trace de ce type dans le journal n'est donc pas forcément un problème de code — vérifier d'abord s'il y a eu deux runs qui se chevauchent.
+
   **Un déploiement coupe le service** : `systemctl restart` n'est pas gracieux, contrairement au `pm2 reload --update-env` qu'il a remplacé. Entre la bascule de `.next` et le redémarrage effectif, le site répond **502** — une à deux minutes observées le 10/08/2026, l'arrêt passant par `stop-sigterm` avant `SIGKILL`. Un 502 juste après un merge sur `main` est donc attendu et transitoire ; ne pas le traiter comme un incident avant d'avoir vérifié `systemctl show -p ActiveState -p SubState triage-app` (`deactivating` / `stop-sigterm` = arrêt en cours, laisser finir).
 - **Lecture de la base de prod (voie normale pour diagnostiquer)** : rôle PostgreSQL dédié **en lecture seule** `triageapp_prod_lecture` (CONNECT, USAGE, SELECT, plus `ALTER DEFAULT PRIVILEGES` pour que les tables des migrations futures restent lisibles — aucune écriture, volontairement). Son mot de passe vit dans le `~/.pgpass` de `debian` sur la box (mode 600) : `psql` le trouve seul, aucun secret à manipuler.
   ```bash
@@ -193,7 +195,7 @@ Validation requise pour : config infra VPS (Nginx, Docker, cron serveur), clés 
 
 Le prix catalogue est en **HT** (site B2B). Standard : **2 € HT/siège/mois → 2,40 € TTC** (TVA 20 %).
 
-- **TVA** : appliquée via un `TaxRate` Stripe (`inclusive=false`), référencé par la variable d'env `STRIPE_TAX_RATE_ID` et posé sur la ligne de checkout dans `actions/billing.ts`. Sans la variable, l'app facture à plat (pas de TVA). En prod (live) : `STRIPE_TAX_RATE_ID=txr_1TmcyFPYbG48BY68DD9EHdMN` (20 %, FR), dans `/home/debian/triage-app/.env.local`. Réversible en retirant la variable + `pm2 restart`.
+- **TVA** : appliquée via un `TaxRate` Stripe (`inclusive=false`), référencé par la variable d'env `STRIPE_TAX_RATE_ID` et posé sur la ligne de checkout dans `actions/billing.ts`. Sans la variable, l'app facture à plat (pas de TVA). En prod (live) : `STRIPE_TAX_RATE_ID=txr_1TmcyFPYbG48BY68DD9EHdMN` (20 %, FR), dans `/home/debian/triage-app/.env.local`. Réversible en retirant la variable + `sudo systemctl restart triage-app` (le `pm2 restart` que ce fichier indiquait n'existe plus).
 - **Tarif associations** : remise commerciale (pas une exonération de TVA — non applicable côté vendeur), via le code promo réutilisable **`ASSO`** (coupon Stripe `lijKoZip`, −16,67 %, `duration=forever`, `promotion_code` `promo_1Tmd2oPYbG48BY68J5sESf3I`). Appliqué au checkout (`allow_promotion_codes: true`), il ramène à **2,00 € TTC** tout compris (2 € HT − 0,33 € = 1,67 € net + 0,33 € TVA). À communiquer aux associations à but non lucratif qui en font la demande.
 - **Créer un code promo ponctuel** (cas particulier) : Stripe Dashboard (live) → Products → Coupons, ou API `POST /v1/coupons` (`percent_off`, `duration`) puis `POST /v1/promotion_codes` (`coupon`, `code`). ⚠️ La version d'API par défaut du compte rejette le param `coupon` sur `/v1/promotion_codes` : forcer l'en-tête `Stripe-Version: 2023-10-16`.
 - **Décision de prix** (activer la TVA, changer le tarif asso) = validation Aliocha (impact facturation prod).
