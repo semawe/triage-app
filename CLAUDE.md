@@ -30,7 +30,7 @@ Cible : organisations Holacracy et non-Holacracy, distribué librement.
 - **Stripe** — abonnement par siège (2 € HT/utilisateur/mois → 2,40 € TTC, TVA via `STRIPE_TAX_RATE_ID` ; tarif asso via code promo `ASSO`, voir § Facturation), `src/lib/stripe.ts` + webhook `src/app/api/stripe/webhook/route.ts`
 - **nodemailer** (SMTP) — invitations et comptes-rendus email, `src/lib/email.ts`
 - **Server-Sent Events** (temps réel) ✅ — broker in-process `src/lib/sse.ts` (mono-instance PM2), route `src/app/api/events/[meetingId]/route.ts`
-- **Déploiement** : VPS OVH, PM2 + Nginx (même instance que of-qualiopi)
+- **Déploiement** : VPS OVH, systemd (`triage-app.service`) + Nginx (même instance que of-qualiopi) — PM2 abandonné le 09/08/2026, cf. § Déploiement
 
 ## Schéma de données (Prisma)
 
