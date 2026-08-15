@@ -29,6 +29,12 @@ ExecStart=/usr/bin/node /home/debian/triage-app/node_modules/.bin/next start -p 
 Restart=on-failure
 RestartSec=3
 
+# `next start` n'installe pas de gestionnaire SIGTERM et meurt du signal : il sort
+# en 143 (128+15). Sans cette ligne, systemd compte chaque arrêt de couleur comme
+# un échec et laisse une unité `failed` derrière chaque déploiement — bruit
+# permanent dans `systemctl --failed`, sur une box qui est surveillée.
+SuccessExitStatus=143
+
 # Le retrait de l'ancienne couleur n'attend pas la fin des connexions : les flux
 # SSE ne se terminent jamais d'eux-mêmes. Le trafic est déjà passé sur la
 # nouvelle instance quand ce délai court, et les clients EventSource s'y
