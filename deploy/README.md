@@ -1,88 +1,111 @@
 # Déploiement — triage-app (triapp.fr)
 
-VPS OVH partagé avec of-qualiopi : `ssh -i ~/.ssh/<your-key> <user>@<vps-ip>`
+VPS OVH `debian@145.239.55.58` (box `semawe-prod-gra11`), partagé avec of-qualiopi,
+l'Académie et inscriptions : `ssh -i ~/.ssh/id_semawe_vps2 debian@145.239.55.58`.
+
+Les fichiers de ce dossier sont des **miroirs versionnés** de ce qui vit sur le serveur.
+Seule la copie du serveur s'exécute : toute retouche ici se reporte là-bas, et inversement.
+Le miroir du script de déploiement avait dérivé entre le 25/06 et le 10/08/2026 sans que
+la prod bronche — c'est le piège à connaître.
+
+| Ici | Sur le VPS |
+| --- | --- |
+| `deploy-triage-app.sh` | `/opt/deploybot/deploy-triage-app.sh` (deploybot) |
+| `triapp-bascule` | `/usr/local/sbin/triapp-bascule` (root:root, 0755) |
+| `triage-app@.service` | `/etc/systemd/system/triage-app@.service` |
+| `nginx-triapp.fr.conf` | `/etc/nginx/sites-available/triapp.fr` |
+| `nginx-triapp-upstream.conf` | `/etc/nginx/conf.d/triapp-upstream.conf` (réécrit à chaque déploiement) |
+| `sudoers-deploybot` | `/etc/sudoers.d/deploybot` |
 
 ## Architecture
 
-- Next.js sur le port **3002** (of-qualiopi=3000, plateforme-elearning=3001)
-- PM2 process name : `triage-app`
-- Nginx reverse proxy : triapp.fr → localhost:3001
-- SSL Let's Encrypt (certbot)
-- Deploy automatique : push sur `main` → webhook GitHub → `deploy-triage-app.sh`
+- Next.js servi par **systemd**, deux instances du template `triage-app@.service`
+  nommées par leur port : `triage-app@3002` et `triage-app@3003`. Une seule sert le
+  trafic à un instant donné. (Les voisins : of-qualiopi=3000, Académie=3001.)
+- Chaque couleur sert son propre répertoire de build : `.next-3002` / `.next-3003`.
+- Nginx `proxy_pass http://triapp_app`, upstream défini dans
+  `/etc/nginx/conf.d/triapp-upstream.conf` — c'est ce fichier qui désigne la couleur
+  en service. SSL Let's Encrypt (certbot).
+- Déploiement automatique : push sur `main` → webhook GitHub → `deploy-triage-app.sh`.
 
-## Première mise en prod (à faire une seule fois)
+## Le déploiement, pas à pas
 
-### 1. Sur le VPS
+Depuis le 15/08/2026, la bascule est **bleu/vert** et ne coupe plus le service. Avant, un
+`systemctl restart` sur l'instance unique servait des 502 aux visiteurs pendant une à deux
+minutes à chaque déploiement.
+
+1. Lecture de la couleur en service dans `triapp-upstream.conf` ; la cible est l'autre port.
+2. `git pull`, `npm ci --ignore-scripts`, `prisma migrate deploy`.
+3. Build dans le répertoire de la couleur cible. **L'instance en service n'est pas touchée** :
+   un build qui échoue laisse la production intacte, sans intervention.
+4. Démarrage de l'instance cible, puis attente de `GET /api/health` en 200 (180 s au plus).
+   Pas de réponse → la cible est arrêtée, la production reste où elle est, le script sort en erreur.
+5. Bascule de l'upstream nginx vers la cible, `nginx -t`, `systemctl reload nginx` (gracieux :
+   les workers en place terminent leurs requêtes).
+6. Drain de 20 s, puis arrêt de l'ancienne couleur.
+
+Les gestes privilégiés de l'étape 4 à 6 passent par `/usr/local/sbin/triapp-bascule`, ouvert à
+`deploybot` par six entrées sudo littérales. Le compte de déploiement ne reçoit ni le droit
+d'écrire dans `/etc/nginx`, ni celui de piloter systemd librement.
+
+## Vérifier un déploiement
+
+`https://triapp.fr/fr` en 200 ne prouve rien à lui seul — l'ancien build répond aussi.
 
 ```bash
-ssh -i ~/.ssh/<your-key> <user>@<vps-ip>
+ssh -i ~/.ssh/id_semawe_vps2 debian@145.239.55.58 'cd /home/debian/triage-app && git log --oneline -1'
+ssh -i ~/.ssh/id_semawe_vps2 debian@145.239.55.58 'tail -5 /var/log/deploybot/deploy-triage-app.log'
+ssh -i ~/.ssh/id_semawe_vps2 debian@145.239.55.58 'grep -o "127.0.0.1:[0-9]*" /etc/nginx/conf.d/triapp-upstream.conf'
+```
 
-# Cloner le repo
+Le journal se termine par `=== Deploy OK (en service sur <port>) ===`, et la couleur lue dans
+l'upstream doit avoir changé.
+
+**Ne pas enchaîner deux merges rapprochés** : deux webhooks qui se chevauchent lancent deux
+`npm ci` sur le même `node_modules` et la compilation meurt sur un module fantôme. Laisser le
+journal afficher `Deploy OK` avant de merger le suivant.
+
+**Le lockfile se génère avec npm 10, jamais avec npm 11** — le VPS tourne sous npm 10.9.8 et
+`npm ci` refuse un lockfile réécrit par npm 11. Utiliser `npx npm@10.9.8 install` / `ci`.
+
+## Première mise en prod (historique, à faire une seule fois)
+
+```bash
 cd /home/debian
 git clone https://github.com/semawe/triage-app.git triage-app
 cd triage-app
-
-# Variables d'env
-cp deploy/.env.local.example .env.local
-# Éditer .env.local avec les vraies valeurs prod
-
-# Créer la base PostgreSQL
+cp deploy/.env.local.example .env.local   # puis renseigner les vraies valeurs
 psql -U postgres -c "CREATE DATABASE triageapp_prod;"
-
-# Migrations initiales
 npm ci --ignore-scripts
 npx prisma migrate deploy
-
-# Build initial
-npm run build
-
-# Démarrer via PM2
-pm2 start "npm start -- -p 3002" --name triage-app
-pm2 save
+NEXT_DIST_DIR=.next-3002 npm run build
 ```
 
-### 2. Nginx
+Puis, en root : poser `triage-app@.service`, `triapp-bascule`, les deux fichiers nginx et la
+règle sudoers depuis ce dossier, `systemctl daemon-reload`, `systemctl enable --now triage-app@3002`,
+`nginx -t && systemctl reload nginx`, `certbot --nginx -d triapp.fr -d www.triapp.fr`.
 
-```bash
-sudo cp /home/debian/triage-app/deploy/nginx-triapp.fr.conf /etc/nginx/sites-available/triapp.fr
-sudo ln -s /etc/nginx/sites-available/triapp.fr /etc/nginx/sites-enabled/
-sudo nginx -t && sudo systemctl reload nginx
+### Webhook GitHub
 
-# SSL
-sudo certbot --nginx -d triapp.fr -d www.triapp.fr
-```
+Sur GitHub → `semawe/triage-app` → Settings → Webhooks :
 
-### 3. Webhook GitHub → deploy automatique
-
-```bash
-# Ajouter la route dans webhook-server.js (voir webhook-server.patch)
-# Puis recharger le process webhook
-pm2 reload webhook-server   # ou le nom du process PM2 qui tourne webhook-server.js
-```
-
-Sur GitHub → `semawe/triage-app` → Settings → Webhooks → Add webhook :
 - Payload URL : `https://of.semawe.fr/hooks/deploy-triage-app`
 - Content type : `application/json`
 - Secret : le contenu de `/home/debian/.webhook-secret` (même secret que of-qualiopi)
 - Events : `push`
 
-### 4. Stripe webhook prod
+### Stripe webhook prod
 
 Sur dashboard.stripe.com (mode Live) → Developers → Webhooks → Add endpoint :
+
 - URL : `https://triapp.fr/api/stripe/webhook`
-- Events : `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`
+- Events : `checkout.session.completed`, `customer.subscription.updated`,
+  `customer.subscription.deleted`, `invoice.payment_failed`
 - Copier le signing secret → `.env.local` → `STRIPE_WEBHOOK_SECRET`
 
-## Déployer une mise à jour
+## Journaux
 
 ```bash
-git push origin main  # le webhook se charge du reste
-```
-
-## Logs
-
-```bash
-ssh -i ~/.ssh/<your-key> <user>@<vps-ip>
-tail -f /home/debian/deploy-triage-app.log
-pm2 logs triage-app
+tail -f /var/log/deploybot/deploy-triage-app.log        # déploiements (lisible sans sudo)
+journalctl -u triage-app@3002 -f                        # l'application, couleur par couleur
 ```
