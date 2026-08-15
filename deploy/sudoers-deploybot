@@ -1,17 +1,31 @@
 # Miroir versionné de /etc/sudoers.d/deploybot sur le VPS (root:root, 0440).
-# Ce fichier concerne les trois applications de la box ; il est repris ici parce que la
-# bascule bleu/vert de triage-app en dépend. Source de reconstruction complète :
+#
+# ATTENTION — ce fichier est PARTAGÉ par les trois applications de la box (triage-app,
+# of-qualiopi, Académie). Il est repris ici parce que la bascule bleu/vert en dépend, mais il ne
+# faut jamais le poser en écrasant l'existant sans relire la copie du serveur : c'est exactement
+# l'erreur commise le 15/08/2026, qui a effacé pendant quelques minutes la règle d'alerte d'échec
+# posée le même jour par une autre session (tâche #1642). Source de reconstruction complète :
 # ~/dev/ovh/infra-monitoring/scripts/vps-rebuild/reference-145.239.55.58/
 #
 # Droits du compte de déploiement. Repris de ce que les scripts deploy-*.sh exécutent
 # réellement : devenir le compte applicatif, et redémarrer son service. Rien de plus.
-# Volontairement PAS de (ALL) ALL, PAS de sudo vers root hors des redémarrages.
+# Volontairement PAS de (ALL) ALL, PAS de sudo vers root hors de ce qui est énuméré ici.
 deploybot ALL=(elearning, triageapp, ofqualiopi) NOPASSWD: ALL
 deploybot ALL=(root) NOPASSWD: /usr/bin/systemctl restart plateforme-elearning, /usr/bin/systemctl restart of-qualiopi
 
-# Bascule bleu/vert de triage-app (15/08/2026). Six commandes littérales, sans joker :
-# le compte de déploiement obtient les trois gestes privilégiés de la bascule sans recevoir
-# le droit d'écrire dans /etc/nginx ni de piloter systemd librement. Le script appelé est
-# root:root 0755 — deploybot ne peut pas le modifier. Cf. deploy/triapp-bascule.
-# `systemctl restart triage-app` a disparu avec le service mono-instance qu'il visait.
+# Alerte d'échec de déploiement (tâche #1642, 15/08/2026). Le relais d'alerte de la box est en
+# `rwx------ root` : `deploybot` ne peut pas prévenir un humain que le déploiement qu'il vient de
+# lancer a échoué — et c'est ce silence qui a laissé la production figée deux jours en août.
+# Plutôt que d'ouvrir le relais ou d'élargir ce compte, une voie étroite : TROIS invocations
+# littérales, aucun joker. `deploybot` ne choisit ni le fichier lu, ni le sujet, ni le
+# destinataire — seulement lequel des trois déploiements est en panne. Le code de sortie n'est
+# pas un argument (ce serait le joker) : il est écrit dans le journal, que le script relit.
+deploybot ALL=(root) NOPASSWD: /usr/local/sbin/alerte-deploiement.sh triage-app, /usr/local/sbin/alerte-deploiement.sh of-qualiopi, /usr/local/sbin/alerte-deploiement.sh plateforme-elearning
+
+# Bascule bleu/vert de triage-app (tâche #1652, 15/08/2026). Même principe : six commandes
+# littérales, sans joker. Le compte de déploiement obtient les trois gestes privilégiés de la
+# bascule sans recevoir le droit d'écrire dans /etc/nginx ni de piloter systemd librement. Le
+# script appelé est root:root 0755 — deploybot ne peut pas le modifier. Cf. deploy/triapp-bascule.
+# `systemctl restart triage-app` a disparu de la ligne ci-dessus avec le service mono-instance
+# qu'il visait.
 deploybot ALL=(root) NOPASSWD: /usr/local/sbin/triapp-bascule demarrer 3002, /usr/local/sbin/triapp-bascule demarrer 3003, /usr/local/sbin/triapp-bascule activer 3002, /usr/local/sbin/triapp-bascule activer 3003, /usr/local/sbin/triapp-bascule arreter 3002, /usr/local/sbin/triapp-bascule arreter 3003
