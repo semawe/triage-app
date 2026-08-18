@@ -91,7 +91,12 @@ export default function NavBar({
     const orgId = e.target.value;
     startSwitch(async () => {
       await switchOrg(orgId);
-      // Hard navigation to ensure the new cookie is picked up by the RSC tree
+      // Navigation dure assumée, et non un oubli de `router.push()` : le cookie
+      // `triage-active-org` que `switchOrg` vient de poser est lu côté serveur par
+      // `requireOrg()`. Une navigation client réutiliserait l'arbre RSC déjà rendu
+      // pour l'organisation précédente — donc afficherait les données de l'ancienne
+      // organisation sous le nom de la nouvelle.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
       window.location.href = `/${locale}/me`;
     });
   }

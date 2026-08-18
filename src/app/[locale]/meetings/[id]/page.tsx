@@ -25,7 +25,6 @@ import SyncPhase from "./SyncPhase";
 import SendRecapButton from "./SendRecapButton";
 import SSEListener from "./SSEListener";
 import { Link } from "@/i18n/navigation";
-import { updateSpacePrivacy } from "@/actions/space";
 import { getLocale } from "next-intl/server";
 
 type Props = { params: Promise<{ id: string }> };
@@ -161,8 +160,6 @@ export default async function MeetingPage({ params }: Props) {
   const setPrivateTrue = updateMeetingPrivacy.bind(null, meeting.id, true);
   const setPrivateFalse = updateMeetingPrivacy.bind(null, meeting.id, false);
   const setPrivateNull = updateMeetingPrivacy.bind(null, meeting.id, null);
-  const setSpacePrivateTrue = updateSpacePrivacy.bind(null, meeting.spaceId, true);
-  const setSpacePrivateFalse = updateSpacePrivacy.bind(null, meeting.spaceId, false);
 
   const dateLabel = meeting.date.toLocaleDateString("fr-FR", {
     weekday: "long", day: "numeric", month: "long", year: "numeric",
