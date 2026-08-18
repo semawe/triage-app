@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { getGuestByToken } from "@/lib/guest";
 import { enterAsGuest } from "@/actions/guest";
 
 type Props = { params: Promise<{ token: string }> };
@@ -6,15 +7,18 @@ type Props = { params: Promise<{ token: string }> };
 export default async function GuestEntryPage({ params }: Props) {
   const { token } = await params;
 
-  const guest = await prisma.meetingGuest.findUnique({
-    where: { token },
-    include: { meeting: { include: { space: { select: { name: true } } } } },
-  });
+  // Page publique par nécessité : son visiteur n'a par construction pas de
+  // session. Le jeton EST son identité, et `getGuestByToken` en est la garde —
+  // les conditions de validité ne sont pas réécrites ici (cf. src/lib/guest.ts).
+  const guest = await getGuestByToken(token);
+  const meeting = guest
+    ? await prisma.meeting.findUnique({
+        where: { id: guest.meetingId },
+        include: { space: { select: { name: true } } },
+      })
+    : null;
 
-  const invalid =
-    !guest || !!guest.revokedAt || (guest.expiresAt ? guest.expiresAt < new Date() : false);
-
-  if (invalid) {
+  if (!guest || !meeting) {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center bg-gray-950 px-4">
         <div className="w-full max-w-sm text-center space-y-3">
@@ -29,7 +33,7 @@ export default async function GuestEntryPage({ params }: Props) {
     );
   }
 
-  const title = guest!.meeting.title?.trim() || `Réunion — ${guest!.meeting.space.name}`;
+  const title = meeting.title?.trim() || `Réunion — ${meeting.space.name}`;
   const enter = enterAsGuest.bind(null, token);
 
   return (
@@ -55,7 +59,7 @@ export default async function GuestEntryPage({ params }: Props) {
               type="text"
               required
               autoFocus
-              defaultValue={guest!.name ?? ""}
+              defaultValue={guest.name ?? ""}
               placeholder="Prénom Nom"
               className="w-full rounded-xl bg-gray-800 border border-gray-700 px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
             />
@@ -69,7 +73,7 @@ export default async function GuestEntryPage({ params }: Props) {
         </form>
 
         <p className="text-center text-xs text-gray-600">
-          Invité comme <span className="text-gray-400">{guest!.email}</span>
+          Invité comme <span className="text-gray-400">{guest.email}</span>
         </p>
       </div>
     </main>
