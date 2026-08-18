@@ -43,3 +43,9 @@ next-env.d.ts
 
 /src/generated/prisma
 .claude/
+
+# Contexte projet et artefacts d'infrastructure — dépôt PRIVÉ semawe/triage-app-meta.
+# CLAUDE.md est un lien symbolique local vers ../triapp-meta/CLAUDE.md : ignoré ici pour
+# qu'il ne puisse pas revenir dans un dépôt public.
+/CLAUDE.md
+/deploy/

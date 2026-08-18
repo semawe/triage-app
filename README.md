@@ -211,10 +211,12 @@ Points à respecter :
   faut du swap ; en dernier recours, `SKIP_BUILD_CHECKS=1` après un
   `npm run typecheck` passé en amont.
 
-Le dossier [`deploy/`](deploy/) contient l'installation réelle de
-<https://triapp.fr> : unité systemd, configuration Nginx, script de déploiement
-bleu/vert sans coupure de service. C'est un exemple fonctionnel, à adapter, pas
-une exigence.
+L'instance <https://triapp.fr> tourne sous systemd derrière Nginx, avec un
+déploiement bleu/vert sans coupure : la nouvelle version est construite et
+démarrée sur un second port, interrogée sur `/api/health`, et le proxy ne pivote
+dessus qu'une fois qu'elle répond. Rien de tout cela n'est nécessaire pour
+auto-héberger l'application — `npm run build` puis `npm start` derrière le proxy
+de votre choix suffisent.
 
 ## Vérifier que ça tourne
 
@@ -269,7 +271,6 @@ src/
 messages/       traductions fr.json et en.json
 prisma/         schéma et migrations
 tests/          tests d'intégration Vitest
-deploy/         miroir de l'installation de triapp.fr
 ```
 
 Quelques partis pris qui expliquent le reste :
