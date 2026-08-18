@@ -15,19 +15,38 @@ import { hasFeature } from "./features";
  */
 export const GUEST_COOKIE = "triapp_guest";
 
-/** Le MeetingGuest valide porté par le cookie pour cette réunion, sinon null. */
-export async function getGuestForMeeting(meetingId: string) {
-  const store = await cookies();
-  const token = store.get(GUEST_COOKIE)?.value;
+/**
+ * Le MeetingGuest valide porté par ce jeton, sinon null.
+ *
+ * Garde nommée du porteur de jeton — l'équivalent, pour un invité, de ce que
+ * `requireAuth()` est pour un membre. Les trois conditions de validité (jeton
+ * connu, non révoqué, non expiré) vivent ICI et nulle part ailleurs : elles
+ * étaient réécrites à l'identique dans la page d'entrée invité et dans
+ * `enterAsGuest`, où une divergence n'aurait rien cassé de visible tout en
+ * ouvrant un accès révoqué. Toute nouvelle porte d'entrée invité passe par
+ * cette fonction plutôt que par un `findUnique` sur `token`.
+ */
+export async function getGuestByToken(token: string) {
   if (!token) return null;
 
   const guest = await prisma.meetingGuest.findUnique({
     where: { token },
     include: { user: { select: { id: true, name: true } } },
   });
-  if (!guest || guest.meetingId !== meetingId) return null;
+  if (!guest) return null;
   if (guest.revokedAt) return null;
   if (guest.expiresAt && guest.expiresAt < new Date()) return null;
+  return guest;
+}
+
+/** Le MeetingGuest valide porté par le cookie pour cette réunion, sinon null. */
+export async function getGuestForMeeting(meetingId: string) {
+  const store = await cookies();
+  const token = store.get(GUEST_COOKIE)?.value;
+  if (!token) return null;
+
+  const guest = await getGuestByToken(token);
+  if (!guest || guest.meetingId !== meetingId) return null;
   return guest;
 }
 

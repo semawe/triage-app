@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { requireMeetingAccess } from "@/lib/session";
-import { GUEST_COOKIE } from "@/lib/guest";
+import { GUEST_COOKIE, getGuestByToken } from "@/lib/guest";
 import { sendEmail } from "@/lib/email";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -96,9 +96,11 @@ export async function revokeGuest(meetingId: string, guestId: string) {
  * et redirige vers la vue invité de la réunion. Aucune authentification requise.
  */
 export async function enterAsGuest(token: string, formData: FormData) {
-  const guest = await prisma.meetingGuest.findUnique({ where: { token } });
+  // Le jeton fait foi : `getGuestByToken` porte les trois conditions de validité
+  // (connu, non révoqué, non expiré) pour cette porte comme pour la page d'entrée.
+  const guest = await getGuestByToken(token);
   const locale = await getLocale().catch(() => "fr");
-  if (!guest || guest.revokedAt || (guest.expiresAt && guest.expiresAt < new Date())) {
+  if (!guest) {
     redirect(`/${locale}/guest/${token}`); // la page rend l'état « lien invalide »
   }
 
