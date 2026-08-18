@@ -77,6 +77,11 @@ Puis ouvrir `.env.local` et renseigner au minimum `DATABASE_URL`, `AUTH_SECRET`,
 commentée dans le fichier : à quoi elle sert, si elle est obligatoire, et ce que
 le code fait en son absence.
 
+`.env.local` est lu par l'application (Next.js le charge de lui-même) comme par
+les commandes `prisma` (`prisma.config.ts` s'en charge). Une variable déjà
+exportée dans l'environnement l'emporte sur le fichier, ce qui permet de viser
+une autre base le temps d'une commande — c'est ainsi que tournent les tests.
+
 Pour `AUTH_SECRET` :
 
 ```bash
@@ -119,9 +124,9 @@ défaut, <http://localhost:3000/fr>.
 
 ### 6. Créer la première organisation
 
-Se connecter avec un compte Google : l'application propose alors de créer une
-organisation, et le compte qui la crée en devient administrateur. Rien à insérer
-en base à la main.
+Se connecter avec un compte Google. N'appartenant encore à aucune organisation,
+le compte est redirigé vers `/fr/setup`, où il en crée une et en devient
+administrateur. Rien à insérer en base à la main.
 
 Pour se donner en plus les droits de super-administrateur de la plateforme
 (console `/admin`, qui donne la vue sur toutes les organisations), insérer une
