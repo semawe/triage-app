@@ -23,6 +23,7 @@ anime des réunions à ordre du jour vivant.
 - [Mise en production](#mise-en-production)
 - [Vérifier que ça tourne](#vérifier-que-ça-tourne)
 - [Modules optionnels](#modules-optionnels)
+- [Où l'authentification est vérifiée](#où-lauthentification-est-vérifiée)
 - [Architecture du code](#architecture-du-code)
 - [Contribuer](#contribuer)
 
@@ -170,6 +171,11 @@ La suite est faite de tests d'intégration exécutés contre une vraie base
 PostgreSQL : les gardes d'autorisation multi-tenant ne se vérifient pas à coups
 de mocks. Il faut donc une base de test, distincte de la base de développement.
 
+Deux fichiers s'exécutent sans base et méritent d'être lus avant de contribuer :
+[`gardes.test.ts`](tests/gardes.test.ts), qui refuse un point d'entrée sans garde
+(voir [Où l'authentification est vérifiée](#où-lauthentification-est-vérifiée)), et
+[`csp.test.ts`](tests/csp.test.ts), qui tient la politique de sécurité de contenu.
+
 ```bash
 createdb triageapp_test
 DATABASE_URL="postgresql://user@localhost:5432/triageapp_test" npx prisma migrate deploy
@@ -259,6 +265,45 @@ l'envoi est désactivé proprement et le reste du produit fonctionne ; les liens
 d'invitation restent copiables depuis l'interface. Un autre relais SMTP demande
 de modifier ce fichier.
 
+## Où l'authentification est vérifiée
+
+**Pas dans `src/proxy.ts`.** Le portier ne vérifie aucune identité, et il ne doit
+pas s'en charger : il s'exécute sur le runtime edge, sans accès à la base, donc il
+ne peut ni lire une session ni constater une révocation. Un cookie forgé, expiré
+ou révoqué y passerait sans encombre. Il pose la politique de sécurité de contenu
+et laisse next-intl router les langues, rien de plus.
+
+**Dans chaque page, chaque action serveur et chaque route d'API, une par une.**
+Cinq gardes nommées, chacune interrogeant la base :
+
+| Garde | Fichier | Ce qu'elle établit |
+| --- | --- | --- |
+| `requireAuth()` | `src/lib/session.ts` | une session valide, sinon redirection vers `/login` |
+| `requireOrg()` | `src/lib/session.ts` | appartenance à l'organisation active, et abonnement en règle |
+| `requireOrgForBilling()` | `src/lib/session.ts` | idem, mur de facturation levé — écrans de régularisation seulement |
+| `requireMeetingAccess()` | `src/lib/session.ts` | appartenance à l'organisation de la réunion, et droit de la voir si elle est confidentielle |
+| `requireSuperAdmin()` | `src/lib/session.ts` | administrateur de la plateforme |
+| `canManageSpace()` | `src/lib/authz.ts` | admin de l'organisation, ou lead du cercle visé |
+| `getGuestByToken()` / `resolveParticipant()` | `src/lib/guest.ts` | porteur d'un jeton d'invité valide — la seule identité sans session |
+
+Un identifiant reçu du client n'est jamais tenu pour appartenant à l'organisation
+de l'appelant : la garde le revérifie. C'est la propriété qu'une contribution
+touchant à une mutation doit conserver.
+
+**Et quelque chose le compte.** Une règle « une par une » écrite en commentaire
+tient jusqu'au prochain fichier ajouté un vendredi soir : une porte non gardée ne
+casse rien, ne lève rien, et n'apparaît dans aucun test.
+[`tests/gardes.test.ts`](tests/gardes.test.ts) énumère les pages, les routes d'API
+et les modules d'actions du dépôt, et échoue sur le point d'entrée qui n'atteint
+aucune garde — directement ou par un helper local. Les rares portes publiques y
+sont inscrites avec leur motif écrit, et le test refuse un motif trop court pour
+en être un.
+
+Ce que cet invariant ne prouve pas : que la garde atteinte soit *la bonne*. C'est
+le travail de [`tests/autorisations.test.ts`](tests/autorisations.test.ts), qui
+fait agir des comptes sans droit — dont un consultant lead chez une organisation
+et simple membre chez une autre — et vérifie que la base n'a pas bougé.
+
 ## Architecture du code
 
 ```
@@ -277,10 +322,8 @@ Quelques partis pris qui expliquent le reste :
 
 - **Server Actions plutôt qu'API REST.** Quatre routes HTTP seulement :
   NextAuth, webhook Stripe, flux SSE, sonde de santé.
-- **Autorisation revérifiée à chaque mutation.** Un identifiant reçu du client
-  n'est jamais tenu pour appartenant à l'organisation de l'appelant : les gardes
-  de `src/lib/session.ts` et `src/lib/authz.ts` le revérifient. Toute
-  contribution touchant à une action de mutation doit conserver cette propriété.
+- **Autorisation revérifiée à chaque mutation**, jamais dans le portier : voir
+  [Où l'authentification est vérifiée](#où-lauthentification-est-vérifiée).
 - **Prisma v7 avec l'adaptateur `@prisma/adapter-pg`**, client généré dans
   `src/generated/prisma` (non versionné).
 - **Next.js 16, App Router.** `params` est une `Promise` : `const { id } = await params`.
@@ -298,7 +341,10 @@ npx eslint src tests
 npm test          # avec DATABASE_URL vers la base de test
 ```
 
-Une correction de sécurité s'accompagne du test qui échoue sans elle.
+Une correction de sécurité s'accompagne du test qui échoue sans elle. Et une
+garde ajoutée s'accompagne de la preuve qu'on l'a vue échouer : retirer la garde du
+code, constater qu'un test la réclame, la remettre. Un test d'autorisation qui
+vérifie « rien n'a bougé » passe aussi quand il ne mesure rien.
 
 `AGENTS.md` est réécrit par `next dev` à partir de la version de Next installée.
 Le fichier versionné est aligné sur elle : si un `npm run dev` le laisse modifié,

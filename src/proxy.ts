@@ -48,9 +48,11 @@
  * l'échappement par React, et la seule balise du dépôt qui l'outrepasse
  * (`dangerouslySetInnerHTML` dans `src/app/layout.tsx`) porte une constante littérale.
  *
- * Référence : `apps/erp/src/proxy.ts` et `apps/erp/docs/09-pieces-de-reference.md` § 3.
- * Copie consciente du 18/08/2026 — la structure vient de l'ERP, les assouplissements 2 et 3
- * sont propres à Triapp et n'existent pas là-bas.
+ * Provenance : copie consciente du 18/08/2026, dans le cadre de l'alignement des applications
+ * internes de Sémawé. La structure de la politique et le raisonnement sur le portier viennent
+ * d'une application interne du parc qui les avait déjà résolus ; les assouplissements 2 et 3
+ * sont propres à Triapp et n'existent pas là-bas. Ce dépôt est public : les chemins de la
+ * référence interne ne sont pas cités ici, ils sont dans le message du commit correspondant.
  */
 
 import createMiddleware from "next-intl/middleware"; // next-intl v4 — convention « proxy » (Next.js 16+)
