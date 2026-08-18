@@ -65,6 +65,11 @@ const GARDES = [
 /**
  * Les portes qui n'atteignent aucune garde, et pourquoi. Toute entrée porte un
  * motif : une porte publique sans motif écrit est un oubli déguisé en décision.
+ *
+ * Attention particulière aux `layout.tsx` : ils rendent à chaque requête, et le
+ * jour où l'un d'eux lira une donnée d'organisation, son motif ci-dessous
+ * deviendra faux sans que rien ne le signale. Un layout qui touche à la base sort
+ * de cette liste et prend une garde.
  */
 const PORTES_PUBLIQUES: Record<string, string> = {
   "src/app/[locale]/login/page.tsx":
@@ -75,11 +80,33 @@ const PORTES_PUBLIQUES: Record<string, string> = {
     "Redirection pure vers /circles (les espaces ont fusionné avec les cercles). Ne lit ni n'écrit aucune donnée ; la garde est sur la cible.",
   "src/app/[locale]/spaces/[id]/page.tsx":
     "Redirection pure vers /circles/[id]. Même motif : la garde est sur la page canonique.",
+  "src/app/layout.tsx":
+    "Layout racine : il pose <html>, les fontes et la balise d'enregistrement du service worker, et lit `x-nonce` dans les en-têtes. Il ne touche pas à la base et ne rend aucune donnée d'organisation.",
+  "src/app/[locale]/layout.tsx":
+    "Layout de langue : il valide la langue de l'URL et charge les traductions, qui sont les mêmes pour tout le monde. Aucun accès à la base, aucune donnée d'organisation. Les pages qu'il enveloppe portent chacune leur garde.",
   "src/app/api/health/route.ts":
     "Sonde du déploiement bleu/vert, interrogée avant que le proxy ne bascule. Ne révèle que le nom de l'application et n'accède pas à la base : la lui fermer rendrait le déploiement dépendant d'une session.",
   "src/app/api/auth/[...nextauth]/route.ts":
     "Point d'entrée d'authentification lui-même : c'est lui qui établit la session. Le handler NextAuth porte ses propres contrôles (état OAuth, PKCE, CSRF).",
 };
+
+/**
+ * Les noms de fichiers par lesquels Next.js fait entrer une requête dans du code
+ * à nous. `page` et `route` sont les évidents ; `layout` et `template` rendent à
+ * chaque requête et peuvent lire la base tout autant, `default` sert les routes
+ * parallèles. Toutes les extensions que Next accepte sont ici, pas seulement
+ * celles employées aujourd'hui : au premier `page.jsx` du dépôt, un marcheur qui
+ * ne connaît que `page.tsx` cesse silencieusement de voir la porte.
+ */
+const ENTREES_NEXT = ["page", "layout", "template", "default", "route"];
+const EXTENSIONS = ["tsx", "ts", "jsx", "js", "mjs"];
+
+/** Le fichier est-il un point d'entrée Next, quel que soit son suffixe ? */
+export function estEntreeNext(nomDeFichier: string): boolean {
+  const m = /^([^.]+)\.([^.]+)$/.exec(nomDeFichier);
+  if (!m) return false;
+  return ENTREES_NEXT.includes(m[1]) && EXTENSIONS.includes(m[2]);
+}
 
 function fichiersSous(dossier: string, garde: (f: string) => boolean): string[] {
   const absolu = join(RACINE, dossier);
@@ -328,15 +355,38 @@ function retourObjetNu(code: string): string[] {
     .map((d) => d.nom);
 }
 
-const PAGES = fichiersSous("src/app", (f) => f === "page.tsx");
-const ROUTES = fichiersSous("src/app/api", (f) => f === "route.ts");
+/** Tous les fichiers de `src/app`, pour pouvoir affirmer qu'aucun n'échappe au tri. */
+const TOUT_APP = fichiersSous("src/app", () => true);
+
+const ENTREES_APP = TOUT_APP.filter((c) => estEntreeNext(c.split("/").pop()!));
+const ROUTES = ENTREES_APP.filter((c) => /\/route\.[^./]+$/.test(c));
+const PAGES = ENTREES_APP.filter((c) => !/\/route\.[^./]+$/.test(c));
 const ACTIONS = fichiersSous("src/actions", (f) => f.endsWith(".ts"));
 
 describe("chaque porte d'entrée atteint une garde", () => {
-  it("trouve bien les points d'entrée (sinon l'invariant est creux)", () => {
-    expect(PAGES.length).toBeGreaterThanOrEqual(26);
-    expect(ROUTES.length).toBeGreaterThanOrEqual(4);
-    expect(ACTIONS.length).toBeGreaterThanOrEqual(15);
+  /**
+   * Ce contrôle-ci a d'abord été écrit comme un plancher — « au moins 26 pages » —
+   * c'est-à-dire exactement la faute que la doctrine du chantier nomme : un
+   * comptage qui rend vert sur une anomalie réelle. Un plancher ne voit pas le
+   * marcheur qui trouve 26 fichiers là où il y en a 30. Il est donc remplacé par
+   * une exhaustivité : tout fichier de `src/app` est soit un point d'entrée
+   * analysé, soit un fichier qui n'en est pas un, et rien ne tombe entre les deux.
+   */
+  it("n'ignore aucun fichier de src/app", () => {
+    const analyses = new Set(ENTREES_APP);
+    const orphelins = TOUT_APP.filter((c) => {
+      if (analyses.has(c)) return false;
+      const nom = c.split("/").pop()!;
+      // Un composant, une feuille de style, une icône : pas une porte d'entrée.
+      // Ce qui porte un nom réservé de Next en est une, et doit être analysé.
+      return ENTREES_NEXT.includes(nom.split(".")[0]);
+    });
+    expect(orphelins, "fichier au nom réservé de Next non analysé").toEqual([]);
+    // Et le marcheur trouve bien quelque chose : une liste vide rendrait tous les
+    // `it.each` ci-dessous vacants, donc la suite verte sans rien vérifier.
+    expect(PAGES.length).toBeGreaterThan(0);
+    expect(ROUTES.length).toBeGreaterThan(0);
+    expect(ACTIONS.length).toBeGreaterThan(0);
   });
 
   it.each([...PAGES, ...ROUTES])("%s", (chemin) => {
