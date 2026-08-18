@@ -16,9 +16,16 @@
  * parcours complet — page publique, action serveur, cookie, redirection —
  * fonctionnait sous cette politique.
  *
- * Une limite, faute de mieux : le navigateur intégré utilisé pour la
+ * `connect-src 'self'` a d'abord été raisonné (« le flux d'événements est de même
+ * origine »), puis observé le 18/08 sur le parcours réel : sur la vue invité, un
+ * `EventSource` vers `/api/events/<réunion>` passe en `readyState: 1` et reçoit le
+ * message d'un vrai broadcast — un point ajouté à l'ordre du jour — sans violation
+ * au journal. C'est la fonction temps réel de l'application : la raisonner ne
+ * suffisait pas.
+ *
+ * Une limite subsiste, faute de mieux : le navigateur intégré utilisé pour la
  * vérification ne sait pas enregistrer de service worker, y compris sur une page
- * témoin servie sans aucune CSP. `worker-src 'self'` est donc raisonné et non
+ * témoin servie sans aucune CSP. `worker-src 'self'` reste donc raisonné et non
  * observé.
  */
 import { describe, it, expect } from "vitest";
