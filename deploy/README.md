@@ -17,6 +17,10 @@ la prod bronche — c'est le piège à connaître.
 | `nginx-triapp-upstream.conf` | `/etc/nginx/conf.d/triapp-upstream.conf` (réécrit à chaque déploiement) |
 | `sudoers-deploybot` | `/etc/sudoers.d/deploybot` |
 
+Les variables d'environnement ne sont plus décrites ici : le fichier `.env.example`
+à la racine du dépôt fait foi, commentaire par commentaire, et sert aussi bien au
+développement local qu'à la production.
+
 ## Architecture
 
 - Next.js servi par **systemd**, deux instances du template `triage-app@.service`
@@ -74,7 +78,7 @@ journal afficher `Deploy OK` avant de merger le suivant.
 cd /home/debian
 git clone https://github.com/semawe/triage-app.git triage-app
 cd triage-app
-cp deploy/.env.local.example .env.local   # puis renseigner les vraies valeurs
+cp .env.example .env.local                # puis renseigner les vraies valeurs
 psql -U postgres -c "CREATE DATABASE triageapp_prod;"
 npm ci --ignore-scripts
 npx prisma migrate deploy
