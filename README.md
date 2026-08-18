@@ -299,6 +299,11 @@ npm test          # avec DATABASE_URL vers la base de test
 
 Une correction de sécurité s'accompagne du test qui échoue sans elle.
 
+`AGENTS.md` est réécrit par `next dev` à partir de la version de Next installée.
+Le fichier versionné est aligné sur elle : si un `npm run dev` le laisse modifié,
+c'est que Next a changé de version, et la modification se commite avec le reste
+plutôt qu'elle ne se jette.
+
 **Réserve sur npm.** Le lockfile est maintenu sous **npm 10.9.8**. Un
 `package-lock.json` réécrit par npm 11 est refusé par `npm ci` sous npm 10, ce
 qui casse la chaîne de déploiement sans que rien ne le signale. Toute
