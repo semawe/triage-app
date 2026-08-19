@@ -110,5 +110,44 @@
       "reference": "Référence",
       "trash": "À abandonner"
     }
+  },
+  "setup": {
+    "joinTitle": "Rejoindre ton organisation",
+    "joinIntroOne": "Ton adresse {email} correspond à cette organisation déjà présente sur triapp.",
+    "joinIntroMany": "Ton adresse {email} correspond à ces organisations déjà présentes sur triapp.",
+    "askToJoin": "Demander à rejoindre →",
+    "noneMatches": "Aucune ne correspond ? Crée la tienne.",
+    "newOrgPlaceholder": "Nom de la nouvelle organisation",
+    "createAnother": "Créer une nouvelle organisation",
+    "createTitle": "Créer votre organisation",
+    "createIntro": "Bienvenue. Commencez par nommer votre organisation.",
+    "orgNameLabel": "Nom de l'organisation",
+    "orgNamePlaceholder": "Ex : Sémawé, Acme Corp…"
+  },
+  "billingWall": {
+    "title": "Accès suspendu",
+    "adminMessage": "L'abonnement de votre organisation est expiré ou en retard de paiement. Régularisez depuis les paramètres de facturation pour rouvrir l'accès.",
+    "memberMessage": "L'abonnement de votre organisation est expiré ou en retard de paiement. Contactez l'administrateur de votre organisation pour régulariser la situation.",
+    "cta": "Régulariser l'abonnement →",
+    "signedInAs": "Vous êtes connecté en tant que {email}"
+  },
+  "guest": {
+    "invalidTitle": "Lien invalide ou expiré",
+    "invalidBody": "Ce lien d'invitation n'est plus valable. Demande à l'hôte de la réunion de t'en renvoyer un.",
+    "joinTitle": "Rejoindre la réunion",
+    "joinIntro": "Tu es invité(e) à {title} en tant qu'invité ponctuel. Tu pourras suivre la réunion, ajouter des points et recevoir le compte-rendu.",
+    "nameLabel": "Ton nom",
+    "namePlaceholder": "Prénom Nom",
+    "enter": "Entrer dans la réunion →",
+    "invitedAs": "Invité comme {email}",
+    "expiredTitle": "Accès invité expiré",
+    "expiredBody": "Ta session invité n'est plus valable. Rouvre le lien d'invitation reçu par email pour rejoindre la réunion.",
+    "notFound": "Réunion introuvable.",
+    "banner": "Tu participes en tant qu'invité ({name}) — accès limité à cette réunion.",
+    "agenda": "Ordre du jour",
+    "noItems": "Aucun point",
+    "proposePlaceholder": "Proposer un point…",
+    "closed": "Réunion terminée",
+    "meetingOf": "Réunion — {space}"
   }
 }

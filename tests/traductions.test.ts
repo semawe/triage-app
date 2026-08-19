@@ -131,7 +131,7 @@ describe("chaînes visibles restées en dur", () => {
    * Cliquet. Baisser cette valeur à chaque conversion, jamais la remonter : une
    * hausse signifie qu'on a ajouté de l'écran non traduit, et le test la refuse.
    */
-  const PLAFOND = 266;
+  const PLAFOND = 252;
 
   it(`n'en compte pas plus que le plafond (${PLAFOND})`, () => {
     const pires = [...parFichier]

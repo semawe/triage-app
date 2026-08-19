@@ -110,5 +110,44 @@
       "reference": "Reference",
       "trash": "Drop it"
     }
+  },
+  "setup": {
+    "joinTitle": "Join your organisation",
+    "joinIntroOne": "Your address {email} matches this organisation already on triapp.",
+    "joinIntroMany": "Your address {email} matches these organisations already on triapp.",
+    "askToJoin": "Ask to join →",
+    "noneMatches": "None of these? Create your own.",
+    "newOrgPlaceholder": "Name of the new organisation",
+    "createAnother": "Create a new organisation",
+    "createTitle": "Create your organisation",
+    "createIntro": "Welcome. Start by naming your organisation.",
+    "orgNameLabel": "Organisation name",
+    "orgNamePlaceholder": "e.g. Sémawé, Acme Corp…"
+  },
+  "billingWall": {
+    "title": "Access suspended",
+    "adminMessage": "Your organisation's subscription has expired or a payment is overdue. Settle it from the billing settings to restore access.",
+    "memberMessage": "Your organisation's subscription has expired or a payment is overdue. Contact your organisation's administrator to settle it.",
+    "cta": "Settle the subscription →",
+    "signedInAs": "You are signed in as {email}"
+  },
+  "guest": {
+    "invalidTitle": "Invalid or expired link",
+    "invalidBody": "This invitation link is no longer valid. Ask the meeting host to send you a new one.",
+    "joinTitle": "Join the meeting",
+    "joinIntro": "You are invited to {title} as a one-off guest. You will be able to follow the meeting, add agenda items and receive the minutes.",
+    "nameLabel": "Your name",
+    "namePlaceholder": "First and last name",
+    "enter": "Enter the meeting →",
+    "invitedAs": "Invited as {email}",
+    "expiredTitle": "Guest access expired",
+    "expiredBody": "Your guest session is no longer valid. Reopen the invitation link you received by email to rejoin the meeting.",
+    "notFound": "Meeting not found.",
+    "banner": "You are taking part as a guest ({name}) — access limited to this meeting.",
+    "agenda": "Agenda",
+    "noItems": "No items",
+    "proposePlaceholder": "Propose an item…",
+    "closed": "Meeting ended",
+    "meetingOf": "Meeting — {space}"
   }
 }

@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { getGuestForMeeting } from "@/lib/guest";
 import { addAgendaItem } from "@/actions/meeting";
 import SSEListener from "../../meetings/[id]/SSEListener";
+import { getTranslations } from "next-intl/server";
 
 type Props = { params: Promise<{ meetingId: string }> };
 
@@ -22,6 +23,7 @@ const OUTPUT_TYPE_LABELS: Record<string, string> = {
 
 export default async function GuestMeetingPage({ params }: Props) {
   const { meetingId } = await params;
+  const t = await getTranslations("guest");
 
   const guest = await getGuestForMeeting(meetingId);
 
@@ -30,10 +32,9 @@ export default async function GuestMeetingPage({ params }: Props) {
       <main className="flex min-h-screen flex-col items-center justify-center bg-gray-950 px-4">
         <div className="w-full max-w-sm text-center space-y-3">
           <p className="text-3xl">🔒</p>
-          <h1 className="text-xl font-bold text-white">Accès invité expiré</h1>
+          <h1 className="text-xl font-bold text-white">{t("expiredTitle")}</h1>
           <p className="text-sm text-gray-400">
-            Ta session invité n&apos;est plus valable. Rouvre le lien d&apos;invitation reçu par
-            email pour rejoindre la réunion.
+            {t("expiredBody")}
           </p>
         </div>
       </main>
@@ -59,7 +60,7 @@ export default async function GuestMeetingPage({ params }: Props) {
   if (!meeting) {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center bg-gray-950 px-4">
-        <p className="text-sm text-gray-400">Réunion introuvable.</p>
+        <p className="text-sm text-gray-400">{t("notFound")}</p>
       </main>
     );
   }
@@ -80,8 +81,7 @@ export default async function GuestMeetingPage({ params }: Props) {
 
       {/* Bandeau invité */}
       <div className="bg-indigo-950/60 border-b border-indigo-900 px-4 py-2 text-center text-xs text-indigo-200">
-        Tu participes en tant qu&apos;invité ({guest.user?.name ?? guest.email}) — accès limité à
-        cette réunion.
+        {t("banner", { name: guest.user?.name ?? guest.email })}
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
@@ -126,7 +126,7 @@ export default async function GuestMeetingPage({ params }: Props) {
               </div>
             ))}
             {meeting.agendaItems.length === 0 && (
-              <p className="px-3 py-4 text-xs text-gray-600 text-center">Aucun point</p>
+              <p className="px-3 py-4 text-xs text-gray-600 text-center">{t("noItems")}</p>
             )}
           </div>
           {meeting.status !== "closed" && (
@@ -135,7 +135,7 @@ export default async function GuestMeetingPage({ params }: Props) {
                 <input
                   name="title"
                   required
-                  placeholder="Proposer un point…"
+                  placeholder={t("proposePlaceholder")}
                   className="min-w-0 flex-1 rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-600"
                 />
                 <button
@@ -183,7 +183,7 @@ export default async function GuestMeetingPage({ params }: Props) {
         {meeting.status === "closed" && (
           <div className="rounded-xl bg-gray-900 border border-gray-800 p-6 text-center">
             <p className="text-2xl">✓</p>
-            <p className="mt-1 font-semibold text-white">Réunion terminée</p>
+            <p className="mt-1 font-semibold text-white">{t("closed")}</p>
             <p className="mt-1 text-sm text-gray-500">
               Tu recevras le compte-rendu par email s&apos;il est diffusé.
             </p>

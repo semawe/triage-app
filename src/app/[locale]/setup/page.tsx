@@ -1,13 +1,14 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
-import { getLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { createOrg } from "@/actions/org";
 import { Link } from "@/i18n/navigation";
 
 export default async function SetupPage() {
   const session = await auth();
   const locale = await getLocale().catch(() => "fr");
+  const t = await getTranslations("setup");
 
   if (!session?.user?.id) redirect(`/${locale}/login`);
 
@@ -35,11 +36,11 @@ export default async function SetupPage() {
         {matchingOrgs.length > 0 ? (
           <>
             <div className="text-center">
-              <h1 className="text-2xl font-bold text-white">Rejoindre ton organisation</h1>
+              <h1 className="text-2xl font-bold text-white">{t("joinTitle")}</h1>
               <p className="mt-2 text-sm text-gray-400">
-                Ton adresse <span className="text-indigo-300">{email}</span> correspond à
-                {matchingOrgs.length > 1 ? " ces organisations" : " cette organisation"} déjà
-                {matchingOrgs.length > 1 ? " présentes" : " présente"} sur triapp.
+                {matchingOrgs.length > 1
+                  ? t("joinIntroMany", { email })
+                  : t("joinIntroOne", { email })}
               </p>
             </div>
 
@@ -51,14 +52,14 @@ export default async function SetupPage() {
                   className="flex items-center justify-between rounded-xl bg-gray-900 border border-gray-800 px-4 py-3 hover:border-indigo-700 transition-colors"
                 >
                   <span className="text-sm font-medium text-white">{org.name}</span>
-                  <span className="text-xs text-indigo-400">Demander à rejoindre →</span>
+                  <span className="text-xs text-indigo-400">{t("askToJoin")}</span>
                 </Link>
               ))}
             </div>
 
             <div className="border-t border-gray-800 pt-6">
               <p className="mb-3 text-center text-xs text-gray-500">
-                Aucune ne correspond ? Crée la tienne.
+                {t("noneMatches")}
               </p>
               <form action={createOrg} className="space-y-3">
                 <input
@@ -66,14 +67,14 @@ export default async function SetupPage() {
                   name="name"
                   type="text"
                   required
-                  placeholder="Nom de la nouvelle organisation"
+                  placeholder={t("newOrgPlaceholder")}
                   className="w-full rounded-xl bg-gray-800 border border-gray-700 px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
                 />
                 <button
                   type="submit"
                   className="w-full rounded-xl border border-gray-700 px-4 py-3 text-sm font-semibold text-gray-200 hover:bg-gray-800 transition-colors"
                 >
-                  Créer une nouvelle organisation
+                  {t("createAnother")}
                 </button>
               </form>
             </div>
@@ -81,16 +82,16 @@ export default async function SetupPage() {
         ) : (
           <>
             <div className="text-center">
-              <h1 className="text-2xl font-bold text-white">Créer votre organisation</h1>
+              <h1 className="text-2xl font-bold text-white">{t("createTitle")}</h1>
               <p className="mt-2 text-sm text-gray-400">
-                Bienvenue. Commencez par nommer votre organisation.
+                {t("createIntro")}
               </p>
             </div>
 
             <form action={createOrg} className="space-y-4">
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-1.5">
-                  Nom de l&apos;organisation
+                  {t("orgNameLabel")}
                 </label>
                 <input
                   id="name"
@@ -98,7 +99,7 @@ export default async function SetupPage() {
                   type="text"
                   required
                   autoFocus
-                  placeholder="Ex : Sémawé, Acme Corp…"
+                  placeholder={t("orgNamePlaceholder")}
                   className="w-full rounded-xl bg-gray-800 border border-gray-700 px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
                 />
               </div>
