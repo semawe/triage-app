@@ -142,6 +142,10 @@ export function chainesEnDur(source: string): string[] {
     // Expression JavaScript prise entre deux chevrons de comparaison :
     // `remaining >= 0 && remaining < 5 * 60` produit un faux « >= 0 && remaining <ations ».
     if (/&&|\|\||=>|\?\?|===|!==/.test(t)) continue;
+    // Fragment d'annotation de type pris entre le `>` d'un générique et le `<` du
+    // suivant : `}>; searchParams: Promise<`. Le français typographie ses
+    // deux-points précédés d'une espace, donc « Domaines : » n'est pas concerné.
+    if (/\w+\??:\s*(string|number|boolean|Promise|Date|[A-Z]\w*)/.test(t)) continue;
     trouvees.push(t);
   }
 
@@ -164,7 +168,7 @@ describe("chaînes visibles restées en dur", () => {
    * Cliquet. Baisser cette valeur à chaque conversion, jamais la remonter : une
    * hausse signifie qu'on a ajouté de l'écran non traduit, et le test la refuse.
    */
-  const PLAFOND = 177;
+  const PLAFOND = 123;
 
   it(`n'en compte pas plus que le plafond (${PLAFOND})`, () => {
     const pires = [...parFichier]
@@ -192,6 +196,9 @@ describe("chaînes visibles restées en dur", () => {
     expect(chainesEnDur('const w = remaining >= 0 && remaining < 300;')).toEqual([]);
     // Titre écrit sur plusieurs lignes : le cas que le détecteur ratait.
     expect(chainesEnDur('<h2 className="x">\n  Éditeur du site\n</h2>')).toContain("Éditeur du site");
+    expect(chainesEnDur('params: Promise<{ id: string }>; searchParams: Promise<{ tab?: string }>')).toEqual([]);
+    // Et le texte français à deux-points reste compté.
+    expect(chainesEnDur('<span>Domaines :</span>')).toContain("Domaines :");
     // Mais la liste est stricte : une phrase qui CONTIENT un nom propre compte.
     expect(chainesEnDur('<p>Sémawé / Cercle principal</p>')).toContain("Sémawé / Cercle principal");
   });

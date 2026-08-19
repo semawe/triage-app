@@ -210,7 +210,7 @@
     "unassigned": "Non assigné",
     "domainsLabel": "Domaines :",
     "accountabilitiesLabel": "Redevabilités :",
-    "assign": "Assigner :",
+    "assign": "Assigner",
     "roleNamePlaceholder": "Nom du rôle",
     "rolePurposePlaceholder": "Raison d'être du rôle…",
     "roleDomainsPlaceholder": "Domaines (un par ligne)",
@@ -222,7 +222,16 @@
     "noMembers": "Aucun membre dans ce cercle.",
     "addMember": "Ajouter un membre",
     "roleMember": "Membre",
-    "roleLead": "Leader"
+    "roleLead": "Leader",
+    "newSubcircle": "+ Sous-cercle",
+    "governanceTitle": "Raison d'être & gouvernance du cercle",
+    "editRole": "Modifier ce rôle",
+    "createRole": "+ Créer",
+    "noRoles": "Aucun rôle défini dans ce cercle.",
+    "meetingPrivacy": "Confidentialité des réunions",
+    "newMeeting": "+ Nouvelle",
+    "promoteLead": "→ Leader",
+    "demoteMember": "→ Membre"
   },
   "billingInfo": {
     "title": "Coordonnées de facturation",
@@ -286,7 +295,17 @@
   "members": {
     "title": "Membres",
     "you": "(vous)",
-    "noSpaces": "Tu n'es membre d'aucun espace pour l'instant."
+    "noSpaces": "Tu n'es membre d'aucun espace pour l'instant.",
+    "billingPath": "Paramètres › Facturation",
+    "inviteByEmail": "Inviter par email",
+    "inviteByEmailHelp": "Un email avec un lien d'accès est envoyé directement au destinataire. Valable 7 jours.",
+    "orGenerateLink": "Ou générer un lien",
+    "promoteAdmin": "Passer admin",
+    "demoteAdmin": "Retirer admin",
+    "mySpaces": "Mes espaces",
+    "adminOnly": "Seuls les administrateurs peuvent inviter des membres ou modifier les rôles.",
+    "member": "Membre",
+    "generateLinkHelp": "Partage le lien manuellement dans Slack ou par message. Lien à usage unique (une personne), valable 7 jours."
   },
   "actions": {
     "mine": "Mes actions"
@@ -347,7 +366,12 @@
     "projects": "🚧 Projets",
     "notePlaceholder": "Note (optionnel)",
     "projectName": "Nom du projet",
-    "projectDescription": "Description (optionnel)"
+    "projectDescription": "Description (optionnel)",
+    "syncInMeeting": "Phase de synchro en réunion",
+    "noIndicators": "Aucun indicateur défini pour cet espace.",
+    "addShort": "+ Ajouter",
+    "noChecklist": "Aucun item de checklist — les items définis ici sont recochés à chaque réunion.",
+    "noProjects": "Aucun projet suivi dans cet espace."
   },
   "invite": {
     "email": "Email",
@@ -425,5 +449,20 @@
     "licence": "Licence",
     "licenceBody": "Le code source de triapp est publié sous licence <licence>AGPL-3.0</licence>. Le dépôt est accessible sur <repo>GitHub</repo>.",
     "back": "← Retour"
+  },
+  "common": {
+    "save": "Enregistrer",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "create": "Créer",
+    "add": "Ajouter",
+    "remove": "Retirer",
+    "accept": "Accepter",
+    "refuse": "Refuser",
+    "auto": "Auto",
+    "enabled": "Activé",
+    "disabled": "Désactivé",
+    "public": "Public",
+    "confidential": "Confidentiel"
   }
 }

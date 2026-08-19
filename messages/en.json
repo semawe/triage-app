@@ -210,7 +210,7 @@
     "unassigned": "Unassigned",
     "domainsLabel": "Domains:",
     "accountabilitiesLabel": "Accountabilities:",
-    "assign": "Assign:",
+    "assign": "Assign",
     "roleNamePlaceholder": "Role name",
     "rolePurposePlaceholder": "Purpose of the role…",
     "roleDomainsPlaceholder": "Domains (one per line)",
@@ -222,7 +222,16 @@
     "noMembers": "No members in this circle.",
     "addMember": "Add a member",
     "roleMember": "Member",
-    "roleLead": "Lead"
+    "roleLead": "Lead",
+    "newSubcircle": "+ Sub-circle",
+    "governanceTitle": "Purpose & governance of the circle",
+    "editRole": "Edit this role",
+    "createRole": "+ Create",
+    "noRoles": "No roles defined in this circle.",
+    "meetingPrivacy": "Meeting confidentiality",
+    "newMeeting": "+ New",
+    "promoteLead": "→ Lead",
+    "demoteMember": "→ Member"
   },
   "billingInfo": {
     "title": "Billing details",
@@ -286,7 +295,17 @@
   "members": {
     "title": "Members",
     "you": "(you)",
-    "noSpaces": "You are not a member of any circle yet."
+    "noSpaces": "You are not a member of any circle yet.",
+    "billingPath": "Settings › Billing",
+    "inviteByEmail": "Invite by email",
+    "inviteByEmailHelp": "An email with an access link is sent straight to the recipient. Valid for 7 days.",
+    "orGenerateLink": "Or generate a link",
+    "promoteAdmin": "Make admin",
+    "demoteAdmin": "Remove admin",
+    "mySpaces": "My circles",
+    "adminOnly": "Only administrators can invite members or change roles.",
+    "member": "Member",
+    "generateLinkHelp": "Share the link yourself, in Slack or by message. Single-use link (one person), valid for 7 days."
   },
   "actions": {
     "mine": "My actions"
@@ -347,7 +366,12 @@
     "projects": "🚧 Projects",
     "notePlaceholder": "Note (optional)",
     "projectName": "Project name",
-    "projectDescription": "Description (optional)"
+    "projectDescription": "Description (optional)",
+    "syncInMeeting": "Sync phase during the meeting",
+    "noIndicators": "No indicators defined for this circle.",
+    "addShort": "+ Add",
+    "noChecklist": "No checklist items — the items defined here are unticked again for every meeting.",
+    "noProjects": "No projects tracked in this circle."
   },
   "invite": {
     "email": "Email",
@@ -425,5 +449,20 @@
     "licence": "Licence",
     "licenceBody": "The source code of triapp is published under the <licence>AGPL-3.0</licence> licence. The repository is available on <repo>GitHub</repo>.",
     "back": "← Back"
+  },
+  "common": {
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "add": "Add",
+    "remove": "Remove",
+    "accept": "Accept",
+    "refuse": "Decline",
+    "auto": "Auto",
+    "enabled": "On",
+    "disabled": "Off",
+    "public": "Public",
+    "confidential": "Confidential"
   }
 }

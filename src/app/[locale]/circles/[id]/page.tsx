@@ -36,6 +36,7 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
   const { tab = "apercu", circle: selCircle, role: selRole } = await searchParams;
   const ctx = await requireOrg();
   const t = await getTranslations("circle");
+  const tc = await getTranslations("common");
   const tSpace = await getTranslations("space");
   const { session, org, membership } = ctx;
   const viewer = viewerFrom(ctx);
@@ -212,7 +213,7 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
         </span>
         {space.isPrivate && (
           <span className="text-xs text-orange-400 border border-orange-900 rounded-full px-2.5 py-0.5">
-            Confidentiel
+            {tc("confidential")}
           </span>
         )}
       </div>
@@ -264,7 +265,7 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
           {canManage && (
             <div className="rounded-xl bg-gray-900 border border-gray-800 p-4">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-                + Sous-cercle
+                {t("newSubcircle")}
               </p>
               <form action={createSpace} className="flex flex-wrap gap-3 items-end">
                 <input type="hidden" name="parentId" value={space.id} />
@@ -287,7 +288,7 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
                   type="submit"
                   className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors"
                 >
-                  Créer
+                  {tc("create")}
                 </button>
               </form>
             </div>
@@ -301,7 +302,7 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
           {/* Purpose + Domains + Accountabilities */}
           <div className="rounded-xl bg-gray-900 border border-gray-800 p-5">
             <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
-              Raison d&apos;être &amp; gouvernance du cercle
+              {t("governanceTitle")}
             </h2>
             {canManage ? (
               <form action={updateGovernance} className="space-y-4">
@@ -343,7 +344,7 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
                   type="submit"
                   className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors"
                 >
-                  Enregistrer
+                  {tc("save")}
                 </button>
               </form>
             ) : (
@@ -428,7 +429,7 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
                         {canManage && (
                           <form action={deleteThisRole}>
                             <button type="submit" className="text-xs text-gray-600 hover:text-red-400 transition-colors">
-                              Supprimer
+                              {tc("delete")}
                             </button>
                           </form>
                         )}
@@ -479,7 +480,7 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
                                 type="submit"
                                 className="rounded-lg bg-indigo-900/50 border border-indigo-800 px-3 py-1.5 text-xs font-medium text-indigo-300 hover:bg-indigo-900 transition-colors whitespace-nowrap"
                               >
-                                Assigner
+                                {t("assign")}
                               </button>
                             </form>
                           )}
@@ -487,7 +488,7 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
                             <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-300 transition-colors list-none flex items-center gap-1">
                               <span className="group-open:hidden">▸</span>
                               <span className="hidden group-open:inline">▾</span>
-                              Modifier ce rôle
+                              {t("editRole")}
                             </summary>
                             <form action={updateThisRole} className="mt-3 space-y-3">
                               <input
@@ -521,7 +522,7 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
                                 type="submit"
                                 className="rounded-lg bg-indigo-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-indigo-500 transition-colors"
                               >
-                                Enregistrer
+                                {tc("save")}
                               </button>
                             </form>
                           </details>
@@ -550,7 +551,7 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
                     type="submit"
                     className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors whitespace-nowrap"
                   >
-                    + Créer
+                    {t("createRole")}
                   </button>
                 </form>
               </div>
@@ -558,7 +559,7 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
 
             {!canManage && space.roles.length === 0 && (
               <p className="text-sm text-gray-600 italic text-center py-4">
-                Aucun rôle défini dans ce cercle.
+                {t("noRoles")}
               </p>
             )}
           </div>
@@ -572,7 +573,7 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
             <div className="mb-5 rounded-xl bg-gray-900 border border-gray-800 p-4 flex items-center justify-between gap-4 flex-wrap">
               <div>
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
-                  Confidentialité des réunions
+                  {t("meetingPrivacy")}
                 </p>
                 <p className="text-xs text-gray-600">
                   {space.isPrivate
@@ -583,12 +584,12 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
               <div className="flex gap-2">
                 <form action={setPrivateFalse}>
                   <button type="submit" className={`rounded-lg px-4 py-1.5 text-xs font-medium transition-colors ${!space.isPrivate ? "bg-green-900/50 text-green-300 border border-green-800" : "text-gray-500 border border-gray-700 hover:border-gray-600 hover:text-gray-300"}`}>
-                    Public
+                    {tc("public")}
                   </button>
                 </form>
                 <form action={setPrivateTrue}>
                   <button type="submit" className={`rounded-lg px-4 py-1.5 text-xs font-medium transition-colors ${space.isPrivate ? "bg-orange-900/50 text-orange-300 border border-orange-800" : "text-gray-500 border border-gray-700 hover:border-gray-600 hover:text-gray-300"}`}>
-                    Confidentiel
+                    {tc("confidential")}
                   </button>
                 </form>
               </div>
@@ -600,7 +601,7 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
               {visibleMeetings.length} réunion{visibleMeetings.length !== 1 ? "s" : ""}
             </p>
             <Link href="/meetings" className="text-xs text-indigo-400 hover:text-indigo-300">
-              + Nouvelle
+              {t("newMeeting")}
             </Link>
           </div>
 
@@ -657,19 +658,19 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
                             {m.role === "member" ? (
                               <form action={makeLeader}>
                                 <button type="submit" className="text-xs text-gray-500 hover:text-indigo-400 transition-colors">
-                                  → Leader
+                                  {t("promoteLead")}
                                 </button>
                               </form>
                             ) : (
                               <form action={makeMember}>
                                 <button type="submit" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">
-                                  → Membre
+                                  {t("demoteMember")}
                                 </button>
                               </form>
                             )}
                             <form action={remove}>
                               <button type="submit" className="text-xs text-gray-600 hover:text-red-400 transition-colors">
-                                Retirer
+                                {tc("remove")}
                               </button>
                             </form>
                           </>
@@ -709,7 +710,7 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
                   type="submit"
                   className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors"
                 >
-                  Ajouter
+                  {tc("add")}
                 </button>
               </form>
             </div>

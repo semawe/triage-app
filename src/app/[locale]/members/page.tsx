@@ -15,6 +15,7 @@ export default async function MembersPage({
 }) {
   const { session, org, membership } = await requireOrg();
   const t = await getTranslations("members");
+  const tc = await getTranslations("common");
   const isAdmin = membership.role === "admin";
   const { error } = await searchParams;
 
@@ -62,7 +63,7 @@ export default async function MembersPage({
           Limite de {org.seatCount} siège{org.seatCount > 1 ? "s" : ""} atteinte — impossible
           d&apos;approuver cette demande. Ajoute des sièges depuis{" "}
           <Link href="/settings" className="underline hover:text-red-200">
-            Paramètres › Facturation
+            {t("billingPath")}
           </Link>
           .
         </div>
@@ -73,21 +74,20 @@ export default async function MembersPage({
         <div className="mb-8 rounded-xl bg-gray-900 border border-gray-800 p-5 space-y-6">
           <div>
             <h2 className="mb-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-              Inviter par email
+              {t("inviteByEmail")}
             </h2>
             <SendInviteForm />
             <p className="mt-3 text-xs text-gray-600">
-              Un email avec un lien d&apos;accès est envoyé directement au destinataire. Valable 7 jours.
+              {t("inviteByEmailHelp")}
             </p>
           </div>
           <div className="border-t border-gray-800 pt-5">
             <h2 className="mb-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-              Ou générer un lien
+              {t("orGenerateLink")}
             </h2>
             <InviteButton />
             <p className="mt-3 text-xs text-gray-600">
-              Partage le lien manuellement dans Slack ou par message. Lien à usage unique
-              (une personne), valable 7 jours.
+              {t("generateLinkHelp")}
             </p>
           </div>
         </div>
@@ -118,12 +118,12 @@ export default async function MembersPage({
                   <div className="flex items-center gap-3 shrink-0">
                     <form action={approve}>
                       <button type="submit" className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-500 transition-colors">
-                        Accepter
+                        {tc("accept")}
                       </button>
                     </form>
                     <form action={reject}>
                       <button type="submit" className="text-xs text-gray-500 hover:text-red-400 transition-colors">
-                        Refuser
+                        {tc("refuse")}
                       </button>
                     </form>
                   </div>
@@ -173,20 +173,20 @@ export default async function MembersPage({
                       {m.role === "member" ? (
                         <form action={makeAdmin}>
                           <button type="submit" className="text-xs text-gray-500 hover:text-indigo-400 transition-colors">
-                            Passer admin
+                            {t("promoteAdmin")}
                           </button>
                         </form>
                       ) : (
                         <form action={makeMember}>
                           <button type="submit" className="text-xs text-gray-500 hover:text-yellow-400 transition-colors">
-                            Retirer admin
+                            {t("demoteAdmin")}
                           </button>
                         </form>
                       )}
                       <span className="text-gray-700">·</span>
                       <form action={remove}>
                         <button type="submit" className="text-xs text-gray-500 hover:text-red-400 transition-colors">
-                          Retirer
+                          {tc("remove")}
                         </button>
                       </form>
                     </div>
@@ -201,7 +201,7 @@ export default async function MembersPage({
       {/* My spaces */}
       <div>
         <h2 className="mb-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-          Mes espaces
+          {t("mySpaces")}
         </h2>
         {mySpaces.length > 0 ? (
           <div className="space-y-2">
@@ -223,7 +223,7 @@ export default async function MembersPage({
 
       {!isAdmin && (
         <p className="mt-8 text-xs text-gray-600 text-center">
-          Seuls les administrateurs peuvent inviter des membres ou modifier les rôles.
+          {t("adminOnly")}
         </p>
       )}
     </AppShell>
@@ -245,7 +245,8 @@ function Avatar({ name, image }: { name: string | null; image: string | null }) 
   );
 }
 
-function RoleBadge({ role }: { role: string }) {
+async function RoleBadge({ role }: { role: string }) {
+  const t = await getTranslations("members");
   if (role === "admin" || role === "lead") {
     return (
       <span className="rounded-full border border-indigo-800 bg-indigo-900/40 px-2.5 py-0.5 text-xs font-medium text-indigo-300">
@@ -255,7 +256,7 @@ function RoleBadge({ role }: { role: string }) {
   }
   return (
     <span className="rounded-full border border-gray-700 bg-gray-800 px-2.5 py-0.5 text-xs font-medium text-gray-400">
-      Membre
+      {t("member")}
     </span>
   );
 }

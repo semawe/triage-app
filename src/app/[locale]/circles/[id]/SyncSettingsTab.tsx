@@ -65,6 +65,7 @@ export default async function SyncSettingsTab({
   projects: Project[];
 }) {
   const t = await getTranslations("cockpit");
+  const tc = await getTranslations("common");
   const setInherit = updateSpaceFeature.bind(null, spaceId, "sync_phase", null);
   const setOn = updateSpaceFeature.bind(null, spaceId, "sync_phase", true);
   const setOff = updateSpaceFeature.bind(null, spaceId, "sync_phase", false);
@@ -80,7 +81,7 @@ export default async function SyncSettingsTab({
       <div className="rounded-xl bg-gray-900 border border-gray-800 p-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
-            Phase de synchro en réunion
+            {t("syncInMeeting")}
           </p>
           <p className="text-xs text-gray-600">
             {effective
@@ -96,7 +97,7 @@ export default async function SyncSettingsTab({
                 className={`px-2 py-0.5 rounded ${syncOverride === null ? "bg-gray-700 text-gray-300" : "hover:text-gray-400"}`}
                 title={`Hérite du réglage de l'organisation (${orgSyncEnabled ? "activé" : "désactivé"})`}
               >
-                Auto
+                {tc("auto")}
               </button>
             </form>
             <form action={setOn}>
@@ -104,7 +105,7 @@ export default async function SyncSettingsTab({
                 type="submit"
                 className={`px-2 py-0.5 rounded ${syncOverride === true ? "bg-green-900 text-green-300" : "hover:text-gray-400"}`}
               >
-                Activé
+                {tc("enabled")}
               </button>
             </form>
             <form action={setOff}>
@@ -112,7 +113,7 @@ export default async function SyncSettingsTab({
                 type="submit"
                 className={`px-2 py-0.5 rounded ${syncOverride === false ? "bg-orange-900 text-orange-300" : "hover:text-gray-400"}`}
               >
-                Désactivé
+                {tc("disabled")}
               </button>
             </form>
           </div>
@@ -156,7 +157,7 @@ export default async function SyncSettingsTab({
                   {canManage && (
                     <form action={deleteIndicator.bind(null, ind.id)}>
                       <button type="submit" className="text-xs text-gray-600 hover:text-red-400 transition-colors">
-                        Supprimer
+                        {tc("delete")}
                       </button>
                     </form>
                   )}
@@ -166,14 +167,14 @@ export default async function SyncSettingsTab({
                     <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-300 transition-colors list-none flex items-center gap-1">
                       <span className="group-open:hidden">▸</span>
                       <span className="hidden group-open:inline">▾</span>
-                      Modifier
+                      {tc("edit")}
                     </summary>
                     <form action={updateIndicator.bind(null, ind.id)} className="mt-2 flex gap-2 flex-wrap items-end">
                       <input name="name" defaultValue={ind.name} placeholder={t("name")} className={`${inputCls} flex-1 min-w-40`} />
                       <input name="unit" defaultValue={ind.unit ?? ""} placeholder={t("unit")} className={`${inputCls} w-24`} />
                       <input name="frequency" defaultValue={ind.frequency ?? ""} placeholder={t("frequency")} className={`${inputCls} w-28`} />
                       <button type="submit" className="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-500 transition-colors">
-                        Enregistrer
+                        {tc("save")}
                       </button>
                     </form>
                   </details>
@@ -183,7 +184,7 @@ export default async function SyncSettingsTab({
           </div>
         ) : (
           <p className="px-5 py-6 text-sm text-gray-600 text-center">
-            Aucun indicateur défini pour cet espace.
+            {t("noIndicators")}
           </p>
         )}
         {canManage && (
@@ -193,7 +194,7 @@ export default async function SyncSettingsTab({
               <input name="unit" placeholder={t("unitPlaceholder")} className={`${inputCls} w-28`} />
               <input name="frequency" placeholder={t("frequency")} className={`${inputCls} w-28`} />
               <button type="submit" className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors whitespace-nowrap">
-                + Ajouter
+                {t("addShort")}
               </button>
             </form>
           </div>
@@ -224,12 +225,12 @@ export default async function SyncSettingsTab({
                     <form action={updateChecklistItem.bind(null, item.id)} className="flex-1 flex gap-2 min-w-48">
                       <input name="title" defaultValue={item.title} className={`${inputCls} flex-1`} />
                       <button type="submit" className="text-xs text-gray-500 hover:text-indigo-400 transition-colors whitespace-nowrap">
-                        Enregistrer
+                        {tc("save")}
                       </button>
                     </form>
                     <form action={deleteChecklistItem.bind(null, item.id)}>
                       <button type="submit" className="text-xs text-gray-600 hover:text-red-400 transition-colors">
-                        Supprimer
+                        {tc("delete")}
                       </button>
                     </form>
                   </>
@@ -241,7 +242,7 @@ export default async function SyncSettingsTab({
           </div>
         ) : (
           <p className="px-5 py-6 text-sm text-gray-600 text-center">
-            Aucun item de checklist — les items définis ici sont recochés à chaque réunion.
+            {t("noChecklist")}
           </p>
         )}
         {canManage && (
@@ -249,7 +250,7 @@ export default async function SyncSettingsTab({
             <form action={addChecklistItem} className="flex gap-2 flex-wrap items-end">
               <input name="title" required placeholder={t("newChecklistItem")} className={`${inputCls} flex-1 min-w-48`} />
               <button type="submit" className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors whitespace-nowrap">
-                + Ajouter
+                {t("addShort")}
               </button>
             </form>
           </div>
@@ -297,7 +298,7 @@ export default async function SyncSettingsTab({
                         </div>
                         <form action={deleteProject.bind(null, p.id)}>
                           <button type="submit" className="text-xs text-gray-600 hover:text-red-400 transition-colors">
-                            Supprimer
+                            {tc("delete")}
                           </button>
                         </form>
                       </>
@@ -311,7 +312,7 @@ export default async function SyncSettingsTab({
                     <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-300 transition-colors list-none flex items-center gap-1">
                       <span className="group-open:hidden">▸</span>
                       <span className="hidden group-open:inline">▾</span>
-                      Modifier
+                      {tc("edit")}
                     </summary>
                     <form action={updateProject.bind(null, p.id)} className="mt-2 space-y-2">
                       <input name="name" defaultValue={p.name} placeholder={t("projectName")} className={`${inputCls} w-full`} />
@@ -323,7 +324,7 @@ export default async function SyncSettingsTab({
                         className={`${inputCls} w-full resize-none`}
                       />
                       <button type="submit" className="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-500 transition-colors">
-                        Enregistrer
+                        {tc("save")}
                       </button>
                     </form>
                   </details>
@@ -333,7 +334,7 @@ export default async function SyncSettingsTab({
           </div>
         ) : (
           <p className="px-5 py-6 text-sm text-gray-600 text-center">
-            Aucun projet suivi dans cet espace.
+            {t("noProjects")}
           </p>
         )}
         {canManage && (
@@ -342,7 +343,7 @@ export default async function SyncSettingsTab({
               <input name="name" required placeholder={t("newProject")} className={`${inputCls} flex-1 min-w-40`} />
               <input name="description" placeholder={t("projectDescription")} className={`${inputCls} flex-1 min-w-40`} />
               <button type="submit" className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors whitespace-nowrap">
-                + Ajouter
+                {t("addShort")}
               </button>
             </form>
           </div>
