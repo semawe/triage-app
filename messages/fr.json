@@ -290,7 +290,17 @@
     "activeModules": "Modules actifs",
     "pricePerSeat": "{net} HT/siège/mois ({gross} TTC)",
     "activeMembers": "{count, plural, one {# membre actif} other {# membres actifs}}",
-    "includedSeats": "{count, plural, one {# siège inclus} other {# sièges inclus}}"
+    "includedSeats": "{count, plural, one {# siège inclus} other {# sièges inclus}}",
+    "identity": "Identité",
+    "domainAccess": "Accès par domaine email",
+    "domainHelp": "Les utilisateurs dont l'adresse se termine par ce domaine pourront demander à rejoindre l'organisation. Tu valides chaque demande depuis la page Membres.",
+    "subscribed": "Abonnement activé. Merci !",
+    "paymentCancelled": "Paiement annulé. Votre accès reste inchangé.",
+    "update": "Mettre à jour",
+    "managePlan": "Gérer l'abonnement",
+    "billingDetailsLink": "Coordonnées de facturation (adresse, SIRET, TVA) →",
+    "modulesHelp": "Active ou désactive des fonctionnalités pour toute l'organisation. Les changements prennent effet immédiatement.",
+    "default": "défaut"
   },
   "members": {
     "title": "Membres",
@@ -350,7 +360,17 @@
     "roleMember": "Membre",
     "roleAdmin": "Admin",
     "modules": "Modules",
-    "default": "défaut"
+    "default": "défaut",
+    "back": "← Admin",
+    "superAdmin": "Super admin",
+    "subscription": "Abonnement",
+    "allowedDomain": "Domaine email autorisé",
+    "promoteAdmin": "Passer admin",
+    "demoteAdmin": "Retirer admin",
+    "dangerZone": "Zone dangereuse",
+    "dangerHelp": "Action irréversible. Toutes les données associées (membres, espaces, réunions, outputs) seront supprimées.",
+    "newOrg": "Nouvelle organisation",
+    "manage": "Gérer →"
   },
   "cockpit": {
     "name": "Nom",
@@ -415,7 +435,24 @@
     "demoItem1": "Recrutement — prochaine étape",
     "demoItem2": "Budget Q3 — décision",
     "demoItem3": "Point partenariat Novalis",
-    "goToApp": "→ En cours"
+    "goToApp": "→ En cours",
+    "signIn": "Se connecter",
+    "kicker": "Facilitation de réunion",
+    "heroLine1": "Des réunions qui avancent,",
+    "heroLine2": "vraiment.",
+    "heroBody": "triapp structure vos réunions d'équipe : agenda partagé, traitement point par point, outputs enregistrés. Conçu pour les équipes auto-organisées, compatible Holacracy.",
+    "ctaTrial": "Essayer gratuitement — 14 jours",
+    "ctaPricing": "Voir les tarifs",
+    "quote": "« Nos triages hebdomadaires ont enfin un fil conducteur. Les outputs sont là, tracés, sans effort supplémentaire en fin de séance. »",
+    "planStandard": "Standard",
+    "perUser": "par utilisateur / mois · soit {gross} TTC (TVA 20 %)",
+    "assoRate": "Tarif spécial associations à but non lucratif, sur demande",
+    "featTrial": "Essai gratuit 14 jours, sans carte bancaire",
+    "featMeetings": "Réunions illimitées",
+    "featSpaces": "Espaces et cercles illimités",
+    "featOpenSource": "Open source — AGPL-3.0",
+    "ctaStart": "Commencer gratuitement",
+    "legalNotice": "Mentions légales"
   },
   "inviteLink": {
     "role": "Rôle de l'invité",

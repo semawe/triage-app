@@ -24,6 +24,7 @@ export default async function SettingsPage({
 }) {
   const { allOrgs } = await requireOrgForBilling();
   const t = await getTranslations("settings");
+  const tc = await getTranslations("common");
 
   // Only orgs where the current user is admin
   const adminOrgs = allOrgs.filter((o) => o.role === "admin");
@@ -74,7 +75,7 @@ export default async function SettingsPage({
       {/* Identité */}
       <section className="mb-8 rounded-xl bg-gray-900 border border-gray-800 p-6">
         <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-5">
-          Identité
+          {t("identity")}
         </h2>
         <form action={updateOrgBranding} className="flex flex-wrap gap-5 items-end">
           <input type="hidden" name="orgId" value={org.id} />
@@ -104,7 +105,7 @@ export default async function SettingsPage({
             type="submit"
             className="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors"
           >
-            Enregistrer
+            {tc("save")}
           </button>
         </form>
       </section>
@@ -112,10 +113,10 @@ export default async function SettingsPage({
       {/* Accès par domaine */}
       <section className="mb-8 rounded-xl bg-gray-900 border border-gray-800 p-6">
         <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
-          Accès par domaine email
+          {t("domainAccess")}
         </h2>
         <p className="text-xs text-gray-600 mb-5">
-          Les utilisateurs dont l&apos;adresse se termine par ce domaine pourront demander à rejoindre l&apos;organisation. Tu valides chaque demande depuis la page Membres.
+          {t("domainHelp")}
         </p>
         <form action={updateOrgDomain} className="flex flex-wrap gap-3 items-end">
           <input type="hidden" name="orgId" value={org.id} />
@@ -136,7 +137,7 @@ export default async function SettingsPage({
             type="submit"
             className="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors"
           >
-            Enregistrer
+            {tc("save")}
           </button>
           {org.allowedEmailDomain && (
             <p className="text-xs text-green-400 self-center">
@@ -153,12 +154,12 @@ export default async function SettingsPage({
         {/* Feedback Stripe */}
         {billingFeedback === "success" && (
           <div className="mb-4 rounded-lg bg-green-900/30 border border-green-800 px-4 py-3 text-sm text-green-300">
-            Abonnement activé. Merci !
+            {t("subscribed")}
           </div>
         )}
         {billingFeedback === "cancel" && (
           <div className="mb-4 rounded-lg bg-gray-800 border border-gray-700 px-4 py-3 text-sm text-gray-400">
-            Paiement annulé. Votre accès reste inchangé.
+            {t("paymentCancelled")}
           </div>
         )}
 
@@ -212,7 +213,7 @@ export default async function SettingsPage({
                   type="submit"
                   className="rounded-lg bg-gray-800 border border-gray-700 px-4 py-1.5 text-sm font-medium text-gray-200 hover:bg-gray-700 transition-colors"
                 >
-                  Mettre à jour
+                  {t("update")}
                 </button>
                 <span className="text-xs text-gray-600 self-center">
                   minimum {memberCount} (membres actuels) · facturation au prorata
@@ -238,7 +239,7 @@ export default async function SettingsPage({
                   type="submit"
                   className="rounded-lg bg-gray-800 border border-gray-700 px-5 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors"
                 >
-                  Gérer l&apos;abonnement
+                  {t("managePlan")}
                 </button>
               </form>
             ) : null}
@@ -250,7 +251,7 @@ export default async function SettingsPage({
             href={`/settings/billing-info?org=${org.id}`}
             className="text-sm text-indigo-400 hover:text-indigo-300 transition-colors font-medium"
           >
-            Coordonnées de facturation (adresse, SIRET, TVA) →
+            {t("billingDetailsLink")}
           </Link>
         </div>
       </section>
@@ -260,8 +261,7 @@ export default async function SettingsPage({
         <div className="px-6 py-4 border-b border-gray-800">
           <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t("activeModules")}</h2>
           <p className="text-xs text-gray-600 mt-1">
-            Active ou désactive des fonctionnalités pour toute l&apos;organisation.
-            Les changements prennent effet immédiatement.
+            {t("modulesHelp")}
           </p>
         </div>
         <div className="divide-y divide-gray-800">
@@ -278,7 +278,7 @@ export default async function SettingsPage({
                     <p className="text-sm font-medium text-white">{label}</p>
                     {isDefault && (
                       <span className="text-xs text-gray-600 bg-gray-800 rounded px-1.5 py-0.5">
-                        défaut
+                        {t("default")}
                       </span>
                     )}
                   </div>

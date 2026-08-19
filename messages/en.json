@@ -290,7 +290,17 @@
     "activeModules": "Active modules",
     "pricePerSeat": "{net} excl. VAT per seat per month ({gross} incl. VAT)",
     "activeMembers": "{count, plural, one {# active member} other {# active members}}",
-    "includedSeats": "{count, plural, one {# seat included} other {# seats included}}"
+    "includedSeats": "{count, plural, one {# seat included} other {# seats included}}",
+    "identity": "Identity",
+    "domainAccess": "Access by email domain",
+    "domainHelp": "Users whose address ends with this domain will be able to request to join the organisation. You approve each request from the Members page.",
+    "subscribed": "Subscription active. Thank you!",
+    "paymentCancelled": "Payment cancelled. Your access is unchanged.",
+    "update": "Update",
+    "managePlan": "Manage the subscription",
+    "billingDetailsLink": "Billing details (address, company number, VAT) →",
+    "modulesHelp": "Turns features on or off for the whole organisation. Changes take effect immediately.",
+    "default": "default"
   },
   "members": {
     "title": "Members",
@@ -350,7 +360,17 @@
     "roleMember": "Member",
     "roleAdmin": "Admin",
     "modules": "Modules",
-    "default": "default"
+    "default": "default",
+    "back": "← Admin",
+    "superAdmin": "Super admin",
+    "subscription": "Subscription",
+    "allowedDomain": "Allowed email domain",
+    "promoteAdmin": "Make admin",
+    "demoteAdmin": "Remove admin",
+    "dangerZone": "Danger zone",
+    "dangerHelp": "This cannot be undone. All associated data (members, circles, meetings, outputs) will be deleted.",
+    "newOrg": "New organisation",
+    "manage": "Manage →"
   },
   "cockpit": {
     "name": "Name",
@@ -415,7 +435,24 @@
     "demoItem1": "Hiring — next action",
     "demoItem2": "Q3 budget — decision",
     "demoItem3": "Novalis partnership check-in",
-    "goToApp": "→ In progress"
+    "goToApp": "→ In progress",
+    "signIn": "Sign in",
+    "kicker": "Meeting facilitation",
+    "heroLine1": "Meetings that actually",
+    "heroLine2": "move forward.",
+    "heroBody": "triapp gives your team meetings a shape: a shared agenda, one item at a time, outputs captured as you go. Built for self-organised teams, at home with Holacracy.",
+    "ctaTrial": "Try it free — 14 days",
+    "ctaPricing": "See pricing",
+    "quote": "“Our weekly triage finally has a thread running through it. The outputs are there, traced, with no extra work at the end of the session.”",
+    "planStandard": "Standard",
+    "perUser": "per user / month · {gross} incl. VAT (20 % VAT)",
+    "assoRate": "Reduced rate for non-profit organisations, on request",
+    "featTrial": "14-day free trial, no card required",
+    "featMeetings": "Unlimited meetings",
+    "featSpaces": "Unlimited circles and spaces",
+    "featOpenSource": "Open source — AGPL-3.0",
+    "ctaStart": "Start for free",
+    "legalNotice": "Legal notice"
   },
   "inviteLink": {
     "role": "Guest role",

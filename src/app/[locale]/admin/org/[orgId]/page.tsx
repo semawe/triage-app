@@ -26,6 +26,7 @@ const STATUS_OPTIONS = [
 export default async function AdminOrgPage({ params }: { params: Promise<{ orgId: string }> }) {
   await requireSuperAdmin();
   const t = await getTranslations("admin");
+  const tc = await getTranslations("common");
 
   const { orgId } = await params;
 
@@ -53,11 +54,11 @@ export default async function AdminOrgPage({ params }: { params: Promise<{ orgId
       {/* Header */}
       <div className="mb-8 flex items-center gap-3 flex-wrap">
         <Link href="/admin" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">
-          ← Admin
+          {t("back")}
         </Link>
         <span className="text-gray-700">/</span>
         <span className="text-xs font-medium text-red-400 bg-red-900/30 border border-red-800 rounded-full px-2.5 py-0.5">
-          Super admin
+          {t("superAdmin")}
         </span>
         <h1 className="text-xl font-bold text-white">{org.name}</h1>
         <code className="text-xs text-gray-600 bg-gray-800 rounded px-2 py-0.5">{org.id}</code>
@@ -66,7 +67,7 @@ export default async function AdminOrgPage({ params }: { params: Promise<{ orgId
       {/* Abonnement */}
       <section className="mb-6 rounded-xl bg-gray-900 border border-gray-800 p-5">
         <h2 className="mb-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-          Abonnement
+          {t("subscription")}
         </h2>
         <form action={adminSetOrgSubscription} className="flex flex-wrap gap-4 items-end">
           <input type="hidden" name="orgId" value={org.id} />
@@ -106,7 +107,7 @@ export default async function AdminOrgPage({ params }: { params: Promise<{ orgId
             type="submit"
             className="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors"
           >
-            Enregistrer
+            {tc("save")}
           </button>
         </form>
         {org.trialEndsAt && (
@@ -119,7 +120,7 @@ export default async function AdminOrgPage({ params }: { params: Promise<{ orgId
       {/* Domaine */}
       <section className="mb-6 rounded-xl bg-gray-900 border border-gray-800 p-5">
         <h2 className="mb-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-          Domaine email autorisé
+          {t("allowedDomain")}
         </h2>
         <form action={adminSetOrgDomain} className="flex flex-wrap gap-3 items-end">
           <input type="hidden" name="orgId" value={org.id} />
@@ -137,7 +138,7 @@ export default async function AdminOrgPage({ params }: { params: Promise<{ orgId
             type="submit"
             className="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors"
           >
-            Enregistrer
+            {tc("save")}
           </button>
           {org.allowedEmailDomain && (
             <span className="text-xs text-green-400 self-center">{t("active")}</span>
@@ -182,7 +183,7 @@ export default async function AdminOrgPage({ params }: { params: Promise<{ orgId
                         type="submit"
                         className="rounded-md border border-amber-500/50 bg-amber-500/10 px-2.5 py-1 font-medium text-amber-300 hover:bg-amber-500/20 transition-colors"
                       >
-                        Passer admin
+                        {t("promoteAdmin")}
                       </button>
                     </form>
                   ) : (
@@ -191,7 +192,7 @@ export default async function AdminOrgPage({ params }: { params: Promise<{ orgId
                         type="submit"
                         className="rounded-md border border-gray-600 bg-gray-800 px-2.5 py-1 font-medium text-gray-200 hover:bg-gray-700 transition-colors"
                       >
-                        Retirer admin
+                        {t("demoteAdmin")}
                       </button>
                     </form>
                   )}
@@ -200,7 +201,7 @@ export default async function AdminOrgPage({ params }: { params: Promise<{ orgId
                       type="submit"
                       className="rounded-md border border-red-800 bg-red-900/20 px-2.5 py-1 font-medium text-red-300 hover:bg-red-900/40 transition-colors"
                     >
-                      Retirer
+                      {tc("remove")}
                     </button>
                   </form>
                 </div>
@@ -236,7 +237,7 @@ export default async function AdminOrgPage({ params }: { params: Promise<{ orgId
               type="submit"
               className="rounded-lg bg-gray-700 px-4 py-2 text-sm font-medium text-gray-200 hover:bg-gray-600 transition-colors"
             >
-              Ajouter
+              {tc("add")}
             </button>
           </form>
         </div>
@@ -295,11 +296,11 @@ export default async function AdminOrgPage({ params }: { params: Promise<{ orgId
       {/* Zone dangereuse */}
       <section className="rounded-xl bg-gray-900 border border-red-900/50 p-5">
         <h2 className="mb-3 text-xs font-semibold text-red-400 uppercase tracking-wider">
-          Zone dangereuse
+          {t("dangerZone")}
         </h2>
         <DeleteOrgButton orgId={org.id} orgName={org.name} />
         <p className="mt-2 text-xs text-gray-400">
-          Action irréversible. Toutes les données associées (membres, espaces, réunions, outputs) seront supprimées.
+          {t("dangerHelp")}
         </p>
       </section>
     </AppShell>

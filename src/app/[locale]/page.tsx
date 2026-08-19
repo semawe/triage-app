@@ -35,35 +35,33 @@ export default async function HomePage() {
           href="/login"
           className="text-sm text-gray-400 hover:text-white transition-colors"
         >
-          Se connecter
+          {tL("signIn")}
         </Link>
       </nav>
 
       {/* Hero */}
       <section className="max-w-5xl mx-auto px-6 pt-20 pb-16 text-center">
         <p className="text-xs font-semibold text-indigo-400 uppercase tracking-widest mb-4">
-          Facilitation de réunion
+          {tL("kicker")}
         </p>
         <h1 className="text-4xl sm:text-5xl font-bold leading-tight tracking-tight mb-6">
-          Des réunions qui avancent,<br className="hidden sm:block" /> vraiment.
+          {tL("heroLine1")}<br className="hidden sm:block" /> {tL("heroLine2")}
         </h1>
         <p className="text-lg text-gray-400 max-w-xl mx-auto mb-10 leading-relaxed">
-          triapp structure vos réunions d&apos;équipe&nbsp;: agenda partagé, traitement point par
-          point, outputs enregistrés. Conçu pour les équipes auto-organisées, compatible
-          Holacracy.
+          {tL("heroBody")}
         </p>
         <div className="flex items-center justify-center gap-4 flex-wrap">
           <Link
             href="/login"
             className="rounded-lg bg-indigo-600 hover:bg-indigo-500 px-7 py-3.5 text-sm font-semibold transition-colors shadow-lg shadow-indigo-950"
           >
-            Essayer gratuitement — 14 jours
+            {tL("ctaTrial")}
           </Link>
           <a
             href="#tarifs"
             className="rounded-lg border border-gray-700 hover:border-gray-500 px-6 py-3.5 text-sm font-medium text-gray-400 hover:text-white transition-colors"
           >
-            Voir les tarifs
+            {tL("ctaPricing")}
           </a>
         </div>
       </section>
@@ -104,8 +102,7 @@ export default async function HomePage() {
           </div>
           <div>
             <p className="text-base text-gray-300 leading-relaxed mb-4">
-              &ldquo;Nos triages hebdomadaires ont enfin un fil conducteur. Les outputs sont là,
-              tracés, sans effort supplémentaire en fin de séance.&rdquo;
+              {tL("quote")}
             </p>
             <p className="text-sm text-gray-600">
               Aliocha Iordanoff — co-fondateur,{" "}
@@ -128,41 +125,41 @@ export default async function HomePage() {
         <h2 className="text-2xl font-bold text-center mb-12">{tL("pricing")}</h2>
         <div className="max-w-sm mx-auto rounded-2xl border border-gray-800 bg-gray-950 p-8">
           <p className="text-xs font-semibold text-indigo-400 uppercase tracking-widest mb-2">
-            Standard
+            {tL("planStandard")}
           </p>
           <p className="text-4xl font-bold mb-1">
             2 <span className="text-2xl">€</span> <span className="text-2xl text-gray-500">{tL("exclVat")}</span>
           </p>
           <p className="text-sm text-gray-500 mb-8">
-            par utilisateur / mois · soit 2,40 € TTC (TVA 20 %)
+            {tL("perUser", { gross: "2,40 €" })}
           </p>
           <ul className="space-y-3 text-sm text-gray-400 mb-8">
             <li className="flex items-start gap-2">
               <span className="text-indigo-400 mt-0.5">✓</span>
-              Tarif spécial associations à but non lucratif, sur demande
+              {tL("assoRate")}
             </li>
             <li className="flex items-start gap-2">
               <span className="text-indigo-400 mt-0.5">✓</span>
-              Essai gratuit 14 jours, sans carte bancaire
+              {tL("featTrial")}
             </li>
             <li className="flex items-start gap-2">
               <span className="text-indigo-400 mt-0.5">✓</span>
-              Réunions illimitées
+              {tL("featMeetings")}
             </li>
             <li className="flex items-start gap-2">
               <span className="text-indigo-400 mt-0.5">✓</span>
-              Espaces et cercles illimités
+              {tL("featSpaces")}
             </li>
             <li className="flex items-start gap-2">
               <span className="text-indigo-400 mt-0.5">✓</span>
-              Open source — AGPL-3.0
+              {tL("featOpenSource")}
             </li>
           </ul>
           <Link
             href="/login"
             className="block w-full rounded-lg bg-indigo-600 hover:bg-indigo-500 px-6 py-3 text-sm font-semibold text-center transition-colors"
           >
-            Commencer gratuitement
+            {tL("ctaStart")}
           </Link>
         </div>
       </section>
@@ -193,7 +190,7 @@ export default async function HomePage() {
           <span>AGPL-3.0</span>
         </div>
         <Link href="/mentions-legales" className="hover:text-gray-400 transition-colors">
-          Mentions légales
+          {tL("legalNotice")}
         </Link>
       </footer>
     </div>

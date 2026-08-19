@@ -18,6 +18,7 @@ const STATUS_LABELS: Record<string, string> = {
 export default async function AdminPage() {
   await requireSuperAdmin();
   const t = await getTranslations("admin");
+  const tc = await getTranslations("common");
 
   const [orgs, userCount] = await Promise.all([
     prisma.organisation.findMany({
@@ -41,7 +42,7 @@ export default async function AdminPage() {
       {/* Header */}
       <div className="mb-8 flex items-center gap-3">
         <span className="text-xs font-medium text-red-400 bg-red-900/30 border border-red-800 rounded-full px-2.5 py-0.5">
-          Super admin
+          {t("superAdmin")}
         </span>
         <h1 className="text-2xl font-bold text-white">{t("title")}</h1>
       </div>
@@ -81,7 +82,7 @@ export default async function AdminPage() {
       {/* Create org */}
       <div className="mb-8 rounded-xl bg-gray-900 border border-gray-800 p-5">
         <h2 className="mb-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-          Nouvelle organisation
+          {t("newOrg")}
         </h2>
         <form action={adminCreateOrg} className="flex flex-wrap gap-3 items-end">
           <div className="flex flex-col gap-1">
@@ -107,7 +108,7 @@ export default async function AdminPage() {
             type="submit"
             className="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors"
           >
-            Créer
+            {tc("create")}
           </button>
         </form>
       </div>
@@ -147,7 +148,7 @@ export default async function AdminPage() {
                   href={`/admin/org/${org.id}`}
                   className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors font-medium"
                 >
-                  Gérer →
+                  {t("manage")}
                 </Link>
               </div>
             </div>
