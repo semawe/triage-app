@@ -415,6 +415,15 @@
     "registration": "SIREN : {siren} — RCS {city}",
     "vat": "TVA intracommunautaire : {vat}",
     "contact": "Contact :",
-    "hostAddress": "{address}"
+    "hostAddress": "{address}",
+    "publisher": "Éditeur du site",
+    "publicationDirector": "Directeur de la publication",
+    "publicationDirectorValue": "Aliocha Iordanoff, représentant de La Fabrique des Alpes, présidente de Heterostasia",
+    "hosting": "Hébergement",
+    "personalData": "Données personnelles",
+    "personalDataBody": "Les données collectées (adresse email, nom) sont utilisées exclusivement pour l'authentification et le fonctionnement du service. Elles ne sont ni vendues ni transmises à des tiers. Vous pouvez demander leur suppression en écrivant à <contact></contact>.",
+    "licence": "Licence",
+    "licenceBody": "Le code source de triapp est publié sous licence <licence>AGPL-3.0</licence>. Le dépôt est accessible sur <repo>GitHub</repo>.",
+    "back": "← Retour"
   }
 }

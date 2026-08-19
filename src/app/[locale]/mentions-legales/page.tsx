@@ -13,6 +13,9 @@ export default async function MentionsLegalesPage() {
     tva: "FR 52 108 072 919",
   };
   const HEBERGEUR_ADRESSE = "2 rue Kellermann, 59100 Roubaix, France";
+  const EMAIL_CONTACT = "contact@heterostasia.com";
+  const LIEN = "text-indigo-400 hover:text-indigo-300 transition-colors";
+  const HEBERGEUR_SITE = "www.ovh.com";
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white">
       <nav className="flex items-center justify-between px-6 py-5 max-w-3xl mx-auto">
@@ -26,7 +29,7 @@ export default async function MentionsLegalesPage() {
 
         <section className="mb-8">
           <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
-            Éditeur du site
+            {t("publisher")}
           </h2>
           <div className="text-sm text-gray-300 space-y-1">
             <p className="font-medium text-white">Heterostasia</p>
@@ -38,11 +41,8 @@ export default async function MentionsLegalesPage() {
             <p>{t("vat", { vat: SOCIETE.tva })}</p>
             <p>
               {t("contact")}{" "}
-              <a
-                href="mailto:contact@heterostasia.com"
-                className="text-indigo-400 hover:text-indigo-300 transition-colors"
-              >
-                contact@heterostasia.com
+              <a href={`mailto:${EMAIL_CONTACT}`} className={LIEN}>
+                {EMAIL_CONTACT}
               </a>
             </p>
           </div>
@@ -50,17 +50,16 @@ export default async function MentionsLegalesPage() {
 
         <section className="mb-8">
           <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
-            Directeur de la publication
+            {t("publicationDirector")}
           </h2>
           <p className="text-sm text-gray-300">
-            Aliocha Iordanoff, représentant de La Fabrique des Alpes,
-            présidente de Heterostasia
+            {t("publicationDirectorValue")}
           </p>
         </section>
 
         <section className="mb-8">
           <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
-            Hébergement
+            {t("hosting")}
           </h2>
           <div className="text-sm text-gray-300 space-y-1">
             <p className="font-medium text-white">OVH SAS</p>
@@ -72,7 +71,7 @@ export default async function MentionsLegalesPage() {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                www.ovh.com
+                {HEBERGEUR_SITE}
               </a>
             </p>
           </div>
@@ -80,47 +79,49 @@ export default async function MentionsLegalesPage() {
 
         <section className="mb-8">
           <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
-            Données personnelles
+            {t("personalData")}
           </h2>
+          {/* Phrase riche : la traduction porte la phrase entière et décide où le lien
+              se place. Découpée en fragments de JSX, elle imposerait l'ordre des mots
+              du français à toutes les langues. */}
           <p className="text-sm text-gray-300 leading-relaxed">
-            Les données collectées (adresse email, nom) sont utilisées
-            exclusivement pour l&apos;authentification et le fonctionnement du
-            service. Elles ne sont ni vendues ni transmises à des tiers. Vous
-            pouvez demander leur suppression en écrivant à{" "}
-            <a
-              href="mailto:contact@heterostasia.com"
-              className="text-indigo-400 hover:text-indigo-300 transition-colors"
-            >
-              contact@heterostasia.com
-            </a>
-            .
+            {t.rich("personalDataBody", {
+              contact: () => (
+                <a href={`mailto:${EMAIL_CONTACT}`} className={LIEN}>
+                  {EMAIL_CONTACT}
+                </a>
+              ),
+            })}
           </p>
         </section>
 
         <section className="mb-12">
           <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
-            Licence
+            {t("licence")}
           </h2>
           <p className="text-sm text-gray-300 leading-relaxed">
-            Le code source de triapp est publié sous licence{" "}
-            <a
-              href="https://www.gnu.org/licenses/agpl-3.0.fr.html"
-              className="text-indigo-400 hover:text-indigo-300 transition-colors"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              AGPL-3.0
-            </a>
-            . Le dépôt est accessible sur{" "}
-            <a
-              href="https://github.com/semawe/triage-app"
-              className="text-indigo-400 hover:text-indigo-300 transition-colors"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              GitHub
-            </a>
-            .
+            {t.rich("licenceBody", {
+              licence: (chunks) => (
+                <a
+                  href="https://www.gnu.org/licenses/agpl-3.0.fr.html"
+                  className={LIEN}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {chunks}
+                </a>
+              ),
+              repo: (chunks) => (
+                <a
+                  href="https://github.com/semawe/triage-app"
+                  className={LIEN}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {chunks}
+                </a>
+              ),
+            })}
           </p>
         </section>
 
@@ -128,7 +129,7 @@ export default async function MentionsLegalesPage() {
           href="/"
           className="text-sm text-gray-500 hover:text-gray-300 transition-colors"
         >
-          ← Retour
+          {t("back")}
         </Link>
       </main>
     </div>

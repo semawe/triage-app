@@ -415,6 +415,15 @@
     "registration": "Company number: {siren} — Trade register of {city}",
     "vat": "EU VAT number: {vat}",
     "contact": "Contact:",
-    "hostAddress": "{address}"
+    "hostAddress": "{address}",
+    "publisher": "Site publisher",
+    "publicationDirector": "Publication director",
+    "publicationDirectorValue": "Aliocha Iordanoff, representing La Fabrique des Alpes, chair of Heterostasia",
+    "hosting": "Hosting",
+    "personalData": "Personal data",
+    "personalDataBody": "The data collected (email address, name) is used solely for authentication and to operate the service. It is neither sold nor passed on to third parties. To request its deletion, write to <contact></contact>.",
+    "licence": "Licence",
+    "licenceBody": "The source code of triapp is published under the <licence>AGPL-3.0</licence> licence. The repository is available on <repo>GitHub</repo>.",
+    "back": "← Back"
   }
 }
