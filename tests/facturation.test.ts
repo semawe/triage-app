@@ -46,28 +46,28 @@ async function orgWithMembers(count: number, status: SubscriptionStatus = "activ
 
 describe("sièges au checkout", () => {
   it("refuse moins de sièges que de membres", async () => {
-    const { admin } = await orgWithMembers(5);
+    const { org, admin } = await orgWithMembers(5);
     actAs(admin);
     const { createCheckoutSession } = await import("@/actions/billing");
-    await createCheckoutSession(1).catch(() => {});
+    await createCheckoutSession(org.id, 1).catch(() => {});
     expect(checkoutCreate).not.toHaveBeenCalled();
   });
 
   it("refuse zéro, un négatif, un non-entier et une valeur démesurée", async () => {
-    const { admin } = await orgWithMembers(2);
+    const { org, admin } = await orgWithMembers(2);
     actAs(admin);
     const { createCheckoutSession } = await import("@/actions/billing");
     for (const seats of [0, -3, 2.5, 10_000]) {
-      await createCheckoutSession(seats).catch(() => {});
+      await createCheckoutSession(org.id, seats).catch(() => {});
     }
     expect(checkoutCreate).not.toHaveBeenCalled();
   });
 
   it("accepte un nombre de sièges au moins égal à l'effectif", async () => {
-    const { admin } = await orgWithMembers(3);
+    const { org, admin } = await orgWithMembers(3);
     actAs(admin);
     const { createCheckoutSession } = await import("@/actions/billing");
-    await createCheckoutSession(3).catch((e) => {
+    await createCheckoutSession(org.id, 3).catch((e) => {
       if (!(e instanceof RedirectError)) throw e;
     });
     expect(checkoutCreate).toHaveBeenCalledOnce();
@@ -79,7 +79,7 @@ describe("sièges au checkout", () => {
     await addMember(org.id, member.id);
     actAs(member);
     const { createCheckoutSession } = await import("@/actions/billing");
-    await createCheckoutSession(10).catch(() => {});
+    await createCheckoutSession(org.id, 10).catch(() => {});
     expect(checkoutCreate).not.toHaveBeenCalled();
   });
 });

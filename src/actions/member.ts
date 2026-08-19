@@ -170,28 +170,38 @@ export async function acceptInvite(token: string) {
     },
   });
 
-  // Recontrôle du siège à l'acceptation (cas d'un downgrade après émission)
-  if (!already) {
-    const org = await prisma.organisation.findUniqueOrThrow({ where: { id: invite.orgId } });
-    const members = await prisma.organisationMember.count({
-      where: { organisationId: invite.orgId },
-    });
-    if (members >= org.seatCount) {
-      redirect(`/${locale}/invite/${token}?full=1`);
-    }
-  }
+  // Recontrôle du siège à l'acceptation (cas d'un downgrade après émission), DANS
+  // la transaction et sous verrou de l'organisation.
+  //
+  // Il vivait avant l'ouverture de la transaction : deux invités acceptant en même
+  // temps sur le dernier siège lisaient tous deux « il en reste un » et entraient
+  // tous deux, laissant l'organisation au-dessus de ce qu'elle facture (revue
+  // adverse du 18/08/2026). `generateInvite` et `approveJoinRequest` étaient déjà
+  // couverts par des tests de concurrence ; cette porte-ci ne l'était pas.
+  const complet = await prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM "Organisation" WHERE id = ${invite.orgId} FOR UPDATE`;
 
-  // Ajoute le membre et consomme l'invitation (usage unique)
-  await prisma.$transaction([
-    prisma.organisationMember.upsert({
+    if (!already) {
+      const org = await tx.organisation.findUniqueOrThrow({ where: { id: invite.orgId } });
+      const members = await tx.organisationMember.count({
+        where: { organisationId: invite.orgId },
+      });
+      if (members >= org.seatCount) return true;
+    }
+
+    await tx.organisationMember.upsert({
       where: {
         organisationId_userId: { organisationId: invite.orgId, userId: session.user.id },
       },
       create: { organisationId: invite.orgId, userId: session.user.id, role: invite.role },
       update: {},
-    }),
-    prisma.pendingInvite.delete({ where: { id: invite.id } }),
-  ]);
+    });
+    // L'invitation est à usage unique : elle se consomme avec l'entrée, ou pas.
+    await tx.pendingInvite.delete({ where: { id: invite.id } });
+    return false;
+  });
+
+  if (complet) redirect(`/${locale}/invite/${token}?full=1`);
 
   redirect(`/${locale}/meetings`);
 }

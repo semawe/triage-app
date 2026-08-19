@@ -430,7 +430,7 @@ describe("sièges facturés — updateSeats", () => {
       data: { stripeSubId: "sub_test", seatCount: 5 },
     });
     actAs(s.membreA);
-    await tente(() => updateSeats(50));
+    await tente(() => updateSeats(s.orgA.id, 50));
     expect((await prisma.organisation.findUniqueOrThrow({ where: { id: s.orgA.id } })).seatCount).toBe(5);
   });
 
@@ -443,7 +443,7 @@ describe("sièges facturés — updateSeats", () => {
     // orgA compte trois membres (admin, membre, lead).
     expect(await prisma.organisationMember.count({ where: { organisationId: s.orgA.id } })).toBe(3);
     actAs(s.adminA);
-    await tente(() => updateSeats(2));
+    await tente(() => updateSeats(s.orgA.id, 2));
     expect((await prisma.organisation.findUniqueOrThrow({ where: { id: s.orgA.id } })).seatCount).toBe(5);
   });
 });

@@ -59,6 +59,8 @@ export default async function BillingInfoPage({
       )}
 
       <form action={updateBillingInfo} className="max-w-2xl space-y-6">
+        {/* L'organisation visée vient de l'écran, jamais du cookie d'org active. */}
+        <input type="hidden" name="orgId" value={org.id} />
         <input type="hidden" name="org" value={org.id} />
 
         <section className="rounded-xl bg-gray-900 border border-gray-800 p-6 space-y-4">

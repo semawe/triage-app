@@ -98,6 +98,31 @@ const loadOrg = cache(async (allowSuspended: boolean) => {
 
 export const requireOrg = () => loadOrg(false);
 
+/**
+ * Contexte de facturation pour une organisation **explicitement désignée**.
+ *
+ * Les écrans de facturation sont multi-organisations : ils rendent un sélecteur
+ * `?org=<id>` et affichent les sièges, l'état d'abonnement et les coordonnées de
+ * l'organisation choisie. Les actions, elles, résolvaient l'organisation depuis le
+ * cookie d'organisation active — donc un administrateur de deux organisations
+ * voyait B et agissait sur A : portail Stripe de A, coordonnées de A, et sièges de
+ * A ajustés au décompte de B (revue adverse du 18/08/2026).
+ *
+ * Toute action de facturation prend désormais son `orgId` en paramètre et passe
+ * par ici. Le mur de facturation est volontairement levé — c'est le propre des
+ * écrans de régularisation — mais jamais le contrôle d'appartenance ni celui du
+ * rôle d'administrateur.
+ */
+export const requireBillingAdmin = async (orgId: string) => {
+  const session = await requireAuth();
+  const membership = await prisma.organisationMember.findUnique({
+    where: { organisationId_userId: { organisationId: orgId, userId: session.user.id } },
+    include: { organisation: true },
+  });
+  if (!membership || membership.role !== "admin") return null;
+  return { session, membership, org: membership.organisation };
+};
+
 /** Variante tolérant un abonnement suspendu — pages et actions de facturation seulement. */
 export const requireOrgForBilling = () => loadOrg(true);
 
@@ -134,8 +159,21 @@ export const requireMeetingAccess = async (meetingId: string) => {
         userId: session.user.id,
       },
     },
+    include: { organisation: true },
   });
   if (!membership) return null;
+
+  // Mur de facturation. `requireOrg()` l'appliquait, cette garde non : une page de
+  // réunion déjà ouverte continuait donc de servir ses actions (et son flux
+  // d'événements) après la fin de l'abonnement, indéfiniment, puisque les
+  // références d'actions serveur restent appelables sans navigation neuve.
+  if (!isOrgAccessible(membership.organisation)) {
+    const sa = await prisma.superAdmin.findUnique({
+      where: { userId: session.user.id },
+      select: { userId: true },
+    });
+    if (!sa) return null;
+  }
 
   // Confidentialité : appartenance à l'org insuffisante sur une réunion privée.
   // La décision vit dans `peutVoirLaReunion` — un seul endroit pour les quatre

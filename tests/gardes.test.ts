@@ -38,6 +38,9 @@ const RACINE = new URL("..", import.meta.url).pathname;
  *
  *  - `requireAuth` / `requireOrg` / `requireOrgForBilling` / `requireMeetingAccess`
  *    / `requireSuperAdmin` — src/lib/session.ts, membre authentifié ;
+ *  - `requireBillingAdmin` — src/lib/session.ts, administrateur d'une organisation
+ *    NOMMÉE : les écrans de facturation sont multi-organisations, et l'organisation
+ *    visée doit venir de l'écran, jamais du cookie d'organisation active ;
  *  - `canManageSpace` — src/lib/authz.ts, admin d'org ou lead de cercle ;
  *  - `resolveParticipant` / `getGuestForMeeting` / `getGuestByToken` — src/lib/guest.ts,
  *    porteur d'un jeton d'invité valide, la seule identité sans session ;
@@ -52,6 +55,7 @@ const GARDES = [
   "requireAuth",
   "requireOrg",
   "requireOrgForBilling",
+  "requireBillingAdmin",
   "requireMeetingAccess",
   "requireSuperAdmin",
   "canManageSpace",

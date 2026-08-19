@@ -188,6 +188,7 @@ export default async function SettingsPage({
             {/* Ajuster les sièges — une fois abonné */}
             {org.stripeSubId && org.subscriptionStatus === "active" && (
               <form action={updateSeatsForm} className="flex items-end gap-2 pt-1">
+                <input type="hidden" name="orgId" value={org.id} />
                 <div className="flex flex-col gap-1">
                   <label className="text-xs text-gray-500">Nombre de sièges</label>
                   <input
@@ -214,7 +215,7 @@ export default async function SettingsPage({
           {/* Actions */}
           <div className="flex gap-3 flex-wrap">
             {!accessible || org.subscriptionStatus !== "active" ? (
-              <form action={createCheckoutSession.bind(null, Math.max(memberCount, org.seatCount))}>
+              <form action={createCheckoutSession.bind(null, org.id, Math.max(memberCount, org.seatCount))}>
                 <button
                   type="submit"
                   className="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors"
@@ -223,7 +224,7 @@ export default async function SettingsPage({
                 </button>
               </form>
             ) : org.stripeCustomerId ? (
-              <form action={createCustomerPortalSession}>
+              <form action={createCustomerPortalSession.bind(null, org.id)}>
                 <button
                   type="submit"
                   className="rounded-lg bg-gray-800 border border-gray-700 px-5 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors"

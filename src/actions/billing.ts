@@ -2,7 +2,7 @@
 
 import { stripe, PRICE_PER_SEAT_EUR_CENTS, MAX_SEATS } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
-import { requireOrgForBilling } from "@/lib/session";
+import { requireBillingAdmin } from "@/lib/session";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getLocale } from "next-intl/server";
@@ -30,9 +30,10 @@ async function ensureStripeCustomer(orgId: string): Promise<string> {
 }
 
 /** Lance une session Stripe Checkout pour s'abonner */
-export async function createCheckoutSession(seats: number) {
-  const { org, membership } = await requireOrgForBilling();
-  if (membership.role !== "admin") return;
+export async function createCheckoutSession(orgId: string, seats: number) {
+  const ctx = await requireBillingAdmin(orgId);
+  if (!ctx) return;
+  const { org } = ctx;
 
   // Le nombre de sièges arrive du client : `updateSeats` refusait déjà de
   // descendre sous l'effectif, le checkout ne validait rien. Une org de 40
@@ -88,9 +89,10 @@ export async function createCheckoutSession(seats: number) {
 }
 
 /** Ouvre le portail self-service Stripe (changer CB, voir factures, annuler) */
-export async function createCustomerPortalSession() {
-  const { org, membership } = await requireOrgForBilling();
-  if (membership.role !== "admin") return;
+export async function createCustomerPortalSession(orgId: string) {
+  const ctx = await requireBillingAdmin(orgId);
+  if (!ctx) return;
+  const { org } = ctx;
   if (!org.stripeCustomerId) return;
 
   const locale = await getLocale().catch(() => "fr");
@@ -110,8 +112,11 @@ export async function createCustomerPortalSession() {
  * Réservé aux admins. La sauvegarde locale réussit même si Stripe est indisponible.
  */
 export async function updateBillingInfo(formData: FormData) {
-  const { org, membership } = await requireOrgForBilling();
-  if (membership.role !== "admin") return;
+  const orgId = (formData.get("orgId") as string)?.trim();
+  if (!orgId) return;
+  const ctx = await requireBillingAdmin(orgId);
+  if (!ctx) return;
+  const { org } = ctx;
 
   const get = (k: string) => {
     const v = (formData.get(k) as string | null)?.trim();
@@ -173,14 +178,16 @@ export async function updateBillingInfo(formData: FormData) {
 
 /** Wrapper formData pour le formulaire d'ajustement des sièges (Paramètres › Facturation). */
 export async function updateSeatsForm(formData: FormData) {
+  const orgId = (formData.get("orgId") as string)?.trim();
   const seats = parseInt(formData.get("seats") as string, 10);
-  if (!isNaN(seats) && seats > 0) await updateSeats(seats);
+  if (orgId && !isNaN(seats) && seats > 0) await updateSeats(orgId, seats);
 }
 
 /** Met à jour le nombre de sièges (modifie l'abonnement Stripe) */
-export async function updateSeats(seats: number) {
-  const { org, membership } = await requireOrgForBilling();
-  if (membership.role !== "admin") return;
+export async function updateSeats(orgId: string, seats: number) {
+  const ctx = await requireBillingAdmin(orgId);
+  if (!ctx) return;
+  const { org } = ctx;
   if (!org.stripeSubId) return;
 
   // Les sièges sont des licences consommées : on n'autorise pas à descendre

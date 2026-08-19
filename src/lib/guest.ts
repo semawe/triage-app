@@ -3,6 +3,7 @@ import { prisma } from "./prisma";
 import { auth } from "./auth";
 import { peutVoirLaReunion } from "./visibility";
 import { hasFeature } from "./features";
+import { isOrgAccessible } from "./stripe";
 
 /**
  * Accès invité (retour de test #31).
@@ -92,8 +93,13 @@ export async function resolveParticipant(meetingId: string): Promise<Participant
         userId: session.user.id,
       },
     },
+    include: { organisation: true },
   });
   if (!membership) return null;
+
+  // Même mur de facturation que `requireMeetingAccess` : sans lui, le flux
+  // d'événements restait ouvert après la fin de l'abonnement.
+  if (!isOrgAccessible(membership.organisation)) return null;
 
   // Même décision que `requireMeetingAccess`, et littéralement la même fonction :
   // un membre de l'org extérieur au cercle privé n'est pas un participant.
