@@ -36,6 +36,7 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
   const { tab = "apercu", circle: selCircle, role: selRole } = await searchParams;
   const ctx = await requireOrg();
   const t = await getTranslations("circle");
+  const tSpace = await getTranslations("space");
   const { session, org, membership } = ctx;
   const viewer = viewerFrom(ctx);
 
@@ -278,9 +279,9 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
                   name="type"
                   className="rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
                 >
-                  <option value="circle">{t("types.circle")}</option>
-                  <option value="instance">{t("types.instance")}</option>
-                  <option value="project">{t("types.project")}</option>
+                  <option value="circle">{tSpace("type.circle")}</option>
+                  <option value="instance">{tSpace("type.instance")}</option>
+                  <option value="project">{tSpace("type.project")}</option>
                 </select>
                 <button
                   type="submit"

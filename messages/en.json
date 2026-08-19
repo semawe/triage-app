@@ -159,11 +159,6 @@
       "members": "Members ({count})",
       "cockpit": "Cockpit"
     },
-    "types": {
-      "circle": "Circle",
-      "instance": "Instance",
-      "project": "Project"
-    },
     "purpose": "Purpose",
     "purposePlaceholder": "Why this circle exists…",
     "onePerLine": "(one per line)",
@@ -214,5 +209,20 @@
     "siretPlaceholder": "123 456 789 00012",
     "vat": "EU VAT number",
     "vatPlaceholder": "FR12345678901"
+  },
+  "circles": {
+    "title": "Circles",
+    "empty": "No circles yet.",
+    "listView": "list view",
+    "namePlaceholder": "e.g. Marketing circle",
+    "type": "Type",
+    "parent": "Sub-circle of",
+    "root": "— Root —",
+    "delete": "Delete"
+  },
+  "outputs": {
+    "assignee": "Assignee (optional)",
+    "edit": "Edit",
+    "delete": "Delete"
   }
 }

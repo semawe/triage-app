@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 
 export type OutputRow = {
   id: string;
@@ -104,6 +105,8 @@ function OutputItem({
   const [editing, setEditing] = useState(false);
   const [content, setContent] = useState(output.content);
   const [pending, startTransition] = useTransition();
+  const t = useTranslations("outputs");
+  const tOut = useTranslations("output");
 
   if (editing) {
     return (
@@ -123,18 +126,18 @@ function OutputItem({
             defaultValue={output.type}
             className="rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
           >
-            <option value="note">Note</option>
-            {showActions && <option value="action">Action</option>}
-            <option value="decision">Décision</option>
-            {showProjects && <option value="project">Projet</option>}
-            {showGovernance && <option value="governance">Gouvernance</option>}
+            <option value="note">{tOut("type.note")}</option>
+            {showActions && <option value="action">{tOut("type.action")}</option>}
+            <option value="decision">{tOut("type.decision")}</option>
+            {showProjects && <option value="project">{tOut("type.project")}</option>}
+            {showGovernance && <option value="governance">{tOut("type.governance")}</option>}
           </select>
           <select
             name="assigneeId"
             defaultValue={output.assigneeId ?? ""}
             className="rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
           >
-            <option value="">Assigné (optionnel)</option>
+            <option value="">{t("assignee")}</option>
             {members.map((m) => (
               <option key={m.userId} value={m.userId}>
                 {m.name}
@@ -196,7 +199,7 @@ function OutputItem({
           <button
             type="button"
             onClick={() => setEditing(true)}
-            title="Modifier"
+            title={t("edit")}
             className="rounded-md px-2 py-1 text-xs text-gray-400 hover:bg-gray-800 hover:text-gray-200 transition-colors"
           >
             ✎
@@ -210,7 +213,7 @@ function OutputItem({
                 await deleteOutput(output.id);
               });
             }}
-            title="Supprimer"
+            title={t("delete")}
             className="rounded-md px-2 py-1 text-xs text-gray-400 hover:bg-red-900/40 hover:text-red-300 transition-colors disabled:opacity-50"
           >
             🗑

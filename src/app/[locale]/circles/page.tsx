@@ -5,6 +5,7 @@ import AppShell from "@/components/AppShell";
 import { createSpace, deleteSpace } from "@/actions/space";
 import { Link, redirect } from "@/i18n/navigation";
 import CircleViz from "./CircleViz";
+import { getTranslations } from "next-intl/server";
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -32,6 +33,7 @@ export default async function CirclesPage({ params, searchParams }: Props) {
   if (parent) redirect({ href: `/circles/${parent}`, locale });
 
   const ctx = await requireOrg();
+  const t = await getTranslations("circles");
   const { org, session, membership } = ctx;
   const isAdmin = membership.role === "admin";
   const showList = view === "list";
@@ -66,7 +68,7 @@ export default async function CirclesPage({ params, searchParams }: Props) {
   return (
     <AppShell>
       <div className="mb-4 flex items-center justify-between flex-wrap gap-3">
-        <h1 className="text-2xl font-bold text-white">Cercles</h1>
+        <h1 className="text-2xl font-bold text-white">{t("title")}</h1>
         <div className="flex items-center gap-4">
           <span className="text-sm text-gray-400">{org.name}</span>
           <div className="flex rounded-lg border border-gray-800 overflow-hidden text-xs">
@@ -90,11 +92,11 @@ export default async function CirclesPage({ params, searchParams }: Props) {
         <ListView spaces={spaces} isAdmin={isAdmin} />
       ) : vizSpaces.length === 0 ? (
         <div className="rounded-xl border border-gray-800 bg-gray-900 px-5 py-16 text-center">
-          <p className="text-sm text-gray-600">Aucun cercle pour l&apos;instant.</p>
+          <p className="text-sm text-gray-600">{t("empty")}</p>
           {isAdmin && (
             <p className="mt-1 text-xs text-gray-700">
               Crée le premier depuis la{" "}
-              <Link href="/circles?view=list" className="underline hover:text-gray-500">vue liste</Link>.
+              <Link href="/circles?view=list" className="underline hover:text-gray-500">{t("listView")}</Link>.
             </p>
           )}
         </div>
@@ -121,7 +123,12 @@ export default async function CirclesPage({ params, searchParams }: Props) {
 
 // ── Vue liste (arborescence + administration) ────────────────────────────────
 
-function ListView({
+/**
+ * Vue liste des cercles. Asynchrone pour appeler `getTranslations` elle-même : elle
+ * vit hors du composant de page, donc hors de portée de son `t`, et lui passer une
+ * douzaine de libellés en propriétés serait plus lourd que de les résoudre ici.
+ */
+async function ListView({
   spaces,
   isAdmin,
 }: {
@@ -134,6 +141,8 @@ function ListView({
   }[];
   isAdmin: boolean;
 }) {
+  const t = await getTranslations("circles");
+  const tSpace = await getTranslations("space");
   const rootSpaces = spaces.filter((s) => !s.parentId);
   const childrenOf = (parentId: string) => spaces.filter((s) => s.parentId === parentId);
 
@@ -161,33 +170,33 @@ function ListView({
           </h2>
           <form action={createSpace} className="flex flex-wrap gap-3 items-end">
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-500">Nom</label>
+              <label className="text-xs text-gray-500">{tSpace("name")}</label>
               <input
                 type="text"
                 name="name"
                 required
-                placeholder="Ex. Cercle Marketing"
+                placeholder={t("namePlaceholder")}
                 className="rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 w-56"
               />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-500">Type</label>
+              <label className="text-xs text-gray-500">{t("type")}</label>
               <select
                 name="type"
                 className="rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
               >
-                <option value="circle">Cercle</option>
-                <option value="instance">Instance</option>
-                <option value="project">Projet</option>
+                <option value="circle">{tSpace("type.circle")}</option>
+                <option value="instance">{tSpace("type.instance")}</option>
+                <option value="project">{tSpace("type.project")}</option>
               </select>
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-500">Sous-cercle de</label>
+              <label className="text-xs text-gray-500">{t("parent")}</label>
               <select
                 name="parentId"
                 className="rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 max-w-44"
               >
-                <option value="">— Racine —</option>
+                <option value="">{t("root")}</option>
                 {spaces.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.name}
@@ -249,9 +258,9 @@ function ListView({
                         <button
                           type="submit"
                           className="text-xs text-gray-600 hover:text-red-400 transition-colors"
-                          title="Supprimer"
+                          title={t("delete")}
                         >
-                          Supprimer
+                          {t("delete")}
                         </button>
                       </form>
                     ) : (

@@ -104,15 +104,28 @@ function fichiersInterface(): string[] {
  * prétend pas être exacte — elle prétend être STABLE, pour que le compteur ait un
  * sens d'une exécution à l'autre.
  */
+/**
+ * Ce qui n'est pas traduisible, et qu'il serait donc faux de compter.
+ *
+ * Relevé le 19/08/2026 en convertissant : le nom de marque est coupé par un
+ * `<span>` de mise en forme (`tri<span>app</span>`), et un identifiant de licence
+ * n'a pas de traduction. La liste est courte et exacte — comparaison stricte, pas
+ * une sous-chaîne — pour qu'elle n'excuse jamais une vraie phrase.
+ */
+const NON_TRADUISIBLES = ["app", "tri", "AGPL-3.0", "Sémawé", "triapp", "Holacracy"];
+
 export function chainesEnDur(source: string): string[] {
   const trouvees: string[] = [];
 
   // Texte entre deux balises : `>Ajouter un point<`
-  for (const m of source.matchAll(/>([^<>{}\n]{2,})</g)) {
-    const t = m[1].trim();
+  for (const m of source.matchAll(/(=?)>([^<>{}\n]{2,})</g)) {
+    // `=>` suivi d'un type générique (`=> Promise<void>`) n'est pas du texte.
+    if (m[1] === "=") continue;
+    const t = m[2].trim();
     if (!t) continue;
     if (!/[A-Za-zÀ-ÿ]{2}/.test(t)) continue; // ni ponctuation seule, ni nombre
     if (/^[\d\s.,:/%-]+$/.test(t)) continue;
+    if (NON_TRADUISIBLES.includes(t)) continue;
     trouvees.push(t);
   }
 
@@ -135,7 +148,7 @@ describe("chaînes visibles restées en dur", () => {
    * Cliquet. Baisser cette valeur à chaque conversion, jamais la remonter : une
    * hausse signifie qu'on a ajouté de l'écran non traduit, et le test la refuse.
    */
-  const PLAFOND = 197;
+  const PLAFOND = 166;
 
   it(`n'en compte pas plus que le plafond (${PLAFOND})`, () => {
     const pires = [...parFichier]
@@ -156,5 +169,11 @@ describe("chaînes visibles restées en dur", () => {
     expect(chainesEnDur('<p>{t("titre")}</p>')).toEqual([]);
     expect(chainesEnDur('<span>42</span>')).toEqual([]);
     expect(chainesEnDur('<span>—</span>')).toEqual([]);
+    // Faux positifs relevés en convertissant, et qu'il serait faux de compter.
+    expect(chainesEnDur('  fn: (x: string) => Promise<void>;')).toEqual([]);
+    expect(chainesEnDur('tri<span className="x">app</span>')).toEqual([]);
+    expect(chainesEnDur('<span>AGPL-3.0</span>')).toEqual([]);
+    // Mais la liste est stricte : une phrase qui CONTIENT un nom propre compte.
+    expect(chainesEnDur('<p>Sémawé / Cercle principal</p>')).toContain("Sémawé / Cercle principal");
   });
 });

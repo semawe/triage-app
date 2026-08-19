@@ -159,11 +159,6 @@
       "members": "Membres ({count})",
       "cockpit": "Cockpit"
     },
-    "types": {
-      "circle": "Cercle",
-      "instance": "Instance",
-      "project": "Projet"
-    },
     "purpose": "Raison d'être",
     "purposePlaceholder": "Pourquoi ce cercle existe…",
     "onePerLine": "(un par ligne)",
@@ -214,5 +209,20 @@
     "siretPlaceholder": "123 456 789 00012",
     "vat": "N° de TVA intracommunautaire",
     "vatPlaceholder": "FR12345678901"
+  },
+  "circles": {
+    "title": "Cercles",
+    "empty": "Aucun cercle pour l'instant.",
+    "listView": "vue liste",
+    "namePlaceholder": "Ex. Cercle Marketing",
+    "type": "Type",
+    "parent": "Sous-cercle de",
+    "root": "— Racine —",
+    "delete": "Supprimer"
+  },
+  "outputs": {
+    "assignee": "Assigné (optionnel)",
+    "edit": "Modifier",
+    "delete": "Supprimer"
   }
 }
