@@ -285,5 +285,41 @@
     "namePlaceholder": "Project name",
     "descriptionPlaceholder": "Description (optional)",
     "deleteForever": "Delete permanently"
+  },
+  "circleViz": {
+    "copyLink": "Copy the link to this panel",
+    "roles": "Roles",
+    "legendRing": "- - ring = sub-circles",
+    "legendRole": "= role of this circle",
+    "legendClicks": "1st click = details · 2nd click = enter",
+    "legendMembrane": "click the membrane = go up",
+    "close": "Close",
+    "lead": "Lead",
+    "noLead": "No lead",
+    "unassigned": "Unassigned",
+    "purpose": "Purpose",
+    "domains": "Domains",
+    "accountabilities": "Accountabilities",
+    "copied": "✓ Copied",
+    "copy": "⧉ Copy the link"
+  },
+  "admin": {
+    "title": "Platform administration",
+    "name": "Name",
+    "namePlaceholder": "e.g. Acme Corp",
+    "adminEmail": "Admin email (optional)",
+    "adminEmailPlaceholder": "admin@example.com",
+    "status": "Status",
+    "seats": "Seats",
+    "trialDays": "Trial length (days from now)",
+    "domainPlaceholder": "example.com",
+    "active": "✓ Active",
+    "emailExisting": "Email (existing account)",
+    "emailPlaceholder": "user@example.com",
+    "role": "Role",
+    "roleMember": "Member",
+    "roleAdmin": "Admin",
+    "modules": "Modules",
+    "default": "default"
   }
 }

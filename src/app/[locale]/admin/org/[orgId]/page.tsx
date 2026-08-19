@@ -1,4 +1,5 @@
 import { requireSuperAdmin } from "@/lib/session";
+import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import AppShell from "@/components/AppShell";
@@ -24,6 +25,7 @@ const STATUS_OPTIONS = [
 
 export default async function AdminOrgPage({ params }: { params: Promise<{ orgId: string }> }) {
   await requireSuperAdmin();
+  const t = await getTranslations("admin");
 
   const { orgId } = await params;
 
@@ -69,7 +71,7 @@ export default async function AdminOrgPage({ params }: { params: Promise<{ orgId
         <form action={adminSetOrgSubscription} className="flex flex-wrap gap-4 items-end">
           <input type="hidden" name="orgId" value={org.id} />
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-gray-500">Statut</label>
+            <label className="text-xs text-gray-500">{t("status")}</label>
             <select
               name="status"
               defaultValue={org.subscriptionStatus}
@@ -81,7 +83,7 @@ export default async function AdminOrgPage({ params }: { params: Promise<{ orgId
             </select>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-gray-500">Sièges</label>
+            <label className="text-xs text-gray-500">{t("seats")}</label>
             <input
               type="number"
               name="seatCount"
@@ -91,7 +93,7 @@ export default async function AdminOrgPage({ params }: { params: Promise<{ orgId
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-gray-500">Durée d&apos;essai (jours depuis maintenant)</label>
+            <label className="text-xs text-gray-500">{t("trialDays")}</label>
             <input
               type="number"
               name="trialDays"
@@ -127,7 +129,7 @@ export default async function AdminOrgPage({ params }: { params: Promise<{ orgId
               type="text"
               name="domain"
               defaultValue={org.allowedEmailDomain ?? ""}
-              placeholder="semawe.fr"
+              placeholder={t("domainPlaceholder")}
               className="rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 w-48"
             />
           </div>
@@ -138,7 +140,7 @@ export default async function AdminOrgPage({ params }: { params: Promise<{ orgId
             Enregistrer
           </button>
           {org.allowedEmailDomain && (
-            <span className="text-xs text-green-400 self-center">✓ Actif</span>
+            <span className="text-xs text-green-400 self-center">{t("active")}</span>
           )}
         </form>
       </section>
@@ -211,23 +213,23 @@ export default async function AdminOrgPage({ params }: { params: Promise<{ orgId
           <form action={adminAddMember} className="flex flex-wrap gap-3 items-end">
             <input type="hidden" name="orgId" value={org.id} />
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-500">Email (compte existant)</label>
+              <label className="text-xs text-gray-500">{t("emailExisting")}</label>
               <input
                 type="email"
                 name="email"
                 required
-                placeholder="utilisateur@domaine.fr"
+                placeholder={t("emailPlaceholder")}
                 className="rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 w-60"
               />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-500">Rôle</label>
+              <label className="text-xs text-gray-500">{t("role")}</label>
               <select
                 name="role"
                 className="rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
               >
-                <option value="member">Membre</option>
-                <option value="admin">Admin</option>
+                <option value="member">{t("roleMember")}</option>
+                <option value="admin">{t("roleAdmin")}</option>
               </select>
             </div>
             <button
@@ -260,7 +262,7 @@ export default async function AdminOrgPage({ params }: { params: Promise<{ orgId
       {/* Modules */}
       <section className="mb-6 rounded-xl bg-gray-900 border border-gray-800 overflow-hidden">
         <div className="px-5 py-3 border-b border-gray-800">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Modules</p>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t("modules")}</p>
         </div>
         <div className="divide-y divide-gray-800">
           {(Object.keys(FEATURE_LABELS) as FeatureKey[]).map((key) => {
@@ -272,7 +274,7 @@ export default async function AdminOrgPage({ params }: { params: Promise<{ orgId
               <div key={key} className="flex items-center justify-between px-5 py-3 gap-4">
                 <div className="flex items-center gap-2">
                   <p className="text-sm text-white">{label}</p>
-                  {isDefault && <span className="text-xs text-gray-600 bg-gray-800 rounded px-1.5 py-0.5">défaut</span>}
+                  {isDefault && <span className="text-xs text-gray-600 bg-gray-800 rounded px-1.5 py-0.5">{t("default")}</span>}
                 </div>
                 <form action={toggle}>
                   <button

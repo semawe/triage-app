@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { useRouter, Link } from "@/i18n/navigation";
 
@@ -200,6 +201,7 @@ function RoleNode({
 }
 
 function CopyLinkButton() {
+  const t = useTranslations("circleViz");
   const [copied, setCopied] = useState(false);
   return (
     <button
@@ -210,9 +212,9 @@ function CopyLinkButton() {
         });
       }}
       className="text-xs text-gray-600 hover:text-gray-300 transition-colors"
-      title="Copier le lien vers cette fiche"
+      title={t("copyLink")}
     >
-      {copied ? "✓ Copié" : "⧉ Copier le lien"}
+      {copied ? t("copied") : t("copy")}
     </button>
   );
 }
@@ -242,6 +244,7 @@ export default function CircleViz({
   upHref: string | null;
   initialSelection?: { kind: "space" | "role"; id: string } | null;
 }) {
+  const t = useTranslations("circleViz");
   const [selected, setSelected] = useState<Selection>(() => {
     if (initialSelection?.kind === "space") {
       const space = spaces.find((s) => s.id === initialSelection.id);
@@ -354,7 +357,7 @@ export default function CircleViz({
         ))}
         {roles.length > 0 && (
           <>
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-4 px-1">Rôles</p>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-4 px-1">{t("roles")}</p>
             {roles.map((r) => (
               <button key={r.id} onClick={() => handleRoleClick(r)}
                 className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm transition-colors text-left ${
@@ -414,10 +417,10 @@ export default function CircleViz({
         {/* Mini legend */}
         {!selected && (
           <div className="absolute top-3 right-3 text-[10px] text-gray-700 space-y-0.5 text-right pointer-events-none">
-            <p>- - anneau = sous-cercles</p>
-            {roles.length > 0 && <p><span style={{ color: `${ROLE_COLOR}88` }}>●</span> = rôle de ce cercle</p>}
-            <p>1ᵉʳ clic = détails · 2ᵉ clic = entrer</p>
-            {upHref && <p>clic sur la membrane = remonter</p>}
+            <p>{t("legendRing")}</p>
+            {roles.length > 0 && <p><span style={{ color: `${ROLE_COLOR}88` }}>●</span> {t("legendRole")}</p>}
+            <p>{t("legendClicks")}</p>
+            {upHref && <p>{t("legendMembrane")}</p>}
           </div>
         )}
       </div>
@@ -448,7 +451,7 @@ export default function CircleViz({
               <div className="flex items-center gap-3">
                 <CopyLinkButton />
                 <button onClick={() => setSelected(null)}
-                  className="text-gray-600 hover:text-gray-300 transition-colors leading-none text-lg" title="Fermer">
+                  className="text-gray-600 hover:text-gray-300 transition-colors leading-none text-lg" title={t("close")}>
                   ×
                 </button>
               </div>
@@ -464,14 +467,14 @@ export default function CircleViz({
                   <p className="text-xs text-gray-400 italic leading-relaxed">{selected.space.purpose}</p>
                 )}
                 <div className="space-y-2">
-                  <p className="text-xs text-gray-600 font-medium uppercase tracking-wider">Leader</p>
+                  <p className="text-xs text-gray-600 font-medium uppercase tracking-wider">{t("lead")}</p>
                   {selected.space.leader ? (
                     <div className="flex items-center gap-2">
                       <DrawerAvatar user={selected.space.leader} />
                       <span className="text-sm text-gray-300">{selected.space.leader.name}</span>
                     </div>
                   ) : (
-                    <p className="text-sm text-gray-600 italic">Sans leader</p>
+                    <p className="text-sm text-gray-600 italic">{t("noLead")}</p>
                   )}
                 </div>
                 <p className="text-xs text-gray-500">
@@ -505,18 +508,18 @@ export default function CircleViz({
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-gray-600 italic">Non attribué</p>
+                    <p className="text-sm text-gray-600 italic">{t("unassigned")}</p>
                   )}
                 </div>
                 {selected.role.purpose && (
                   <div className="space-y-1">
-                    <p className="text-xs text-gray-600 font-medium uppercase tracking-wider">Raison d&apos;être</p>
+                    <p className="text-xs text-gray-600 font-medium uppercase tracking-wider">{t("purpose")}</p>
                     <p className="text-xs text-gray-400 italic leading-relaxed">{selected.role.purpose}</p>
                   </div>
                 )}
                 {selected.role.domains.length > 0 && (
                   <div className="space-y-1">
-                    <p className="text-xs text-gray-600 font-medium uppercase tracking-wider">Domaines</p>
+                    <p className="text-xs text-gray-600 font-medium uppercase tracking-wider">{t("domains")}</p>
                     <ul className="space-y-0.5">
                       {selected.role.domains.map((d, i) => (
                         <li key={i} className="text-xs text-gray-400 flex gap-2">
@@ -528,7 +531,7 @@ export default function CircleViz({
                 )}
                 {selected.role.accountabilities.length > 0 && (
                   <div className="space-y-1">
-                    <p className="text-xs text-gray-600 font-medium uppercase tracking-wider">Redevabilités</p>
+                    <p className="text-xs text-gray-600 font-medium uppercase tracking-wider">{t("accountabilities")}</p>
                     <ul className="space-y-0.5">
                       {selected.role.accountabilities.map((a, i) => (
                         <li key={i} className="text-xs text-gray-400 flex gap-2">

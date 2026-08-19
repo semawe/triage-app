@@ -285,5 +285,41 @@
     "namePlaceholder": "Nom du projet",
     "descriptionPlaceholder": "Description (optionnel)",
     "deleteForever": "Supprimer définitivement"
+  },
+  "circleViz": {
+    "copyLink": "Copier le lien vers cette fiche",
+    "roles": "Rôles",
+    "legendRing": "- - anneau = sous-cercles",
+    "legendRole": "= rôle de ce cercle",
+    "legendClicks": "1ᵉʳ clic = détails · 2ᵉ clic = entrer",
+    "legendMembrane": "clic sur la membrane = remonter",
+    "close": "Fermer",
+    "lead": "Leader",
+    "noLead": "Sans leader",
+    "unassigned": "Non attribué",
+    "purpose": "Raison d'être",
+    "domains": "Domaines",
+    "accountabilities": "Redevabilités",
+    "copied": "✓ Copié",
+    "copy": "⧉ Copier le lien"
+  },
+  "admin": {
+    "title": "Administration plateforme",
+    "name": "Nom",
+    "namePlaceholder": "Ex. Acme Corp",
+    "adminEmail": "Email admin (optionnel)",
+    "adminEmailPlaceholder": "admin@example.com",
+    "status": "Statut",
+    "seats": "Sièges",
+    "trialDays": "Durée d'essai (jours depuis maintenant)",
+    "domainPlaceholder": "semawe.fr",
+    "active": "✓ Actif",
+    "emailExisting": "Email (compte existant)",
+    "emailPlaceholder": "utilisateur@domaine.fr",
+    "role": "Rôle",
+    "roleMember": "Membre",
+    "roleAdmin": "Admin",
+    "modules": "Modules",
+    "default": "défaut"
   }
 }

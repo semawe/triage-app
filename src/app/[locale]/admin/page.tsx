@@ -1,4 +1,5 @@
 import { requireSuperAdmin } from "@/lib/session";
+import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import AppShell from "@/components/AppShell";
 import { adminCreateOrg } from "@/actions/admin";
@@ -16,6 +17,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 export default async function AdminPage() {
   await requireSuperAdmin();
+  const t = await getTranslations("admin");
 
   const [orgs, userCount] = await Promise.all([
     prisma.organisation.findMany({
@@ -41,7 +43,7 @@ export default async function AdminPage() {
         <span className="text-xs font-medium text-red-400 bg-red-900/30 border border-red-800 rounded-full px-2.5 py-0.5">
           Super admin
         </span>
-        <h1 className="text-2xl font-bold text-white">Administration plateforme</h1>
+        <h1 className="text-2xl font-bold text-white">{t("title")}</h1>
       </div>
 
       {/* Stats */}
@@ -83,21 +85,21 @@ export default async function AdminPage() {
         </h2>
         <form action={adminCreateOrg} className="flex flex-wrap gap-3 items-end">
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-gray-500">Nom</label>
+            <label className="text-xs text-gray-500">{t("name")}</label>
             <input
               type="text"
               name="name"
               required
-              placeholder="Ex. Acme Corp"
+              placeholder={t("namePlaceholder")}
               className="rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 w-48"
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-gray-500">Email admin (optionnel)</label>
+            <label className="text-xs text-gray-500">{t("adminEmail")}</label>
             <input
               type="email"
               name="adminEmail"
-              placeholder="admin@example.com"
+              placeholder={t("adminEmailPlaceholder")}
               className="rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 w-56"
             />
           </div>
