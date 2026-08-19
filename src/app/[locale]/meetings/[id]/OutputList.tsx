@@ -22,18 +22,15 @@ const TYPE_COLORS: Record<string, string> = {
   governance: "bg-pink-900 text-pink-300",
 };
 
-const TYPE_LABELS: Record<string, string> = {
-  note: "Note",
-  action: "Action",
-  decision: "Décision",
-  project: "Projet",
-  governance: "Gouvernance",
-};
-
 function TypeBadge({ type }: { type: string }) {
+  const t = useTranslations("output.type");
+  const labels: Record<string, string> = {
+    note: t("note"), action: t("action"), decision: t("decision"),
+    project: t("project"), governance: t("governance"),
+  };
   return (
     <span className={`shrink-0 rounded-md px-2 py-0.5 text-xs font-medium ${TYPE_COLORS[type] ?? "bg-gray-700 text-gray-300"}`}>
-      {TYPE_LABELS[type] ?? type}
+      {labels[type] ?? type}
     </span>
   );
 }
@@ -165,7 +162,7 @@ function OutputItem({
             disabled={pending || !content.trim()}
             className="rounded-lg bg-indigo-700 px-3 py-1.5 text-sm text-white hover:bg-indigo-600 transition-colors disabled:opacity-50"
           >
-            {pending ? "Enregistrement…" : "Enregistrer"}
+            {pending ? t("saving") : t("save")}
           </button>
           <button
             type="button"
@@ -175,7 +172,7 @@ function OutputItem({
             }}
             className="rounded-lg border border-gray-700 px-3 py-1.5 text-sm text-gray-400 hover:text-gray-200 transition-colors"
           >
-            Annuler
+            {t("cancel")}
           </button>
         </div>
       </form>
@@ -208,7 +205,7 @@ function OutputItem({
             type="button"
             disabled={pending}
             onClick={() => {
-              if (!confirm("Supprimer cet output ?")) return;
+              if (!confirm(t("deleteConfirm"))) return;
               startTransition(async () => {
                 await deleteOutput(output.id);
               });

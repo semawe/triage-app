@@ -1,7 +1,7 @@
 import { requireOrg } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import AppShell from "@/components/AppShell";
 import { addSpaceMember, removeSpaceMember, updateSpaceMemberRole } from "@/actions/member";
 import { createSpace, updateSpacePrivacy } from "@/actions/space";
@@ -22,13 +22,6 @@ import SyncSettingsTab from "./SyncSettingsTab";
 type Props = {
   params: Promise<{ id: string }>;
   searchParams: Promise<{ tab?: string; circle?: string; role?: string }>;
-};
-
-const TYPE_LABELS: Record<string, string> = {
-  circle: "Cercle", project: "Projet", instance: "Instance",
-};
-const STATUS_LABELS: Record<string, string> = {
-  draft: "Brouillon", open: "En cours", closed: "Terminée",
 };
 
 export default async function CircleDetailPage({ params, searchParams }: Props) {
@@ -96,7 +89,7 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
           <p className="text-3xl">🔒</p>
           <p className="text-white font-semibold">{t("confidential")}</p>
           <p className="text-sm text-gray-500">
-            Réservé aux membres de {exists.name}.
+            {t("restrictedToMembers", { circle: exists.name })}
           </p>
         </div>
       </AppShell>
@@ -209,7 +202,7 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
       <div className="mb-5 flex flex-wrap items-center gap-3">
         <h1 className="text-xl font-bold text-white">{space.name}</h1>
         <span className="text-xs text-gray-500 bg-gray-800 rounded-full px-2.5 py-0.5">
-          {TYPE_LABELS[space.type] ?? space.type}
+          {tSpace(`type.${space.type}`)}
         </span>
         {space.isPrivate && (
           <span className="text-xs text-orange-400 border border-orange-900 rounded-full px-2.5 py-0.5">
@@ -390,7 +383,7 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
           <div>
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                Rôles ({space.roles.length})
+                {t("rolesCount", { count: space.roles.length })}
               </h2>
             </div>
 
@@ -538,7 +531,7 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
             {canManage && (
               <div className="rounded-xl bg-gray-900 border border-gray-800 p-4">
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-                  {space.roles.length === 0 ? "Créer le premier rôle" : "Ajouter un rôle"}
+                  {t(space.roles.length === 0 ? "createFirstRole" : "addRole")}
                 </p>
                 <form action={addRole} className="flex gap-3 flex-wrap items-end">
                   <input
@@ -577,8 +570,8 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
                 </p>
                 <p className="text-xs text-gray-600">
                   {space.isPrivate
-                    ? "CR réservés aux membres de ce cercle."
-                    : "CR accessibles à tous les membres de l'organisation."}
+                    ? t("privateMinutes")
+                    : t("publicMinutes")}
                 </p>
               </div>
               <div className="flex gap-2">
@@ -746,13 +739,15 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function MeetingRow({ meeting: m }: {
+async function MeetingRow({ meeting: m }: {
   meeting: {
     id: string; title: string | null; date: Date; status: string;
     durationMinutes: number | null; isPrivate: boolean | null;
   };
 }) {
-  const dateLabel = m.date.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
+  const locale = await getLocale();
+  const tStatus = await getTranslations("meeting.status");
+  const dateLabel = m.date.toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric" });
   const displayName = m.title ?? `Triage · ${dateLabel}`;
   const statusColor: Record<string, string> = {
     open: "bg-green-500 animate-pulse", draft: "bg-yellow-500", closed: "bg-gray-600",
@@ -767,7 +762,9 @@ function MeetingRow({ meeting: m }: {
         <span className="text-sm text-gray-300 group-hover:text-white transition-colors truncate">{displayName}</span>
         {m.isPrivate && <span className="text-xs text-gray-600">🔒</span>}
       </div>
-      <span className="text-xs text-gray-600 shrink-0 ml-3">{STATUS_LABELS[m.status] ?? m.status}</span>
+      <span className="text-xs text-gray-600 shrink-0 ml-3">
+        {m.status === "draft" ? tStatus("draft") : m.status === "open" ? tStatus("open") : tStatus("closed")}
+      </span>
     </Link>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 /**
  * Écoute du flux d'événements d'une réunion.
@@ -21,6 +22,7 @@ import { useRouter } from "next/navigation";
  */
 export default function SSEListener({ meetingId }: { meetingId: string }) {
   const router = useRouter();
+  const t = useTranslations("outputs");
   const [connecte, setConnecte] = useState(true);
 
   useEffect(() => {
@@ -51,7 +53,7 @@ export default function SSEListener({ meetingId }: { meetingId: string }) {
       role="status"
       className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2 rounded-full bg-yellow-950/90 border border-yellow-800 px-4 py-1.5 text-xs text-yellow-300 shadow-lg"
     >
-      Temps réel interrompu — reconnexion…
+      {t("reconnecting")}
     </div>
   );
 }

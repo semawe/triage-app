@@ -35,7 +35,7 @@ export default function GuestInvitePanel({
         className="w-full flex items-center justify-between gap-3 px-5 py-3 text-left hover:bg-gray-800/40 transition-colors"
       >
         <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-          Inviter un membre extérieur
+          {t("externalTitle")}
           {guests.length > 0 && (
             <span className="ml-2 rounded-full bg-gray-800 px-2 py-0.5 text-[10px] text-gray-300 normal-case tracking-normal">
               {guests.length}
@@ -57,7 +57,7 @@ export default function GuestInvitePanel({
                 <p className="text-sm text-white truncate">{g.name ?? g.email}</p>
                 <p className="text-xs text-gray-500 truncate">
                   {g.email}
-                  {g.entered ? " · a rejoint" : " · invité, pas encore entré"}
+                  {g.entered ? ` · ${t("joined")}` : ` · ${t("notEntered")}`}
                 </p>
               </div>
               <div className="flex items-center gap-2 shrink-0 text-xs">
@@ -70,14 +70,14 @@ export default function GuestInvitePanel({
                   }}
                   className="rounded-md border border-gray-700 bg-gray-800 px-2.5 py-1 text-gray-300 hover:bg-gray-700 transition-colors"
                 >
-                  {copied === g.id ? "Copié ✓" : "Copier le lien"}
+                  {copied === g.id ? t("copied") : t("copyLink")}
                 </button>
                 <form action={revokeGuest.bind(null, meetingId, g.id)}>
                   <button
                     type="submit"
                     className="rounded-md border border-red-800 bg-red-900/20 px-2.5 py-1 text-red-300 hover:bg-red-900/40 transition-colors"
                   >
-                    Révoquer
+                    {t("revoke")}
                   </button>
                 </form>
               </div>
@@ -112,7 +112,7 @@ export default function GuestInvitePanel({
             disabled={pending}
             className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors disabled:opacity-50"
           >
-            {pending ? "Envoi…" : "Inviter"}
+            {pending ? t("sending") : t("send")}
           </button>
         </form>
         {state?.ok && (
@@ -122,8 +122,7 @@ export default function GuestInvitePanel({
           <p className="mt-2 text-xs text-yellow-400">{state.error}</p>
         )}
         <p className="mt-2 text-xs text-gray-600">
-          L&apos;invité peut suivre la réunion, ajouter des points et recevoir le compte-rendu —
-          sans compte ni accès au reste de l&apos;organisation.
+          {t("guestHelp")}
         </p>
       </div>
         </>

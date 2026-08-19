@@ -4,68 +4,16 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 const PISTES = [
-  {
-    key: "action",
-    label: "Action suivante",
-    color: "text-blue-300",
-    dot: "bg-blue-500",
-    question: "Quelle est la prochaine action physique et visible ?",
-    tactique:
-      "Un verbe + une chose tangible. Qui fait quoi, concrètement ? Si plusieurs personnes doivent agir, créer une action par personne.",
-  },
-  {
-    key: "project",
-    label: "Projet",
-    color: "text-orange-300",
-    dot: "bg-orange-500",
-    question: "Le résultat demande-t-il plus d'une action ?",
-    tactique:
-      "Formuler le résultat désiré (ex. « Contrat signé »), puis identifier la première action suivante du projet.",
-  },
-  {
-    key: "waiting",
-    label: "En attente de…",
-    color: "text-yellow-300",
-    dot: "bg-yellow-500",
-    question: "Attends-tu quelque chose d'une personne précise ?",
-    tactique:
-      "Noter : qui, quoi, depuis quand. Planifier une relance si l'échéance est connue.",
-  },
-  {
-    key: "someday",
-    label: "Un jour / Peut-être",
-    color: "text-purple-300",
-    dot: "bg-purple-500",
-    question: "Bonne idée, mais pas maintenant ?",
-    tactique:
-      "À revoir lors de la prochaine revue hebdomadaire ou de gouvernance. Pas d'engagement.",
-  },
-  {
-    key: "reference",
-    label: "Référence",
-    color: "text-gray-300",
-    dot: "bg-gray-500",
-    question: "Information utile, sans action associée ?",
-    tactique:
-      "Archiver à un endroit de confiance. Rien à faire — la tension est résolue par la connaissance.",
-  },
-  {
-    key: "trash",
-    label: "Classer sans suite",
-    color: "text-red-300",
-    dot: "bg-red-600",
-    question: "Rien à faire, rien à garder ?",
-    tactique:
-      "On laisse tomber explicitement. La tension est résolue par la décision de ne rien faire.",
-  },
+  { key: "action", trackKey: "next_action", color: "text-blue-300", dot: "bg-blue-500" },
+  { key: "project", trackKey: "project", color: "text-orange-300", dot: "bg-orange-500" },
+  { key: "waiting", trackKey: "waiting_for", color: "text-yellow-300", dot: "bg-yellow-500" },
+  { key: "someday", trackKey: "someday_maybe", color: "text-purple-300", dot: "bg-purple-500" },
+  { key: "reference", trackKey: "reference", color: "text-gray-300", dot: "bg-gray-500" },
+  { key: "trash", trackKey: "trash", color: "text-red-300", dot: "bg-red-600" },
 ] as const;
 
 const TACTIQUES_HOLACRACY = [
-  { label: "Demande d'info", desc: "« Qui sait quelque chose sur… ? »" },
-  { label: "Demande de ressource", desc: "« J'ai besoin de X pour Y. »" },
-  { label: "Partage d'info", desc: "« Je voulais que vous sachiez que… »" },
-  { label: "Coordination", desc: "« J'ai besoin que le rôle X fasse Y. »" },
-  { label: "Délégation", desc: "« Qui peut décider de X ? »" },
+  "info", "resource", "share", "coordinate", "delegate",
 ] as const;
 
 type Tab = "pistes" | "tactiques";
@@ -98,7 +46,7 @@ export default function PistesPanel() {
                   : "text-gray-500 hover:text-gray-300"
               }`}
             >
-              Pistes GTD
+              {tT("gtd")}
             </button>
             <button
               onClick={() => setTab("tactiques")}
@@ -108,7 +56,7 @@ export default function PistesPanel() {
                   : "text-gray-500 hover:text-gray-300"
               }`}
             >
-              Tactiques
+              {tT("tactical")}
             </button>
           </div>
 
@@ -118,10 +66,10 @@ export default function PistesPanel() {
                 <div key={p.key} className="space-y-1">
                   <div className="flex items-center gap-2">
                     <span className={`h-2 w-2 rounded-full shrink-0 ${p.dot}`} />
-                    <p className={`text-sm font-semibold ${p.color}`}>{p.label}</p>
+                    <p className={`text-sm font-semibold ${p.color}`}>{tT(`tracks.${p.trackKey}`)}</p>
                   </div>
-                  <p className="pl-4 text-xs text-gray-400 italic">{p.question}</p>
-                  <p className="pl-4 text-xs text-gray-500">{p.tactique}</p>
+                  <p className="pl-4 text-xs text-gray-400 italic">{tT(`guidance.${p.key}.question`)}</p>
+                  <p className="pl-4 text-xs text-gray-500">{tT(`guidance.${p.key}.detail`)}</p>
                 </div>
               ))}
             </div>
@@ -130,13 +78,12 @@ export default function PistesPanel() {
           {tab === "tactiques" && (
             <div className="p-4 space-y-4">
               <p className="text-xs text-gray-500 leading-relaxed">
-                En réunion tactique Holacracy, le titulaire d&apos;un point exprime
-                sa tension. Voici les modes d&apos;interaction possibles :
+                {tT("tacticalHelp")}
               </p>
-              {TACTIQUES_HOLACRACY.map((t) => (
-                <div key={t.label} className="space-y-0.5">
-                  <p className="text-sm font-medium text-gray-200">{t.label}</p>
-                  <p className="text-xs text-gray-500">{t.desc}</p>
+              {TACTIQUES_HOLACRACY.map((mode) => (
+                <div key={mode} className="space-y-0.5">
+                  <p className="text-sm font-medium text-gray-200">{tT(`modes.${mode}.label`)}</p>
+                  <p className="text-xs text-gray-500">{tT(`modes.${mode}.description`)}</p>
                 </div>
               ))}
             </div>

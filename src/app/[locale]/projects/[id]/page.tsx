@@ -15,10 +15,10 @@ import type { ProjectTaskStatus } from "@/generated/prisma";
 
 type Props = { params: Promise<{ id: string }> };
 
-const TASK_STATUSES: { key: ProjectTaskStatus; label: string; accent: string }[] = [
-  { key: "todo", label: "À faire", accent: "border-gray-700" },
-  { key: "doing", label: "En cours", accent: "border-indigo-800" },
-  { key: "done", label: "Terminé", accent: "border-green-800" },
+const TASK_STATUSES: { key: ProjectTaskStatus; labelKey: "statusTodo" | "statusDoing" | "statusDone"; accent: string }[] = [
+  { key: "todo", labelKey: "statusTodo", accent: "border-gray-700" },
+  { key: "doing", labelKey: "statusDoing", accent: "border-indigo-800" },
+  { key: "done", labelKey: "statusDone", accent: "border-green-800" },
 ];
 
 export default async function ProjectDetailPage({ params }: Props) {
@@ -59,6 +59,7 @@ export default async function ProjectDetailPage({ params }: Props) {
   const createTask = createProjectTask.bind(null, project.id);
   const columns = TASK_STATUSES.map((st) => ({
     ...st,
+    label: tr(st.labelKey),
     tasks: project.tasks.filter((t) => t.status === st.key),
   }));
 
@@ -83,7 +84,7 @@ export default async function ProjectDetailPage({ params }: Props) {
       {canManage && (
         <div className="mb-6 rounded-xl bg-gray-900 border border-gray-800 p-4">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-            + Nouvelle tâche
+            {tr("new")}
           </p>
           <form action={createTask} className="flex gap-2 flex-wrap items-end">
             <input
@@ -111,7 +112,7 @@ export default async function ProjectDetailPage({ params }: Props) {
               type="submit"
               className="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors whitespace-nowrap"
             >
-              Créer
+              {tr("create")}
             </button>
           </form>
         </div>
@@ -124,7 +125,7 @@ export default async function ProjectDetailPage({ params }: Props) {
           <p className="text-gray-400 text-sm">{tr("empty")}</p>
           {!canManage && (
             <p className="text-xs text-gray-600">
-              Les tâches sont créées par les leaders du cercle ou les admins.
+              {tr("memberEmpty")}
             </p>
           )}
         </div>
@@ -169,6 +170,7 @@ async function TaskCard({
   canManage: boolean;
 }) {
   const tr = await getTranslations("projectTasks");
+  const statuses = TASK_STATUSES.map((status) => ({ ...status, label: tr(status.labelKey) }));
   const isOverdue = t.dueDate && t.status !== "done" && new Date(t.dueDate) < new Date();
 
   return (
@@ -189,12 +191,12 @@ async function TaskCard({
         </div>
         {canManage && (
           <div className="flex gap-1 text-[11px]">
-            {TASK_STATUSES.filter((s) => s.key !== t.status).map((s) => (
+            {statuses.filter((s) => s.key !== t.status).map((s) => (
               <form key={s.key} action={updateProjectTaskStatus.bind(null, t.id, s.key)}>
                 <button
                   type="submit"
                   className="px-1.5 py-0.5 rounded text-gray-600 hover:text-gray-300 hover:bg-gray-700 transition-colors"
-                  title={`Passer en « ${s.label} »`}
+                  title={tr("moveTo", { status: s.label })}
                 >
                   → {s.label}
                 </button>

@@ -1,5 +1,5 @@
 import { completeSyncPhase } from "@/actions/meeting";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { logIndicatorValue } from "@/actions/indicator";
 import { toggleChecklistCheck } from "@/actions/checklist";
 import { Link } from "@/i18n/navigation";
@@ -27,14 +27,8 @@ type ProjectRow = {
   status: "active" | "on_hold" | "done";
 };
 
-const PROJECT_STATUS_BADGES: Record<ProjectRow["status"], { label: string; classes: string }> = {
-  active: { label: "En cours", classes: "bg-green-900/40 text-green-400 border-green-800" },
-  on_hold: { label: "En pause", classes: "bg-yellow-900/40 text-yellow-400 border-yellow-800" },
-  done: { label: "Terminé", classes: "bg-gray-800 text-gray-400 border-gray-700" },
-};
-
-function formatValue(value: number, unit: string | null) {
-  const num = Number.isInteger(value) ? value.toString() : value.toLocaleString("fr-FR");
+function formatValue(value: number, unit: string | null, locale: string) {
+  const num = Number.isInteger(value) ? value.toString() : value.toLocaleString(locale);
   return unit ? `${num} ${unit}` : num;
 }
 
@@ -58,6 +52,12 @@ export default async function SyncPhase({
   projects: ProjectRow[];
 }) {
   const t = await getTranslations("cockpit");
+  const locale = await getLocale();
+  const projectStatusBadges: Record<ProjectRow["status"], { label: string; classes: string }> = {
+    active: { label: t("statusActive"), classes: "bg-green-900/40 text-green-400 border-green-800" },
+    on_hold: { label: t("statusOnHold"), classes: "bg-yellow-900/40 text-yellow-400 border-yellow-800" },
+    done: { label: t("statusDone"), classes: "bg-gray-800 text-gray-400 border-gray-700" },
+  };
   const complete = completeSyncPhase.bind(null, meetingId);
   const isEmpty = indicators.length === 0 && checklist.length === 0 && projects.length === 0;
 
@@ -65,20 +65,17 @@ export default async function SyncPhase({
     <div className="space-y-4">
       <div className="rounded-xl bg-gray-900 border border-teal-900 p-6">
         <div className="text-xs font-medium text-teal-400/70 mb-1">{t("syncPhase")}</div>
-        <h2 className="text-2xl font-bold text-white leading-tight">Cockpit de {spaceName}</h2>
+        <h2 className="text-2xl font-bold text-white leading-tight">{t("title", { space: spaceName })}</h2>
         <p className="mt-1 text-sm text-gray-500">
-          Indicateurs, checklists et projets — passez le cockpit en revue avant de démarrer le triage.
+          {t("syncHelp")}
         </p>
       </div>
 
       {isEmpty && (
         <div className="rounded-xl bg-gray-900 border border-gray-800 p-6 text-sm text-gray-500">
-          Rien à passer en revue pour ce cercle. Les indicateurs, checklists et projets se
-          définissent depuis{" "}
           <Link href={`/circles/${spaceId}?tab=synchro`} className="underline hover:text-gray-300">
-            la page du cercle
+            {t("emptySync", { circlePage: t("circlePage") })}
           </Link>
-          .
         </div>
       )}
 
@@ -102,9 +99,9 @@ export default async function SyncPhase({
                     </p>
                     {ind.previousValue && (
                       <p className="text-xs text-gray-500">
-                        Précédent : {formatValue(ind.previousValue.value, ind.unit)}
+                        {t("previous", { value: formatValue(ind.previousValue.value, ind.unit, locale) })}
                         <span className="text-gray-700">
-                          {" "}· {ind.previousValue.recordedAt.toLocaleDateString("fr-FR")}
+                          {" "}· {ind.previousValue.recordedAt.toLocaleDateString(locale)}
                         </span>
                       </p>
                     )}
@@ -115,7 +112,7 @@ export default async function SyncPhase({
                       required
                       inputMode="decimal"
                       defaultValue={ind.currentValue?.value ?? ""}
-                      placeholder={ind.unit ? `Valeur (${ind.unit})` : "Valeur"}
+                      placeholder={ind.unit ? t("valueWithUnit", { unit: ind.unit }) : t("value")}
                       className="w-28 rounded-lg bg-gray-800 border border-gray-700 px-3 py-1.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-teal-600"
                     />
                     <input
@@ -128,7 +125,7 @@ export default async function SyncPhase({
                       type="submit"
                       className="rounded-lg border border-gray-700 px-3 py-1.5 text-xs text-gray-300 hover:border-teal-600 hover:text-white transition-colors"
                     >
-                      {ind.currentValue ? "Corriger" : "Relever"}
+                      {ind.currentValue ? t("correct") : t("record")}
                     </button>
                     {ind.currentValue && <span className="text-xs text-teal-500">✓</span>}
                   </form>
@@ -186,12 +183,12 @@ export default async function SyncPhase({
               href={`/circles/${spaceId}?tab=synchro`}
               className="text-xs text-gray-600 hover:text-gray-400 transition-colors"
             >
-              Gérer →
+              {t("manage")}
             </Link>
           </div>
           <div className="divide-y divide-gray-800">
             {projects.map((p) => {
-              const badge = PROJECT_STATUS_BADGES[p.status];
+              const badge = projectStatusBadges[p.status];
               return (
                 <div key={p.id} className="px-4 py-3 flex items-start gap-3">
                   <span className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-medium ${badge.classes}`}>
@@ -214,7 +211,7 @@ export default async function SyncPhase({
             type="submit"
             className="rounded-xl bg-indigo-600 px-8 py-3 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors"
           >
-            Démarrer le triage →
+            {t("startTriage")}
           </button>
         </form>
       </div>

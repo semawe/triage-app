@@ -53,15 +53,14 @@ export default async function MembersPage({
             <span className={members.length > org.seatCount ? "text-red-400" : "text-white"}>
               {members.length}
             </span>
-            <span className="text-gray-600"> / {org.seatCount} siège{org.seatCount > 1 ? "s" : ""}</span>
+            <span className="text-gray-600"> / {t("seatCount", { count: org.seatCount })}</span>
           </span>
         </div>
       </div>
 
       {error === "seats-full" && (
         <div className="mb-6 rounded-lg bg-red-900/30 border border-red-800 px-4 py-3 text-sm text-red-300">
-          Limite de {org.seatCount} siège{org.seatCount > 1 ? "s" : ""} atteinte — impossible
-          d&apos;approuver cette demande. Ajoute des sièges depuis{" "}
+          {t("seatLimit", { count: org.seatCount })}{" "}
           <Link href="/settings" className="underline hover:text-red-200">
             {t("billingPath")}
           </Link>
@@ -99,7 +98,7 @@ export default async function MembersPage({
           <div className="px-5 py-3 border-b border-yellow-900/50 flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-yellow-400 animate-pulse" />
             <p className="text-xs font-semibold text-yellow-400 uppercase tracking-wider">
-              {joinRequests.length} demande{joinRequests.length !== 1 ? "s" : ""} en attente
+              {t("pendingRequests", { count: joinRequests.length })}
             </p>
           </div>
           <div className="divide-y divide-gray-800">

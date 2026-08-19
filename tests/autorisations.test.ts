@@ -325,6 +325,40 @@ describe("requireSuperAdmin — la console de plateforme", () => {
 });
 
 describe("gestion des membres — le franchissement d'organisation", () => {
+  it("retire aussi les appartenances aux cercles et les rôles de cette organisation", async () => {
+    const s = await deuxOrganisations();
+    const cible = await prisma.organisationMember.findFirstOrThrow({
+      where: { organisationId: s.orgA.id, userId: s.leadA.id },
+    });
+    const role = await prisma.role.create({
+      data: { spaceId: s.espaceA.id, name: "Facilitateur" },
+    });
+    await prisma.roleAssignment.create({ data: { roleId: role.id, userId: s.leadA.id } });
+    // Un rôle chez B doit survivre : le nettoyage reste strictement mono-tenant.
+    const roleB = await prisma.role.create({
+      data: { spaceId: s.espaceB.id, name: "Secrétaire" },
+    });
+    await prisma.roleAssignment.create({ data: { roleId: roleB.id, userId: s.leadA.id } });
+    await addSpaceMember(s.espaceB.id, s.leadA.id);
+
+    actAs(s.adminA);
+    await tente(() => removeMember(cible.id));
+
+    expect(await prisma.organisationMember.findUnique({ where: { id: cible.id } })).toBeNull();
+    expect(await prisma.spaceMember.count({
+      where: { userId: s.leadA.id, space: { organisationId: s.orgA.id } },
+    })).toBe(0);
+    expect(await prisma.roleAssignment.count({
+      where: { userId: s.leadA.id, role: { space: { organisationId: s.orgA.id } } },
+    })).toBe(0);
+    expect(await prisma.spaceMember.count({
+      where: { userId: s.leadA.id, space: { organisationId: s.orgB.id } },
+    })).toBe(1);
+    expect(await prisma.roleAssignment.count({
+      where: { userId: s.leadA.id, role: { space: { organisationId: s.orgB.id } } },
+    })).toBe(1);
+  });
+
   it("un admin ne touche pas un membre d'une autre organisation", async () => {
     const s = await deuxOrganisations();
     const cibleB = await prisma.organisationMember.findFirstOrThrow({

@@ -9,10 +9,10 @@ import { hasFeature } from "@/lib/features";
 import { Link } from "@/i18n/navigation";
 import type { ProjectStatus } from "@/generated/prisma";
 
-const STATUSES: { key: ProjectStatus; label: string; accent: string }[] = [
-  { key: "active", label: "En cours", accent: "border-green-800" },
-  { key: "on_hold", label: "En pause", accent: "border-yellow-800" },
-  { key: "done", label: "Terminé", accent: "border-gray-700" },
+const STATUSES: { key: ProjectStatus; labelKey: "statusActive" | "statusOnHold" | "statusDone"; accent: string }[] = [
+  { key: "active", labelKey: "statusActive", accent: "border-green-800" },
+  { key: "on_hold", labelKey: "statusOnHold", accent: "border-yellow-800" },
+  { key: "done", labelKey: "statusDone", accent: "border-gray-700" },
 ];
 
 export default async function ProjectsPage({
@@ -22,6 +22,7 @@ export default async function ProjectsPage({
 }) {
   const ctx = await requireOrg();
   const t = await getTranslations("projects");
+  const tc = await getTranslations("common");
   const { org, session, membership } = ctx;
 
   if (!hasFeature(org, "projects")) notFound();
@@ -63,6 +64,7 @@ export default async function ProjectsPage({
 
   const columns = STATUSES.map((st) => ({
     ...st,
+    label: t(st.labelKey),
     projects: projects.filter((p) => p.status === st.key),
   }));
 
@@ -78,7 +80,7 @@ export default async function ProjectsPage({
               href="/projects"
               className={`px-3 py-1.5 ${!spaceFilter ? "bg-indigo-900/60 text-indigo-300 font-medium" : "text-gray-500 hover:text-gray-300"}`}
             >
-              Tous
+              {t("all")}
             </Link>
             {spaces.map((s) => (
               <Link
@@ -97,7 +99,7 @@ export default async function ProjectsPage({
       {canCreate && (
         <div className="mb-6 rounded-xl bg-gray-900 border border-gray-800 p-4">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-            + Nouveau projet
+            {t("newProject")}
           </p>
           <form action={createProjectInSpace} className="flex gap-2 flex-wrap items-end">
             <input
@@ -124,7 +126,7 @@ export default async function ProjectsPage({
               type="submit"
               className="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors whitespace-nowrap"
             >
-              Créer
+              {tc("create")}
             </button>
           </form>
         </div>
@@ -135,16 +137,15 @@ export default async function ProjectsPage({
         <div className="mt-12 text-center space-y-2">
           <p className="text-3xl">🚧</p>
           <p className="text-gray-400 text-sm">
-            Aucun projet{spaceFilter ? " dans cet espace" : ""} pour l&apos;instant.
+            {t(spaceFilter ? "noneSpace" : "noneAll")}
           </p>
           {canCreate ? (
             <p className="text-xs text-gray-600">
-              Crée le premier avec le formulaire ci-dessus — il apparaîtra dans la colonne « En cours ».
+              {t("emptyAdmin")}
             </p>
           ) : (
             <p className="text-xs text-gray-600">
-              Les projets sont créés par les leaders d&apos;espace ou les admins, ici ou depuis
-              l&apos;onglet Synchro d&apos;un cercle.
+              {t("emptyMember")}
             </p>
           )}
         </div>
@@ -196,6 +197,7 @@ async function ProjectCard({
   showSpace: boolean;
 }) {
   const t = await getTranslations("projects");
+  const statuses = STATUSES.map((status) => ({ ...status, label: t(status.labelKey) }));
   return (
     <div className="rounded-lg bg-gray-800/60 border border-gray-800 px-3 py-2.5 space-y-1.5">
       <Link
@@ -218,12 +220,12 @@ async function ProjectCard({
         ) : <span />}
         {canManage && (
           <div className="flex gap-1 text-[11px]">
-            {STATUSES.filter((s) => s.key !== p.status).map((s) => (
+            {statuses.filter((s) => s.key !== p.status).map((s) => (
               <form key={s.key} action={updateProjectStatus.bind(null, p.id, s.key)}>
                 <button
                   type="submit"
                   className="px-1.5 py-0.5 rounded text-gray-600 hover:text-gray-300 hover:bg-gray-700 transition-colors"
-                  title={`Passer en « ${s.label} »`}
+                  title={t("moveTo", { status: s.label })}
                 >
                   → {s.label}
                 </button>

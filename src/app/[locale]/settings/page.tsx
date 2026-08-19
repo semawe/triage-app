@@ -10,13 +10,6 @@ import { createCheckoutSession, createCustomerPortalSession, updateSeatsForm } f
 import { isOrgAccessible } from "@/lib/stripe";
 import { getTranslations } from "next-intl/server";
 
-const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  trial:    { label: "Essai gratuit",        color: "text-yellow-400 bg-yellow-900/30 border-yellow-800" },
-  active:   { label: "Abonnement actif",     color: "text-green-400 bg-green-900/30 border-green-800" },
-  past_due: { label: "Paiement en retard",   color: "text-red-400 bg-red-900/30 border-red-800" },
-  canceled: { label: "Abonnement résilié",   color: "text-gray-400 bg-gray-800 border-gray-700" },
-};
-
 export default async function SettingsPage({
   searchParams,
 }: {
@@ -25,6 +18,12 @@ export default async function SettingsPage({
   const { allOrgs } = await requireOrgForBilling();
   const t = await getTranslations("settings");
   const tc = await getTranslations("common");
+  const statusLabels: Record<string, { label: string; color: string }> = {
+    trial: { label: t("statusTrial"), color: "text-yellow-400 bg-yellow-900/30 border-yellow-800" },
+    active: { label: t("statusActive"), color: "text-green-400 bg-green-900/30 border-green-800" },
+    past_due: { label: t("statusPastDue"), color: "text-red-400 bg-red-900/30 border-red-800" },
+    canceled: { label: t("statusCanceled"), color: "text-gray-400 bg-gray-800 border-gray-700" },
+  };
 
   // Only orgs where the current user is admin
   const adminOrgs = allOrgs.filter((o) => o.role === "admin");
@@ -42,7 +41,7 @@ export default async function SettingsPage({
   const features = getOrgFeatures(org);
   const memberCount = await prisma.organisationMember.count({ where: { organisationId: org.id } });
   const accessible = isOrgAccessible(org);
-  const statusInfo = STATUS_LABELS[org.subscriptionStatus] ?? STATUS_LABELS.trial;
+  const statusInfo = statusLabels[org.subscriptionStatus] ?? statusLabels.trial;
 
   return (
     <AppShell allowSuspended>
@@ -292,7 +291,7 @@ export default async function SettingsPage({
                     }`}
                     role="switch"
                     aria-checked={isOn}
-                    title={isOn ? "Désactiver" : "Activer"}
+                    title={tc(isOn ? "deactivate" : "activate")}
                   >
                     <span
                       className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${

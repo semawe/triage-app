@@ -1,5 +1,5 @@
 import { updateSpaceFeature } from "@/actions/space";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import {
   createIndicator,
   updateIndicator,
@@ -33,12 +33,6 @@ type Project = {
   status: "active" | "on_hold" | "done";
 };
 
-const PROJECT_STATUS_LABELS: Record<Project["status"], string> = {
-  active: "En cours",
-  on_hold: "En pause",
-  done: "Terminé",
-};
-
 const inputCls =
   "rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500";
 
@@ -66,6 +60,10 @@ export default async function SyncSettingsTab({
 }) {
   const t = await getTranslations("cockpit");
   const tc = await getTranslations("common");
+  const locale = await getLocale();
+  const projectStatusLabels: Record<Project["status"], string> = {
+    active: t("statusActive"), on_hold: t("statusOnHold"), done: t("statusDone"),
+  };
   const setInherit = updateSpaceFeature.bind(null, spaceId, "sync_phase", null);
   const setOn = updateSpaceFeature.bind(null, spaceId, "sync_phase", true);
   const setOff = updateSpaceFeature.bind(null, spaceId, "sync_phase", false);
@@ -85,8 +83,8 @@ export default async function SyncSettingsTab({
           </p>
           <p className="text-xs text-gray-600">
             {effective
-              ? "Les réunions de cet espace commencent par la revue des indicateurs, checklists et projets."
-              : "Les réunions de cet espace démarrent directement sur le triage des points."}
+              ? t("syncEnabledDescription")
+              : t("syncDisabledDescription")}
           </p>
         </div>
         {canManage ? (
@@ -95,7 +93,7 @@ export default async function SyncSettingsTab({
               <button
                 type="submit"
                 className={`px-2 py-0.5 rounded ${syncOverride === null ? "bg-gray-700 text-gray-300" : "hover:text-gray-400"}`}
-                title={`Hérite du réglage de l'organisation (${orgSyncEnabled ? "activé" : "désactivé"})`}
+                title={t("inheritsOrg", { state: t(orgSyncEnabled ? "enabledState" : "disabledState") })}
               >
                 {tc("auto")}
               </button>
@@ -119,7 +117,7 @@ export default async function SyncSettingsTab({
           </div>
         ) : (
           <span className={`text-xs ${effective ? "text-green-500" : "text-gray-600"}`}>
-            {effective ? "Activée" : "Désactivée"}
+            {t(effective ? "enabledF" : "disabledF")}
           </span>
         )}
       </div>
@@ -128,7 +126,7 @@ export default async function SyncSettingsTab({
       <div className="rounded-xl bg-gray-900 border border-gray-800 overflow-hidden">
         <div className="px-5 py-3 border-b border-gray-800">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-            📊 Indicateurs ({indicators.length})
+            {t("indicatorCount", { count: indicators.length })}
           </p>
         </div>
         {indicators.length > 0 ? (
@@ -146,7 +144,7 @@ export default async function SyncSettingsTab({
                     </p>
                     {ind.lastValue && (
                       <p className="text-xs text-gray-500">
-                        Dernier relevé : {ind.lastValue.value.toLocaleString("fr-FR")}
+                        {t("lastReading", { value: ind.lastValue.value.toLocaleString(locale) })}
                         {ind.unit ? ` ${ind.unit}` : ""}
                         <span className="text-gray-700">
                           {" "}· {ind.lastValue.recordedAt.toLocaleDateString("fr-FR")}
@@ -205,7 +203,7 @@ export default async function SyncSettingsTab({
       <div className="rounded-xl bg-gray-900 border border-gray-800 overflow-hidden">
         <div className="px-5 py-3 border-b border-gray-800">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-            ✅ Checklist récurrente ({checklistItems.length})
+            {t("checklistCount", { count: checklistItems.length })}
           </p>
         </div>
         {checklistItems.length > 0 ? (
@@ -261,7 +259,7 @@ export default async function SyncSettingsTab({
       <div className="rounded-xl bg-gray-900 border border-gray-800 overflow-hidden">
         <div className="px-5 py-3 border-b border-gray-800">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-            🚧 Projets ({projects.length})
+            {t("projectCount", { count: projects.length })}
           </p>
         </div>
         {projects.length > 0 ? (
@@ -277,7 +275,7 @@ export default async function SyncSettingsTab({
                     {canManage ? (
                       <>
                         <div className="flex gap-1 text-xs">
-                          {(Object.keys(PROJECT_STATUS_LABELS) as Project["status"][]).map((s) => (
+                          {(Object.keys(projectStatusLabels) as Project["status"][]).map((s) => (
                             <form key={s} action={updateProjectStatus.bind(null, p.id, s)}>
                               <button
                                 type="submit"
@@ -291,7 +289,7 @@ export default async function SyncSettingsTab({
                                     : "text-gray-600 hover:text-gray-400"
                                 }`}
                               >
-                                {PROJECT_STATUS_LABELS[s]}
+                                {projectStatusLabels[s]}
                               </button>
                             </form>
                           ))}
@@ -303,7 +301,7 @@ export default async function SyncSettingsTab({
                         </form>
                       </>
                     ) : (
-                      <span className="text-xs text-gray-500">{PROJECT_STATUS_LABELS[p.status]}</span>
+                      <span className="text-xs text-gray-500">{projectStatusLabels[p.status]}</span>
                     )}
                   </div>
                 </div>

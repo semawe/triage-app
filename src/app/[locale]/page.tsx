@@ -4,20 +4,22 @@ import { redirect } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = {
-  title: "triapp — Facilitation de réunion Holacracy",
-  description:
-    "Agenda partagé en temps réel, traitement point par point, outputs typés. L'outil de réunion pour équipes auto-organisées. Open source, essai gratuit 14 jours.",
-  openGraph: {
-    title: "triapp — Des réunions qui avancent, vraiment.",
-    description:
-      "Agenda partagé en temps réel, traitement structuré, outputs typés. Compatible Holacracy.",
-    url: "https://triapp.fr",
-    siteName: "triapp",
-    locale: "fr_FR",
-    type: "website",
-  },
-};
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "landing" });
+  return {
+    title: t("metaTitle"),
+    description: t("metaDescription"),
+    openGraph: {
+      title: t("metaOgTitle"),
+      description: t("metaOgDescription"),
+      url: "https://triapp.fr",
+      siteName: "triapp",
+      locale: locale === "en" ? "en_GB" : "fr_FR",
+      type: "website",
+    },
+  };
+}
 
 export default async function HomePage() {
   const tL = await getTranslations("landing");
@@ -77,17 +79,17 @@ export default async function HomePage() {
           <FeatureCard
             icon="◈"
             title={tL("featureAgenda")}
-            description="Chaque membre ajoute ses points avant la réunion. L'ordre se construit ensemble, en temps réel."
+            description={tL("featureAgendaDescription")}
           />
           <FeatureCard
             icon="◎"
             title={tL("featureTriage")}
-            description="Un point à la fois. Notes, actions, décisions, projets, gouvernance — chaque output est typé et daté."
+            description={tL("featureTriageDescription")}
           />
           <FeatureCard
             icon="◉"
             title={tL("featureSpaces")}
-            description="Cercles, équipes ou projets. Chaque espace a ses réunions, ses membres, sa hiérarchie."
+            description={tL("featureSpacesDescription")}
           />
         </div>
       </section>
@@ -105,7 +107,7 @@ export default async function HomePage() {
               {tL("quote")}
             </p>
             <p className="text-sm text-gray-600">
-              Aliocha Iordanoff — co-fondateur,{" "}
+              {tL("quoteAttribution")}{" "}
               <a
                 href="https://semawe.fr"
                 target="_blank"
@@ -114,7 +116,7 @@ export default async function HomePage() {
               >
                 Sémawé
               </a>{" "}
-              &middot; premier utilisateur de triapp
+              {tL("quoteRole")}
             </p>
           </div>
         </div>
@@ -167,7 +169,7 @@ export default async function HomePage() {
       {/* Footer */}
       <footer className="border-t border-gray-900 max-w-5xl mx-auto px-6 py-8 flex items-center justify-between text-xs text-gray-600 flex-wrap gap-4">
         <span>
-          tri<span className="text-indigo-700">app</span> — par{" "}
+          tri<span className="text-indigo-700">app</span> {tL("footerBy")}{" "}
           <a
             href="https://heterostasia.com"
             className="hover:text-gray-400 transition-colors"
@@ -241,7 +243,7 @@ async function AppMock() {
           title={tL("demoItem1")}
           initials="J"
           avatarClass="bg-purple-700"
-          output={{ type: "action", text: "@Juliette — préparer le brief RH avant le 25/06" }}
+          output={{ type: "action", text: tL("demoOutput") }}
         />
         <MockAgendaItem
           status="pending"

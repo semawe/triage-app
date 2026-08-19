@@ -41,7 +41,7 @@ export default function SendInviteForm() {
           disabled={pending}
           className="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors disabled:opacity-50"
         >
-          {pending ? "Envoi…" : "Envoyer l'invitation"}
+          {pending ? t("sending") : t("send")}
         </button>
       </form>
 

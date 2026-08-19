@@ -3,7 +3,11 @@
     "name": "Triage App",
     "tagline": "Triage facilitation, for Holacracy and beyond",
     "errorTitle": "This page could not be displayed",
-    "loading": "Loading…"
+    "loading": "Loading…",
+    "errorBody": "The error has been recorded. Trying again is usually enough; if it happens again, the reference below will help us find it.",
+    "errorReference": "reference {digest}",
+    "retry": "Try again",
+    "backHome": "Back to home"
   },
   "auth": {
     "signIn": "Sign in",
@@ -118,7 +122,19 @@
     "privacyAutoTitle": "Inherits the circle's setting ({state})",
     "inheritsPrefix": "Inherits from the circle:",
     "inheritsSuffix": "— change it on",
-    "rename": "Click to rename"
+    "rename": "Click to rename",
+    "close": "Close",
+    "open": "Open the meeting →",
+    "scribe": "✍️ Scribe:",
+    "pass": "Hand over",
+    "closeConfirm": "Close the meeting ✓",
+    "byStatus": "By status",
+    "bySpace": "By circle",
+    "recapTitle": "Minutes — {space} — {date}",
+    "processedCount": "{count, plural, one {# item processed} other {# items processed}}",
+    "restrictedToSpace": "Restricted to members of {space}.",
+    "draftEmpty": "Add agenda items, then open the meeting.",
+    "draftCount": "{count, plural, one {# agenda item. Ready?} other {# agenda items. Ready?}}"
   },
   "item": {
     "status": {
@@ -148,7 +164,25 @@
       "trash": "Drop it"
     },
     "panel": "Processing tracks",
-    "short": "Tracks"
+    "short": "Tracks",
+    "gtd": "GTD tracks",
+    "tactical": "Tactical",
+    "tacticalHelp": "In a Holacracy tactical meeting, the person who brought an item voices their tension. Here are the possible modes of interaction:",
+    "guidance": {
+      "action": {"question": "What is the next physical, visible action?", "detail": "A verb plus something tangible. Who does what, concretely? If several people need to act, create one action per person."},
+      "project": {"question": "Does the result require more than one action?", "detail": "State the desired outcome (e.g. “Contract signed”), then identify the project's first next action."},
+      "waiting": {"question": "Are you waiting for something from a specific person?", "detail": "Record who, what and since when. Schedule a follow-up if the due date is known."},
+      "someday": {"question": "Good idea, but not now?", "detail": "Review it at the next weekly or governance review. No commitment."},
+      "reference": {"question": "Useful information with no associated action?", "detail": "Archive it in a trusted place. Nothing to do — the tension is resolved by knowing."},
+      "trash": {"question": "Nothing to do and nothing to keep?", "detail": "Explicitly drop it. The tension is resolved by deciding to do nothing."}
+    },
+    "modes": {
+      "info": {"label": "Request information", "description": "“Who knows something about…?”"},
+      "resource": {"label": "Request a resource", "description": "“I need X for Y.”"},
+      "share": {"label": "Share information", "description": "“I wanted you to know that…”"},
+      "coordinate": {"label": "Coordinate", "description": "“I need role X to do Y.”"},
+      "delegate": {"label": "Delegate", "description": "“Who can decide X?”"}
+    }
   },
   "setup": {
     "joinTitle": "Join your organisation",
@@ -161,7 +195,8 @@
     "createTitle": "Create your organisation",
     "createIntro": "Welcome. Start by naming your organisation.",
     "orgNameLabel": "Organisation name",
-    "orgNamePlaceholder": "e.g. Sémawé, Acme Corp…"
+    "orgNamePlaceholder": "e.g. Sémawé, Acme Corp…",
+    "createContinue": "Create and continue →"
   },
   "billingWall": {
     "title": "Access suspended",
@@ -187,7 +222,12 @@
     "noItems": "No items",
     "proposePlaceholder": "Propose an item…",
     "closed": "Meeting ended",
-    "meetingOf": "Meeting — {space}"
+    "meetingOf": "Meeting — {space}",
+    "readOnlyOutputs": "Outputs are recorded by organisation members.",
+    "recapByEmail": "You will receive the minutes by email if they are sent.",
+    "statusDraft": "Draft",
+    "statusOpen": "In progress",
+    "statusClosed": "Ended"
   },
   "circle": {
     "confidential": "Confidential circle",
@@ -231,7 +271,13 @@
     "meetingPrivacy": "Meeting confidentiality",
     "newMeeting": "+ New",
     "promoteLead": "→ Lead",
-    "demoteMember": "→ Member"
+    "demoteMember": "→ Member",
+    "createFirstRole": "Create the first role",
+    "addRole": "Add a role",
+    "privateMinutes": "Minutes restricted to members of this circle.",
+    "publicMinutes": "Minutes available to every organisation member.",
+    "restrictedToMembers": "Restricted to members of {circle}.",
+    "rolesCount": "Roles ({count})"
   },
   "billingInfo": {
     "title": "Billing details",
@@ -256,7 +302,12 @@
     "siret": "Company registration number",
     "siretPlaceholder": "123 456 789 00012",
     "vat": "EU VAT number",
-    "vatPlaceholder": "FR12345678901"
+    "vatPlaceholder": "FR12345678901",
+    "backSettings": "← Settings",
+    "intro": "This information identifies the entity billed for {org} and appears on invoices issued by Stripe. Each organisation has one set of billing details; only administrators can edit it.",
+    "saved": "Billing details saved.",
+    "vatInvalid": "The VAT number was saved locally but rejected by Stripe (invalid format). Check it so it appears on the invoice.",
+    "save": "Save"
   },
   "circles": {
     "title": "Circles",
@@ -266,7 +317,18 @@
     "type": "Type",
     "parent": "Sub-circle of",
     "root": "— Root —",
-    "delete": "Delete"
+    "delete": "Delete",
+    "map": "Map",
+    "list": "List",
+    "new": "New circle",
+    "createFirst": "Create the first one from the {listView}.",
+    "subcircles": "{count, plural, one {# sub-circle} other {# sub-circles}}",
+    "meetingsCount": "{count, plural, one {# meeting} other {# meetings}}",
+    "hasChildren": "This circle has sub-circles",
+    "hasRoles": "This circle has roles",
+    "hasMeetings": "This circle has meetings",
+    "emptyAdmin": "No circles. Create one above.",
+    "emptyMember": "No circles."
   },
   "outputs": {
     "assignee": "Assignee (optional)",
@@ -275,7 +337,19 @@
     "entryPlaceholder": "Enter the output…",
     "unsaved": "Note not saved",
     "recapSent": "✓ Minutes sent",
-    "copyRecap": "Copy the text of the minutes"
+    "copyRecap": "Copy the text of the minutes",
+    "cancel": "Cancel",
+    "sendingRecap": "Sending…",
+    "sendRecap": "Send minutes ✉",
+    "copy": "Copy",
+    "reconnecting": "Live updates interrupted — reconnecting…",
+    "saving": "Saving…",
+    "save": "Save",
+    "deleteConfirm": "Delete this output?",
+    "preservedAfterError": "Your entry is preserved above.",
+    "addOutput": "Add output",
+    "unsavedConfirm": "An output has been entered but not saved for this item. Leave without saving it?",
+    "saveFailed": "The output was not saved."
   },
   "settings": {
     "title": "Settings",
@@ -300,7 +374,11 @@
     "managePlan": "Manage the subscription",
     "billingDetailsLink": "Billing details (address, company number, VAT) →",
     "modulesHelp": "Turns features on or off for the whole organisation. Changes take effect immediately.",
-    "default": "default"
+    "default": "default",
+    "statusTrial": "Free trial",
+    "statusActive": "Subscription active",
+    "statusPastDue": "Payment overdue",
+    "statusCanceled": "Subscription cancelled"
   },
   "members": {
     "title": "Members",
@@ -315,16 +393,39 @@
     "mySpaces": "My circles",
     "adminOnly": "Only administrators can invite members or change roles.",
     "member": "Member",
-    "generateLinkHelp": "Share the link yourself, in Slack or by message. Single-use link (one person), valid for 7 days."
+    "generateLinkHelp": "Share the link yourself, in Slack or by message. Single-use link (one person), valid for 7 days.",
+    "seatCount": "{count, plural, one {# seat} other {# seats}}",
+    "seatLimit": "The {count, plural, one {#-seat limit has} other {#-seat limit has}} been reached — this request cannot be approved. Add seats from",
+    "pendingRequests": "{count, plural, one {# pending request} other {# pending requests}}"
   },
   "actions": {
-    "mine": "My actions"
+    "mine": "My actions",
+    "mineFilter": "Mine",
+    "allOrg": "Whole organisation",
+    "noneMine": "No action assigned to you.",
+    "noneAll": "No action in the organisation.",
+    "todoCount": "To do · {count}",
+    "doneCount": "Completed · {count}",
+    "markDone": "Mark as done",
+    "markUndone": "Mark as not done",
+    "due": "Due: {date}",
+    "type": "Action"
   },
   "projects": {
     "title": "Projects",
     "namePlaceholder": "Project name",
     "descriptionPlaceholder": "Description (optional)",
-    "deleteForever": "Delete permanently"
+    "deleteForever": "Delete permanently",
+    "all": "All",
+    "newProject": "+ New project",
+    "emptyAdmin": "Create the first one with the form above — it will appear in the “In progress” column.",
+    "emptyMember": "Projects are created by circle leads or administrators, here or from the Sync tab of a circle.",
+    "statusActive": "In progress",
+    "statusOnHold": "On hold",
+    "statusDone": "Completed",
+    "moveTo": "Move to “{status}”",
+    "noneAll": "No projects yet.",
+    "noneSpace": "No projects in this circle yet."
   },
   "circleViz": {
     "copyLink": "Copy the link to this panel",
@@ -341,7 +442,17 @@
     "domains": "Domains",
     "accountabilities": "Accountabilities",
     "copied": "✓ Copied",
-    "copy": "⧉ Copy the link"
+    "copy": "⧉ Copy the link",
+    "empty": "No sub-circles or roles",
+    "role": "Role",
+    "orDoubleClick": "or click the circle a second time on the map",
+    "manageGovernance": "Manage in governance →",
+    "circles": "Circles",
+    "instances": "Instances",
+    "projects": "Projects",
+    "summary": "{children, plural, one {# sub-circle} other {# sub-circles}} · {roles, plural, one {# role} other {# roles}}",
+    "enter": "Enter the {type} →",
+    "holders": "{count, plural, one {Holder} other {Holders}}"
   },
   "admin": {
     "title": "Platform administration",
@@ -370,7 +481,18 @@
     "dangerZone": "Danger zone",
     "dangerHelp": "This cannot be undone. All associated data (members, circles, meetings, outputs) will be deleted.",
     "newOrg": "New organisation",
-    "manage": "Manage →"
+    "manage": "Manage →",
+    "organisations": "Organisations",
+    "users": "Users",
+    "activeSubscriptions": "Active subscriptions",
+    "statusTrial": "Trial",
+    "statusActive": "Active",
+    "statusPastDue": "Past due",
+    "statusCanceled": "Cancelled",
+    "pendingRequests": "{count, plural, one {# pending request} other {# pending requests}}",
+    "deleteConfirm": "Permanently delete “{org}” and all its data?",
+    "deleting": "Deleting…",
+    "deleteOrg": "Delete organisation"
   },
   "cockpit": {
     "name": "Name",
@@ -391,7 +513,32 @@
     "noIndicators": "No indicators defined for this circle.",
     "addShort": "+ Add",
     "noChecklist": "No checklist items — the items defined here are unticked again for every meeting.",
-    "noProjects": "No projects tracked in this circle."
+    "noProjects": "No projects tracked in this circle.",
+    "syncHelp": "Indicators, checklists and projects — review the cockpit before starting the triage.",
+    "circlePage": "the circle page",
+    "manage": "Manage →",
+    "startTriage": "Start the triage →",
+    "title": "{space} cockpit",
+    "emptySync": "Nothing to review for this circle. Indicators, checklists and projects are defined from {circlePage}.",
+    "previous": "Previous: {value}",
+    "value": "Value",
+    "valueWithUnit": "Value ({unit})",
+    "correct": "Correct",
+    "record": "Record",
+    "statusActive": "In progress",
+    "statusOnHold": "On hold",
+    "statusDone": "Completed",
+    "syncEnabledDescription": "Meetings in this space start by reviewing indicators, checklists and projects.",
+    "syncDisabledDescription": "Meetings in this space start directly with agenda-item triage.",
+    "inheritsOrg": "Inherits the organisation setting ({state})",
+    "enabledState": "enabled",
+    "disabledState": "disabled",
+    "enabledF": "Enabled",
+    "disabledF": "Disabled",
+    "indicatorCount": "📊 {count, plural, one {# indicator} other {# indicators}}",
+    "checklistCount": "✅ {count, plural, one {# recurring checklist item} other {# recurring checklist items}}",
+    "projectCount": "🚧 {count, plural, one {# project} other {# projects}}",
+    "lastReading": "Last reading: {value}"
   },
   "invite": {
     "email": "Email",
@@ -404,26 +551,59 @@
     "guestEmailPlaceholder": "guest@example.com",
     "guestName": "Name (optional)",
     "guestNamePlaceholder": "First and last name",
-    "guestSent": "Invitation sent."
+    "guestSent": "Invitation sent.",
+    "externalTitle": "Invite an external participant",
+    "joined": "joined",
+    "notEntered": "invited, not entered yet",
+    "copied": "Copied ✓",
+    "copyLink": "Copy link",
+    "revoke": "Revoke",
+    "sending": "Sending…",
+    "send": "Invite",
+    "guestHelp": "The guest can follow the meeting, add agenda items and receive the minutes — without an account or access to the rest of the organisation."
   },
   "projector": {
     "agenda": "Agenda",
     "processed": "processed",
     "current": "Current item",
     "ended": "Meeting ended",
-    "notOpened": "Waiting to open"
+    "notOpened": "Waiting to open",
+    "exit": "← Exit",
+    "remaining": "{count, plural, one {# item remaining} other {# items remaining}}",
+    "lastItem": "Last item",
+    "nextItem": "Next item →",
+    "closeMeeting": "Close meeting ✓",
+    "processedCount": "{count, plural, one {# item processed} other {# items processed}}",
+    "agendaCount": "{count, plural, one {# agenda item} other {# agenda items}}"
   },
   "projectTasks": {
     "titlePlaceholder": "Task title",
     "unassigned": "Unassigned",
     "empty": "No tasks yet.",
     "deleteForever": "Delete permanently",
-    "breadcrumb": "Projects"
+    "breadcrumb": "Projects",
+    "new": "+ New task",
+    "create": "Create",
+    "memberEmpty": "Tasks are created by circle leads or administrators.",
+    "statusTodo": "To do",
+    "statusDoing": "In progress",
+    "statusDone": "Completed",
+    "moveTo": "Move to “{status}”"
   },
   "landing": {
+    "metaTitle": "triapp — Holacracy meeting facilitation",
+    "metaDescription": "A real-time shared agenda, structured item-by-item processing and typed outputs. The meeting tool for self-organised teams. Open source, with a 14-day free trial.",
+    "metaOgTitle": "triapp — Meetings that actually move forward.",
+    "metaOgDescription": "A real-time shared agenda, structured processing and typed outputs. At home with Holacracy.",
     "featureAgenda": "Collaborative agenda",
     "featureTriage": "Structured processing",
     "featureSpaces": "Multiple circles",
+    "featureAgendaDescription": "Every member adds agenda items before the meeting. The order is built together, in real time.",
+    "featureTriageDescription": "One item at a time. Notes, actions, decisions, projects and governance — every output is typed and dated.",
+    "featureSpacesDescription": "Circles, teams or projects. Each space has its own meetings, members and hierarchy.",
+    "quoteAttribution": "Aliocha Iordanoff — co-founder,",
+    "quoteRole": "· triapp's first user",
+    "footerBy": "— by",
     "pricing": "Pricing",
     "exclVat": "excl. VAT",
     "demoSpace": "Acme / Main circle",
@@ -435,6 +615,7 @@
     "demoItem1": "Hiring — next action",
     "demoItem2": "Q3 budget — decision",
     "demoItem3": "Novalis partnership check-in",
+    "demoOutput": "@Juliette — prepare the HR brief before 25/06",
     "goToApp": "→ In progress",
     "signIn": "Sign in",
     "kicker": "Meeting facilitation",
@@ -463,11 +644,32 @@
     "invalidBody": "Ask the administrator for a new link.",
     "nominative": "This invitation is personal",
     "rejected": "Your request was declined by the administrator.",
-    "pending": "Request pending"
+    "pending": "Request pending",
+    "eligible": "Your address {email} is eligible to join this organisation.",
+    "resend": "Send the request again",
+    "pendingHelp": "Your request will be submitted to the organisation's administrator for approval. You will be notified by email once it has been handled.",
+    "createOwn": "Create your own",
+    "wrongAccount": "It was sent to an address other than {email}. Sign in with the recipient account, or ask for an invitation sent to your address.",
+    "fullTitle": "No seat available in {org}",
+    "fullBody": "The organisation has reached its seat limit. Ask an administrator to add seats, then try this link again.",
+    "join": "Join {org}",
+    "invitedRole": "You are invited as {role}.",
+    "adminRole": "administrator",
+    "memberRole": "member",
+    "joinCta": "Join the organisation →",
+    "joinTitle": "Join {org}",
+    "pendingAdmin": "An administrator of {org} will be notified and can approve or decline your request.",
+    "askJoin": "Ask to join {org}",
+    "wrongOrg": "Not the right organisation?"
   },
   "adminUsers": {
     "title": "Users",
-    "noOrg": "No organisation"
+    "noOrg": "No organisation",
+    "back": "← Admin",
+    "superAdmin": "Super admin",
+    "count": "{count, plural, one {# user} other {# users}}",
+    "orgAdmin": "admin",
+    "orgMember": "member"
   },
   "legal": {
     "title": "Legal notice",
@@ -500,6 +702,8 @@
     "enabled": "On",
     "disabled": "Off",
     "public": "Public",
-    "confidential": "Confidential"
+    "confidential": "Confidential",
+    "activate": "Enable",
+    "deactivate": "Disable"
   }
 }
