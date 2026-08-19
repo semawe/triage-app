@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useActionState, useState } from "react";
 import { inviteGuestToMeeting, revokeGuest } from "@/actions/guest";
 
@@ -18,6 +19,7 @@ export default function GuestInvitePanel({
   meetingId: string;
   guests: Guest[];
 }) {
+  const t = useTranslations("invite");
   const invite = inviteGuestToMeeting.bind(null, meetingId);
   const [state, formAction, pending] = useActionState(invite, null);
   const [copied, setCopied] = useState<string | null>(null);
@@ -87,21 +89,21 @@ export default function GuestInvitePanel({
       <div className="border-t border-gray-800 px-5 py-4">
         <form action={formAction} className="flex flex-wrap gap-3 items-end">
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-gray-500">Email de l&apos;invité</label>
+            <label className="text-xs text-gray-500">{t("guestEmail")}</label>
             <input
               type="email"
               name="email"
               required
-              placeholder="invite@exemple.fr"
+              placeholder={t("guestEmailPlaceholder")}
               className="rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 w-56"
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-gray-500">Nom (optionnel)</label>
+            <label className="text-xs text-gray-500">{t("guestName")}</label>
             <input
               type="text"
               name="name"
-              placeholder="Prénom Nom"
+              placeholder={t("guestNamePlaceholder")}
               className="rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 w-48"
             />
           </div>
@@ -114,7 +116,7 @@ export default function GuestInvitePanel({
           </button>
         </form>
         {state?.ok && (
-          <p className="mt-2 text-xs text-green-400">Invitation envoyée.</p>
+          <p className="mt-2 text-xs text-green-400">{t("guestSent")}</p>
         )}
         {state && !state.ok && state.error && (
           <p className="mt-2 text-xs text-yellow-400">{state.error}</p>

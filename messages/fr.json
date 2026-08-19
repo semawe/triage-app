@@ -321,5 +321,47 @@
     "roleAdmin": "Admin",
     "modules": "Modules",
     "default": "défaut"
+  },
+  "cockpit": {
+    "name": "Nom",
+    "unit": "Unité",
+    "frequency": "Fréquence",
+    "newIndicator": "Nouvel indicateur (ex : CA du mois)",
+    "unitPlaceholder": "Unité (€, %…)",
+    "newChecklistItem": "Nouvel item (ex : Factures du mois envoyées)",
+    "newProject": "Nouveau projet",
+    "syncPhase": "Phase de synchronisation",
+    "indicators": "📊 Indicateurs",
+    "checklist": "✅ Checklist",
+    "projects": "🚧 Projets",
+    "notePlaceholder": "Note (optionnel)",
+    "projectName": "Nom du projet",
+    "projectDescription": "Description (optionnel)"
+  },
+  "invite": {
+    "email": "Email",
+    "emailPlaceholder": "prenom@domaine.fr",
+    "role": "Rôle",
+    "roleMember": "Membre",
+    "roleAdmin": "Admin",
+    "sent": "✓ Invitation envoyée — lien valable 7 jours.",
+    "guestEmail": "Email de l'invité",
+    "guestEmailPlaceholder": "invite@exemple.fr",
+    "guestName": "Nom (optionnel)",
+    "guestNamePlaceholder": "Prénom Nom",
+    "guestSent": "Invitation envoyée."
+  },
+  "projector": {
+    "agenda": "Ordre du jour",
+    "processed": "traités",
+    "current": "Point en cours",
+    "ended": "Réunion terminée",
+    "notOpened": "En attente d'ouverture"
+  },
+  "projectTasks": {
+    "titlePlaceholder": "Intitulé de la tâche",
+    "unassigned": "Non assignée",
+    "empty": "Aucune tâche pour l'instant.",
+    "deleteForever": "Supprimer définitivement"
   }
 }

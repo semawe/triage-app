@@ -1,4 +1,5 @@
 import { updateSpaceFeature } from "@/actions/space";
+import { getTranslations } from "next-intl/server";
 import {
   createIndicator,
   updateIndicator,
@@ -46,7 +47,7 @@ const inputCls =
  * et gestion des indicateurs, checklists et projets passés en revue pendant
  * la phase de synchronisation des réunions.
  */
-export default function SyncSettingsTab({
+export default async function SyncSettingsTab({
   spaceId,
   canManage,
   syncOverride,
@@ -63,6 +64,7 @@ export default function SyncSettingsTab({
   checklistItems: ChecklistItem[];
   projects: Project[];
 }) {
+  const t = await getTranslations("cockpit");
   const setInherit = updateSpaceFeature.bind(null, spaceId, "sync_phase", null);
   const setOn = updateSpaceFeature.bind(null, spaceId, "sync_phase", true);
   const setOff = updateSpaceFeature.bind(null, spaceId, "sync_phase", false);
@@ -167,9 +169,9 @@ export default function SyncSettingsTab({
                       Modifier
                     </summary>
                     <form action={updateIndicator.bind(null, ind.id)} className="mt-2 flex gap-2 flex-wrap items-end">
-                      <input name="name" defaultValue={ind.name} placeholder="Nom" className={`${inputCls} flex-1 min-w-40`} />
-                      <input name="unit" defaultValue={ind.unit ?? ""} placeholder="Unité" className={`${inputCls} w-24`} />
-                      <input name="frequency" defaultValue={ind.frequency ?? ""} placeholder="Fréquence" className={`${inputCls} w-28`} />
+                      <input name="name" defaultValue={ind.name} placeholder={t("name")} className={`${inputCls} flex-1 min-w-40`} />
+                      <input name="unit" defaultValue={ind.unit ?? ""} placeholder={t("unit")} className={`${inputCls} w-24`} />
+                      <input name="frequency" defaultValue={ind.frequency ?? ""} placeholder={t("frequency")} className={`${inputCls} w-28`} />
                       <button type="submit" className="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-500 transition-colors">
                         Enregistrer
                       </button>
@@ -187,9 +189,9 @@ export default function SyncSettingsTab({
         {canManage && (
           <div className="border-t border-gray-800 px-5 py-3">
             <form action={addIndicator} className="flex gap-2 flex-wrap items-end">
-              <input name="name" required placeholder="Nouvel indicateur (ex: CA du mois)" className={`${inputCls} flex-1 min-w-40`} />
-              <input name="unit" placeholder="Unité (€, %…)" className={`${inputCls} w-28`} />
-              <input name="frequency" placeholder="Fréquence" className={`${inputCls} w-28`} />
+              <input name="name" required placeholder={t("newIndicator")} className={`${inputCls} flex-1 min-w-40`} />
+              <input name="unit" placeholder={t("unitPlaceholder")} className={`${inputCls} w-28`} />
+              <input name="frequency" placeholder={t("frequency")} className={`${inputCls} w-28`} />
               <button type="submit" className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors whitespace-nowrap">
                 + Ajouter
               </button>
@@ -245,7 +247,7 @@ export default function SyncSettingsTab({
         {canManage && (
           <div className="border-t border-gray-800 px-5 py-3">
             <form action={addChecklistItem} className="flex gap-2 flex-wrap items-end">
-              <input name="title" required placeholder="Nouvel item (ex: Factures du mois envoyées)" className={`${inputCls} flex-1 min-w-48`} />
+              <input name="title" required placeholder={t("newChecklistItem")} className={`${inputCls} flex-1 min-w-48`} />
               <button type="submit" className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors whitespace-nowrap">
                 + Ajouter
               </button>
@@ -312,12 +314,12 @@ export default function SyncSettingsTab({
                       Modifier
                     </summary>
                     <form action={updateProject.bind(null, p.id)} className="mt-2 space-y-2">
-                      <input name="name" defaultValue={p.name} placeholder="Nom du projet" className={`${inputCls} w-full`} />
+                      <input name="name" defaultValue={p.name} placeholder={t("projectName")} className={`${inputCls} w-full`} />
                       <textarea
                         name="description"
                         defaultValue={p.description ?? ""}
                         rows={2}
-                        placeholder="Description (optionnel)"
+                        placeholder={t("projectDescription")}
                         className={`${inputCls} w-full resize-none`}
                       />
                       <button type="submit" className="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-500 transition-colors">
@@ -337,8 +339,8 @@ export default function SyncSettingsTab({
         {canManage && (
           <div className="border-t border-gray-800 px-5 py-3">
             <form action={addProject} className="flex gap-2 flex-wrap items-end">
-              <input name="name" required placeholder="Nouveau projet" className={`${inputCls} flex-1 min-w-40`} />
-              <input name="description" placeholder="Description (optionnel)" className={`${inputCls} flex-1 min-w-40`} />
+              <input name="name" required placeholder={t("newProject")} className={`${inputCls} flex-1 min-w-40`} />
+              <input name="description" placeholder={t("projectDescription")} className={`${inputCls} flex-1 min-w-40`} />
               <button type="submit" className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors whitespace-nowrap">
                 + Ajouter
               </button>

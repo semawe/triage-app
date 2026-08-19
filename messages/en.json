@@ -321,5 +321,47 @@
     "roleAdmin": "Admin",
     "modules": "Modules",
     "default": "default"
+  },
+  "cockpit": {
+    "name": "Name",
+    "unit": "Unit",
+    "frequency": "Frequency",
+    "newIndicator": "New indicator (e.g. monthly revenue)",
+    "unitPlaceholder": "Unit (€, %…)",
+    "newChecklistItem": "New item (e.g. monthly invoices sent)",
+    "newProject": "New project",
+    "syncPhase": "Sync phase",
+    "indicators": "📊 Indicators",
+    "checklist": "✅ Checklist",
+    "projects": "🚧 Projects",
+    "notePlaceholder": "Note (optional)",
+    "projectName": "Project name",
+    "projectDescription": "Description (optional)"
+  },
+  "invite": {
+    "email": "Email",
+    "emailPlaceholder": "first.last@example.com",
+    "role": "Role",
+    "roleMember": "Member",
+    "roleAdmin": "Admin",
+    "sent": "✓ Invitation sent — link valid for 7 days.",
+    "guestEmail": "Guest email",
+    "guestEmailPlaceholder": "guest@example.com",
+    "guestName": "Name (optional)",
+    "guestNamePlaceholder": "First and last name",
+    "guestSent": "Invitation sent."
+  },
+  "projector": {
+    "agenda": "Agenda",
+    "processed": "processed",
+    "current": "Current item",
+    "ended": "Meeting ended",
+    "notOpened": "Waiting to open"
+  },
+  "projectTasks": {
+    "titlePlaceholder": "Task title",
+    "unassigned": "Unassigned",
+    "empty": "No tasks yet.",
+    "deleteForever": "Delete permanently"
   }
 }

@@ -1,4 +1,5 @@
 import { requireOrg } from "@/lib/session";
+import { getTranslations } from "next-intl/server";
 import { viewerFrom, visibleSpaceWhere } from "@/lib/visibility";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
@@ -23,6 +24,7 @@ const TASK_STATUSES: { key: ProjectTaskStatus; label: string; accent: string }[]
 export default async function ProjectDetailPage({ params }: Props) {
   const { id } = await params;
   const ctx = await requireOrg();
+  const tr = await getTranslations("projectTasks");
   const { org, session, membership } = ctx;
 
   if (!hasFeature(org, "projects")) notFound();
@@ -87,7 +89,7 @@ export default async function ProjectDetailPage({ params }: Props) {
             <input
               name="title"
               required
-              placeholder="Intitulé de la tâche"
+              placeholder={tr("titlePlaceholder")}
               className="flex-1 min-w-48 rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500"
             />
             <select
@@ -95,7 +97,7 @@ export default async function ProjectDetailPage({ params }: Props) {
               defaultValue=""
               className="rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
             >
-              <option value="">Non assignée</option>
+              <option value="">{tr("unassigned")}</option>
               {orgMembers.map((m) => (
                 <option key={m.userId} value={m.userId}>{m.user.name ?? m.user.id}</option>
               ))}
@@ -119,7 +121,7 @@ export default async function ProjectDetailPage({ params }: Props) {
       {project.tasks.length === 0 && (
         <div className="mt-12 text-center space-y-2">
           <p className="text-3xl">📋</p>
-          <p className="text-gray-400 text-sm">Aucune tâche pour l&apos;instant.</p>
+          <p className="text-gray-400 text-sm">{tr("empty")}</p>
           {!canManage && (
             <p className="text-xs text-gray-600">
               Les tâches sont créées par les leaders du cercle ou les admins.
@@ -153,7 +155,7 @@ export default async function ProjectDetailPage({ params }: Props) {
   );
 }
 
-function TaskCard({
+async function TaskCard({
   task: t,
   canManage,
 }: {
@@ -166,6 +168,7 @@ function TaskCard({
   };
   canManage: boolean;
 }) {
+  const tr = await getTranslations("projectTasks");
   const isOverdue = t.dueDate && t.status !== "done" && new Date(t.dueDate) < new Date();
 
   return (
@@ -202,7 +205,7 @@ function TaskCard({
                 <button
                   type="submit"
                   className="px-1.5 py-0.5 rounded text-gray-700 hover:text-red-400 transition-colors"
-                  title="Supprimer définitivement"
+                  title={tr("deleteForever")}
                 >
                   ✕
                 </button>

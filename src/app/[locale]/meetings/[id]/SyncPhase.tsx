@@ -1,4 +1,5 @@
 import { completeSyncPhase } from "@/actions/meeting";
+import { getTranslations } from "next-intl/server";
 import { logIndicatorValue } from "@/actions/indicator";
 import { toggleChecklistCheck } from "@/actions/checklist";
 import { Link } from "@/i18n/navigation";
@@ -41,7 +42,7 @@ function formatValue(value: number, unit: string | null) {
  * Phase de synchronisation (réunion tactique) : revue des indicateurs,
  * checklists et projets de l'espace, avant le démarrage du triage.
  */
-export default function SyncPhase({
+export default async function SyncPhase({
   meetingId,
   spaceId,
   spaceName,
@@ -56,13 +57,14 @@ export default function SyncPhase({
   checklist: ChecklistRow[];
   projects: ProjectRow[];
 }) {
+  const t = await getTranslations("cockpit");
   const complete = completeSyncPhase.bind(null, meetingId);
   const isEmpty = indicators.length === 0 && checklist.length === 0 && projects.length === 0;
 
   return (
     <div className="space-y-4">
       <div className="rounded-xl bg-gray-900 border border-teal-900 p-6">
-        <div className="text-xs font-medium text-teal-400/70 mb-1">Phase de synchronisation</div>
+        <div className="text-xs font-medium text-teal-400/70 mb-1">{t("syncPhase")}</div>
         <h2 className="text-2xl font-bold text-white leading-tight">Cockpit de {spaceName}</h2>
         <p className="mt-1 text-sm text-gray-500">
           Indicateurs, checklists et projets — passez le cockpit en revue avant de démarrer le triage.
@@ -84,7 +86,7 @@ export default function SyncPhase({
       {indicators.length > 0 && (
         <div className="rounded-xl bg-gray-900 border border-gray-800 overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-800">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">📊 Indicateurs</p>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t("indicators")}</p>
           </div>
           <div className="divide-y divide-gray-800">
             {indicators.map((ind) => {
@@ -119,7 +121,7 @@ export default function SyncPhase({
                     <input
                       name="note"
                       defaultValue={ind.currentValue?.note ?? ""}
-                      placeholder="Note (optionnel)"
+                      placeholder={t("notePlaceholder")}
                       className="w-44 rounded-lg bg-gray-800 border border-gray-700 px-3 py-1.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-teal-600"
                     />
                     <button
@@ -141,7 +143,7 @@ export default function SyncPhase({
       {checklist.length > 0 && (
         <div className="rounded-xl bg-gray-900 border border-gray-800 overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-800">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">✅ Checklist</p>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t("checklist")}</p>
           </div>
           <div className="divide-y divide-gray-800">
             {checklist.map((item) => {
@@ -179,7 +181,7 @@ export default function SyncPhase({
       {projects.length > 0 && (
         <div className="rounded-xl bg-gray-900 border border-gray-800 overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-800 flex items-center justify-between">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">🚧 Projets</p>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t("projects")}</p>
             <Link
               href={`/circles/${spaceId}?tab=synchro`}
               className="text-xs text-gray-600 hover:text-gray-400 transition-colors"

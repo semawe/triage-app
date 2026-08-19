@@ -1,4 +1,5 @@
 import { requireOrg } from "@/lib/session";
+import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { Link } from "@/i18n/navigation";
@@ -22,6 +23,7 @@ const OUTPUT_TYPE_LABELS: Record<string, string> = {
 export default async function ProjectorPage({ params }: Props) {
   const { id } = await params;
   const ctx = await requireOrg();
+  const t = await getTranslations("projector");
   const { org } = ctx;
 
   // Même règle de confidentialité que la page réunion : le mode projecteur
@@ -62,7 +64,7 @@ export default async function ProjectorPage({ params }: Props) {
       {/* ── Left sidebar: agenda ── */}
       <aside className="w-56 shrink-0 border-r border-gray-800/60 bg-gray-900/40 flex flex-col overflow-hidden">
         <div className="px-4 py-4 border-b border-gray-800/60">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Ordre du jour</p>
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t("agenda")}</p>
           <p className="text-xs text-gray-700 mt-0.5">{doneCount}/{total} traités</p>
         </div>
         <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
@@ -106,7 +108,7 @@ export default async function ProjectorPage({ params }: Props) {
                 <p className="text-2xl font-bold text-white tabular-nums">
                   {doneCount}<span className="text-gray-600">/{total}</span>
                 </p>
-                <p className="text-xs text-gray-500">traités</p>
+                <p className="text-xs text-gray-500">{t("processed")}</p>
               </div>
             )}
             <Link
@@ -122,7 +124,7 @@ export default async function ProjectorPage({ params }: Props) {
         {activeItem ? (
           <>
             <div className="flex-1 flex flex-col justify-center">
-              <p className="text-sm text-indigo-400 uppercase tracking-widest mb-4">Point en cours</p>
+              <p className="text-sm text-indigo-400 uppercase tracking-widest mb-4">{t("current")}</p>
               <h1 className="text-4xl md:text-6xl font-bold text-white leading-tight mb-8">
                 {activeItem.title}
               </h1>
@@ -169,12 +171,12 @@ export default async function ProjectorPage({ params }: Props) {
               {meeting.status === "closed" ? (
                 <>
                   <p className="text-6xl mb-4">✓</p>
-                  <p className="text-2xl font-bold text-white">Réunion terminée</p>
+                  <p className="text-2xl font-bold text-white">{t("ended")}</p>
                   <p className="text-gray-500 mt-2">{doneCount} points traités</p>
                 </>
               ) : (
                 <>
-                  <p className="text-2xl text-gray-400">En attente d&apos;ouverture</p>
+                  <p className="text-2xl text-gray-400">{t("notOpened")}</p>
                   <p className="text-gray-600 mt-2 text-sm">{total} point{total !== 1 ? "s" : ""} à l&apos;ordre du jour</p>
                 </>
               )}
