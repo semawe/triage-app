@@ -104,7 +104,14 @@
     "noLimit": "Sans limite",
     "empty": "Aucune réunion. Créez-en une ci-dessus.",
     "minutes": "{n} min",
-    "dateTime": "Date et heure"
+    "dateTime": "Date et heure",
+    "privacyLabel": "Cette réunion :",
+    "privacyAuto": "Auto",
+    "privacyPublic": "Publique",
+    "privacyPrivate": "Privée",
+    "privacyAutoTitle": "Hérite du réglage de l'espace ({state})",
+    "inheritsPrefix": "Hérite de l'espace :",
+    "inheritsSuffix": "— modifiable depuis"
   },
   "item": {
     "status": {

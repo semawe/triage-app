@@ -104,7 +104,14 @@
     "noLimit": "No limit",
     "empty": "No meetings yet. Create one above.",
     "minutes": "{n} min",
-    "dateTime": "Date and time"
+    "dateTime": "Date and time",
+    "privacyLabel": "This meeting:",
+    "privacyAuto": "Auto",
+    "privacyPublic": "Public",
+    "privacyPrivate": "Private",
+    "privacyAutoTitle": "Inherits the circle's setting ({state})",
+    "inheritsPrefix": "Inherits from the circle:",
+    "inheritsSuffix": "— change it on"
   },
   "item": {
     "status": {

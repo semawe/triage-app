@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import { hasFeature } from "@/lib/features";
+import { getTranslations } from "next-intl/server";
 import PistesPanel from "./PistesPanel";
 import Chrono from "./Chrono";
 import ItemChrono from "./ItemChrono";
@@ -32,6 +33,7 @@ type Props = { params: Promise<{ id: string }> };
 export default async function MeetingPage({ params }: Props) {
   const { id } = await params;
   const { org, session, membership } = await requireOrg();
+  const t = await getTranslations("meeting");
   const isAdmin = membership.role === "admin";
   const meeting = await prisma.meeting.findUnique({
     where: { id },
@@ -74,7 +76,7 @@ export default async function MeetingPage({ params }: Props) {
       <AppShell>
         <div className="mt-24 text-center space-y-3">
           <p className="text-3xl">🔒</p>
-          <p className="text-white font-semibold">Réunion confidentielle</p>
+          <p className="text-white font-semibold">{t("confidential")}</p>
           <p className="text-sm text-gray-500">Réservée aux membres de l&apos;espace {meeting.space.name}.</p>
         </div>
       </AppShell>
@@ -232,7 +234,7 @@ export default async function MeetingPage({ params }: Props) {
               {meeting.space.name}
             </Link>
             {effectivePrivate && (
-              <span className="text-xs text-gray-600" title="Confidentiel">🔒</span>
+              <span className="text-xs text-gray-600" title={t("confidentialShort")}>🔒</span>
             )}
           </div>
           <EditableTitle
@@ -263,7 +265,7 @@ export default async function MeetingPage({ params }: Props) {
               <form action={updateLink} className="flex gap-1 items-center">
                 <input
                   name="link"
-                  placeholder="Ajouter un lien (Fireflies, visio…)"
+                  placeholder={t("linkPlaceholder")}
                   className="text-xs bg-transparent border-b border-gray-700 text-gray-500 placeholder-gray-700 focus:outline-none focus:border-indigo-600 w-56"
                 />
                 <button type="submit" className="text-xs text-gray-600 hover:text-indigo-400">↵</button>
@@ -282,7 +284,7 @@ export default async function MeetingPage({ params }: Props) {
             <Link
               href={`/meetings/${meeting.id}/projector`}
               className="rounded-lg border border-gray-700 px-3 py-1.5 text-xs text-gray-400 hover:border-gray-500 hover:text-gray-200 transition-colors"
-              title="Mode projecteur"
+              title={t("projector")}
             >
               ⛶
             </Link>
@@ -297,21 +299,21 @@ export default async function MeetingPage({ params }: Props) {
           {/* Privacy controls (admin only, confidentiality feature) */}
           {isAdmin && f.confidentiality && (
             <div className="flex items-center gap-1 text-xs text-gray-600">
-              <span>Cette réunion :</span>
+              <span>{t("privacyLabel")}</span>
               <form action={setPrivateNull}>
                 <button type="submit" className={`px-2 py-0.5 rounded ${meeting.isPrivate === null ? "bg-gray-700 text-gray-300" : "hover:text-gray-400"}`}
-                  title={`Hérite du réglage de l'espace (${meeting.space.isPrivate ? "confidentiel" : "public"})`}>
-                  Auto
+                  title={t("privacyAutoTitle", { state: meeting.space.isPrivate ? t("privateWord") : t("publicWord") })}>
+                  {t("privacyAuto")}
                 </button>
               </form>
               <form action={setPrivateFalse}>
                 <button type="submit" className={`px-2 py-0.5 rounded ${meeting.isPrivate === false ? "bg-green-900 text-green-300" : "hover:text-gray-400"}`}>
-                  Publique
+                  {t("privacyPublic")}
                 </button>
               </form>
               <form action={setPrivateTrue}>
                 <button type="submit" className={`px-2 py-0.5 rounded ${meeting.isPrivate === true ? "bg-orange-900 text-orange-300" : "hover:text-gray-400"}`}>
-                  Privée
+                  {t("privacyPrivate")}
                 </button>
               </form>
             </div>
@@ -322,11 +324,12 @@ export default async function MeetingPage({ params }: Props) {
       {/* Space privacy — read-only indicator (toggle lives on the space page) */}
       {f.confidentiality && meeting.isPrivate === null && (
         <div className="mb-4 text-xs text-gray-700">
-          Hérite de l&apos;espace : {meeting.space.isPrivate
-            ? <span className="text-orange-500/70">confidentiel</span>
-            : <span className="text-green-600/70">public</span>
-          } — modifiable depuis{" "}
-          <Link href={`/circles/${meeting.spaceId}?tab=reunions`} className="underline hover:text-gray-500">la page du cercle</Link>.
+          {t("inheritsPrefix")}{" "}
+          {meeting.space.isPrivate
+            ? <span className="text-orange-500/70">{t("privateWord")}</span>
+            : <span className="text-green-600/70">{t("publicWord")}</span>
+          }{" "}{t("inheritsSuffix")}{" "}
+          <Link href={`/circles/${meeting.spaceId}?tab=reunions`} className="underline hover:text-gray-500">{t("circlePage")}</Link>.
         </div>
       )}
 
@@ -336,7 +339,7 @@ export default async function MeetingPage({ params }: Props) {
         {/* Left: Agenda */}
         <div className="w-60 shrink-0 flex flex-col rounded-xl bg-gray-900 border border-gray-800 overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-800">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Ordre du jour</p>
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t("agenda")}</p>
           </div>
           <div className="flex-1 p-2 space-y-0.5">
             {doneItems.map((item) => {
@@ -380,7 +383,7 @@ export default async function MeetingPage({ params }: Props) {
               );
             })}
             {meeting.agendaItems.length === 0 && (
-              <p className="px-3 py-4 text-xs text-gray-600 text-center">Aucun point</p>
+              <p className="px-3 py-4 text-xs text-gray-600 text-center">{t("noItems")}</p>
             )}
           </div>
           {meeting.status !== "closed" && (
@@ -389,7 +392,7 @@ export default async function MeetingPage({ params }: Props) {
                 <input
                   name="title"
                   required
-                  placeholder="Ajouter un point…"
+                  placeholder={t("addItemPlaceholder")}
                   className="min-w-0 flex-1 rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-indigo-600"
                 />
                 <button type="submit" className="rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-gray-300 hover:bg-indigo-900 hover:border-indigo-700 hover:text-white transition-colors">
@@ -480,7 +483,7 @@ export default async function MeetingPage({ params }: Props) {
                       required
                       className="rounded-lg bg-gray-800 border border-gray-700 px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500"
                     >
-                      <option value="" disabled>Passer le relais à…</option>
+                      <option value="" disabled>{t("passScribe")}</option>
                       {memberOptions
                         .filter((m) => m.userId !== scribeId)
                         .map((m) => (
@@ -529,7 +532,7 @@ export default async function MeetingPage({ params }: Props) {
           {/* OPEN + no active item */}
           {meeting.status === "open" && !inSyncPhase && !activeItem && (
             <div className="rounded-xl bg-gray-900 border border-gray-800 p-8 flex flex-col items-center justify-center gap-4">
-              <p className="text-gray-400 text-sm">Tous les points ont été traités.</p>
+              <p className="text-gray-400 text-sm">{t("allDone")}</p>
               <form action={close}>
                 <button type="submit" className="rounded-xl bg-emerald-700 px-6 py-3 text-sm font-semibold text-white hover:bg-emerald-600 transition-colors">
                   Clore la réunion ✓
@@ -554,7 +557,7 @@ export default async function MeetingPage({ params }: Props) {
               <div className="rounded-xl bg-gray-900 border border-gray-800 p-8 space-y-4">
                 <div className="flex flex-col items-center gap-2 text-center">
                   <p className="text-3xl">✓</p>
-                  <p className="font-semibold text-white">Réunion terminée</p>
+                  <p className="font-semibold text-white">{t("ended")}</p>
                   <p className="text-sm text-gray-500">{meeting.agendaItems.length} point{meeting.agendaItems.length !== 1 ? "s" : ""} traité{meeting.agendaItems.length !== 1 ? "s" : ""}</p>
                   {f.recapEmail && (
                     <div className="mt-2">
@@ -564,7 +567,7 @@ export default async function MeetingPage({ params }: Props) {
                 </div>
                 {meeting.agendaItems.flatMap((i) => i.outputs).length > 0 && (
                   <div className="mt-2 space-y-3">
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Récapitulatif des outputs</p>
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t("recap")}</p>
                     {meeting.agendaItems.filter((i) => i.outputs.length > 0).map((item) => (
                       <div key={item.id} className="space-y-2">
                         <p className="text-sm font-medium text-gray-300">{itemNumbers.get(item.id)}. {item.title}</p>
