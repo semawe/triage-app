@@ -1,4 +1,5 @@
 import { requireOrgForBilling } from "@/lib/session";
+import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import { prisma } from "@/lib/prisma";
@@ -11,6 +12,7 @@ export default async function BillingInfoPage({
   searchParams: Promise<{ org?: string; saved?: string; vat?: string }>;
 }) {
   const { allOrgs } = await requireOrgForBilling();
+  const t = await getTranslations("billingInfo");
 
   // Réservé aux admins (le contact de facturation est forcément un admin de l'org)
   const adminOrgs = allOrgs.filter((o) => o.role === "admin");
@@ -37,7 +39,7 @@ export default async function BillingInfoPage({
           ← Paramètres
         </Link>
         <span className="text-gray-700">/</span>
-        <h1 className="text-2xl font-bold text-white">Coordonnées de facturation</h1>
+        <h1 className="text-2xl font-bold text-white">{t("title")}</h1>
       </div>
 
       <p className="mb-6 max-w-2xl text-sm text-gray-400 leading-relaxed">
@@ -64,9 +66,9 @@ export default async function BillingInfoPage({
         <input type="hidden" name="org" value={org.id} />
 
         <section className="rounded-xl bg-gray-900 border border-gray-800 p-6 space-y-4">
-          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Identité</h2>
+          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t("identity")}</h2>
           <div className="flex flex-col gap-1">
-            <label className={labelCls}>Raison sociale facturée</label>
+            <label className={labelCls}>{t("legalName")}</label>
             <input
               type="text"
               name="billingName"
@@ -76,78 +78,78 @@ export default async function BillingInfoPage({
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className={labelCls}>Nom et prénom du contact (à l&apos;attention de)</label>
+            <label className={labelCls}>{t("contactName")}</label>
             <input
               type="text"
               name="billingContactName"
               defaultValue={org.billingContactName ?? ""}
-              placeholder="Prénom Nom"
+              placeholder={t("contactPlaceholder")}
               className={field}
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className={labelCls}>Email de facturation</label>
+            <label className={labelCls}>{t("email")}</label>
             <input
               type="email"
               name="billingEmail"
               defaultValue={org.billingEmail ?? ""}
-              placeholder="facturation@exemple.fr"
+              placeholder={t("emailPlaceholder")}
               className={field}
             />
           </div>
         </section>
 
         <section className="rounded-xl bg-gray-900 border border-gray-800 p-6 space-y-4">
-          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Adresse</h2>
+          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t("address")}</h2>
           <div className="flex flex-col gap-1">
-            <label className={labelCls}>Adresse</label>
+            <label className={labelCls}>{t("street")}</label>
             <input
               type="text"
               name="billingAddressLine1"
               defaultValue={org.billingAddressLine1 ?? ""}
-              placeholder="N° et rue"
+              placeholder={t("streetPlaceholder")}
               className={field}
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className={labelCls}>Complément (optionnel)</label>
+            <label className={labelCls}>{t("complement")}</label>
             <input
               type="text"
               name="billingAddressLine2"
               defaultValue={org.billingAddressLine2 ?? ""}
-              placeholder="Bâtiment, étage…"
+              placeholder={t("complementPlaceholder")}
               className={field}
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1">
-              <label className={labelCls}>Code postal</label>
+              <label className={labelCls}>{t("postalCode")}</label>
               <input
                 type="text"
                 name="billingPostalCode"
                 defaultValue={org.billingPostalCode ?? ""}
-                placeholder="38100"
+                placeholder={t("postalCodePlaceholder")}
                 className={field}
               />
             </div>
             <div className="flex flex-col gap-1">
-              <label className={labelCls}>Ville</label>
+              <label className={labelCls}>{t("city")}</label>
               <input
                 type="text"
                 name="billingCity"
                 defaultValue={org.billingCity ?? ""}
-                placeholder="Grenoble"
+                placeholder={t("cityPlaceholder")}
                 className={field}
               />
             </div>
           </div>
           <div className="flex flex-col gap-1">
-            <label className={labelCls}>Pays (code ISO)</label>
+            <label className={labelCls}>{t("country")}</label>
             <input
               type="text"
               name="billingCountry"
               defaultValue={org.billingCountry ?? "FR"}
-              placeholder="FR"
+              placeholder={t("countryPlaceholder")}
               maxLength={2}
               className={`${field} w-24 uppercase`}
             />
@@ -155,24 +157,24 @@ export default async function BillingInfoPage({
         </section>
 
         <section className="rounded-xl bg-gray-900 border border-gray-800 p-6 space-y-4">
-          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Données fiscales</h2>
+          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t("taxData")}</h2>
           <div className="flex flex-col gap-1">
-            <label className={labelCls}>SIRET</label>
+            <label className={labelCls}>{t("siret")}</label>
             <input
               type="text"
               name="siret"
               defaultValue={org.siret ?? ""}
-              placeholder="123 456 789 00012"
+              placeholder={t("siretPlaceholder")}
               className={field}
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className={labelCls}>N° de TVA intracommunautaire</label>
+            <label className={labelCls}>{t("vat")}</label>
             <input
               type="text"
               name="vatNumber"
               defaultValue={org.vatNumber ?? ""}
-              placeholder="FR12345678901"
+              placeholder={t("vatPlaceholder")}
               className={field}
             />
           </div>

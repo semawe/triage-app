@@ -1,6 +1,7 @@
 import { requireOrg } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import AppShell from "@/components/AppShell";
 import { addSpaceMember, removeSpaceMember, updateSpaceMemberRole } from "@/actions/member";
 import { createSpace, updateSpacePrivacy } from "@/actions/space";
@@ -34,6 +35,7 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
   const { id } = await params;
   const { tab = "apercu", circle: selCircle, role: selRole } = await searchParams;
   const ctx = await requireOrg();
+  const t = await getTranslations("circle");
   const { session, org, membership } = ctx;
   const viewer = viewerFrom(ctx);
 
@@ -90,7 +92,7 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
       <AppShell>
         <div className="mt-24 text-center space-y-3">
           <p className="text-3xl">🔒</p>
-          <p className="text-white font-semibold">Cercle confidentiel</p>
+          <p className="text-white font-semibold">{t("confidential")}</p>
           <p className="text-sm text-gray-500">
             Réservé aux membres de {exists.name}.
           </p>
@@ -175,11 +177,11 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
   }));
 
   const tabs = [
-    { key: "apercu", label: "Aperçu" },
-    { key: "gouvernance", label: "Gouvernance" },
-    { key: "reunions", label: `Réunions (${visibleMeetings.length})` },
-    { key: "membres", label: `Membres (${space.members.length})` },
-    { key: "synchro", label: "Cockpit" },
+    { key: "apercu", label: t("tabs.overview") },
+    { key: "gouvernance", label: t("tabs.governance") },
+    { key: "reunions", label: t("tabs.meetings", { count: visibleMeetings.length }) },
+    { key: "membres", label: t("tabs.members", { count: space.members.length }) },
+    { key: "synchro", label: t("tabs.cockpit") },
   ];
 
   return (
@@ -276,9 +278,9 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
                   name="type"
                   className="rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
                 >
-                  <option value="circle">Cercle</option>
-                  <option value="instance">Instance</option>
-                  <option value="project">Projet</option>
+                  <option value="circle">{t("types.circle")}</option>
+                  <option value="instance">{t("types.instance")}</option>
+                  <option value="project">{t("types.project")}</option>
                 </select>
                 <button
                   type="submit"
@@ -303,36 +305,36 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
             {canManage ? (
               <form action={updateGovernance} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1">Raison d&apos;être</label>
+                  <label className="block text-xs font-medium text-gray-400 mb-1">{t("purpose")}</label>
                   <textarea
                     name="purpose"
                     defaultValue={space.purpose ?? ""}
                     rows={2}
-                    placeholder="Pourquoi ce cercle existe…"
+                    placeholder={t("purposePlaceholder")}
                     className="w-full rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 resize-none"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">
-                    Domaines <span className="font-normal text-gray-600">(un par ligne)</span>
+                    {t("domains")} <span className="font-normal text-gray-600">{t("onePerLine")}</span>
                   </label>
                   <textarea
                     name="domains"
                     defaultValue={space.domains.join("\n")}
                     rows={3}
-                    placeholder="Ex: Gestion du site web&#10;Contrats clients"
+                    placeholder={t("domainsPlaceholder")}
                     className="w-full rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 resize-none"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-400 mb-1">
-                    Redevabilités <span className="font-normal text-gray-600">(une par ligne)</span>
+                    {t("accountabilities")} <span className="font-normal text-gray-600">{t("onePerLineF")}</span>
                   </label>
                   <textarea
                     name="accountabilities"
                     defaultValue={space.accountabilities.join("\n")}
                     rows={4}
-                    placeholder="Ex: Publier les comptes-rendus de réunion&#10;Maintenir la roadmap à jour"
+                    placeholder={t("accountabilitiesPlaceholder")}
                     className="w-full rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 resize-none"
                   />
                 </div>
@@ -347,13 +349,13 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
               <div className="space-y-4">
                 {space.purpose ? (
                   <div>
-                    <p className="text-xs text-gray-500 mb-1">Raison d&apos;être</p>
+                    <p className="text-xs text-gray-500 mb-1">{t("purpose")}</p>
                     <p className="text-sm text-gray-300">{space.purpose}</p>
                   </div>
                 ) : null}
                 {space.domains.length > 0 && (
                   <div>
-                    <p className="text-xs text-gray-500 mb-1">Domaines</p>
+                    <p className="text-xs text-gray-500 mb-1">{t("domains")}</p>
                     <ul className="space-y-1">
                       {space.domains.map((d, i) => (
                         <li key={i} className="text-sm text-gray-300 flex gap-2">
@@ -365,7 +367,7 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
                 )}
                 {space.accountabilities.length > 0 && (
                   <div>
-                    <p className="text-xs text-gray-500 mb-1">Redevabilités</p>
+                    <p className="text-xs text-gray-500 mb-1">{t("accountabilities")}</p>
                     <ul className="space-y-1">
                       {space.accountabilities.map((a, i) => (
                         <li key={i} className="text-sm text-gray-300 flex gap-2">
@@ -376,7 +378,7 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
                   </div>
                 )}
                 {!space.purpose && space.domains.length === 0 && space.accountabilities.length === 0 && (
-                  <p className="text-sm text-gray-600 italic">Aucune gouvernance définie.</p>
+                  <p className="text-sm text-gray-600 italic">{t("noGovernance")}</p>
                 )}
               </div>
             )}
@@ -419,7 +421,7 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
                             </span>
                           ))}
                           {role.assignments.length === 0 && (
-                            <span className="text-xs text-gray-600 italic">Non assigné</span>
+                            <span className="text-xs text-gray-600 italic">{t("unassigned")}</span>
                           )}
                         </div>
                         {canManage && (
@@ -438,13 +440,13 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
                         )}
                         {role.domains.length > 0 && (
                           <div>
-                            <span className="text-xs text-gray-600 font-medium">Domaines : </span>
+                            <span className="text-xs text-gray-600 font-medium">{t("domainsLabel")} </span>
                             <span className="text-xs text-gray-400">{role.domains.join(", ")}</span>
                           </div>
                         )}
                         {role.accountabilities.length > 0 && (
                           <div>
-                            <span className="text-xs text-gray-600 font-medium">Redevabilités : </span>
+                            <span className="text-xs text-gray-600 font-medium">{t("accountabilitiesLabel")} </span>
                             <ul className="mt-1 space-y-0.5">
                               {role.accountabilities.map((a, i) => (
                                 <li key={i} className="text-xs text-gray-400 flex gap-2">
@@ -461,7 +463,7 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
                         <div className="border-t border-gray-800/60 px-5 py-3 space-y-3">
                           {assignableMembers.length > 0 && (
                             <form action={assignMember} className="flex gap-2 flex-wrap items-center">
-                              <span className="text-xs text-gray-500 shrink-0">Assigner :</span>
+                              <span className="text-xs text-gray-500 shrink-0">{t("assign")}</span>
                               <select
                                 name="userId"
                                 className="rounded-lg bg-gray-800 border border-gray-700 px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 flex-1 min-w-0"
@@ -491,27 +493,27 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
                                 name="name"
                                 defaultValue={role.name}
                                 className="w-full rounded-lg bg-gray-800 border border-gray-700 px-3 py-1.5 text-sm text-white focus:outline-none focus:border-indigo-500"
-                                placeholder="Nom du rôle"
+                                placeholder={t("roleNamePlaceholder")}
                               />
                               <textarea
                                 name="purpose"
                                 defaultValue={role.purpose ?? ""}
                                 rows={2}
-                                placeholder="Raison d'être du rôle…"
+                                placeholder={t("rolePurposePlaceholder")}
                                 className="w-full rounded-lg bg-gray-800 border border-gray-700 px-3 py-1.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 resize-none"
                               />
                               <textarea
                                 name="domains"
                                 defaultValue={role.domains.join("\n")}
                                 rows={2}
-                                placeholder="Domaines (un par ligne)"
+                                placeholder={t("roleDomainsPlaceholder")}
                                 className="w-full rounded-lg bg-gray-800 border border-gray-700 px-3 py-1.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 resize-none"
                               />
                               <textarea
                                 name="accountabilities"
                                 defaultValue={role.accountabilities.join("\n")}
                                 rows={3}
-                                placeholder="Redevabilités (une par ligne)"
+                                placeholder={t("roleAccountabilitiesPlaceholder")}
                                 className="w-full rounded-lg bg-gray-800 border border-gray-700 px-3 py-1.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 resize-none"
                               />
                               <button
@@ -540,7 +542,7 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
                   <input
                     name="name"
                     required
-                    placeholder="Nom du rôle (ex: Dev Ops, Facilitateur…)"
+                    placeholder={t("newRolePlaceholder")}
                     className="flex-1 rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500"
                   />
                   <button
@@ -603,11 +605,11 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
 
           {!canSeeMeetings ? (
             <div className="rounded-xl bg-gray-900 border border-gray-800 px-5 py-8 text-center">
-              <p className="text-sm text-gray-600">Réunions confidentielles — réservées aux membres.</p>
+              <p className="text-sm text-gray-600">{t("confidentialMeetings")}</p>
             </div>
           ) : visibleMeetings.length === 0 ? (
             <div className="rounded-xl bg-gray-900 border border-gray-800 px-5 py-8 text-center">
-              <p className="text-sm text-gray-600">Aucune réunion dans ce cercle.</p>
+              <p className="text-sm text-gray-600">{t("noMeetings")}</p>
             </div>
           ) : (
             <div className="space-y-1.5">
@@ -642,13 +644,13 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
                         <div>
                           <p className="text-sm font-medium text-white">
                             {m.user.name ?? "—"}
-                            {isSelf && <span className="ml-2 text-xs text-gray-500">(vous)</span>}
+                            {isSelf && <span className="ml-2 text-xs text-gray-500">{t("you")}</span>}
                           </p>
                           <p className="text-xs text-gray-500">{m.user.email}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0 flex-wrap">
-                        <RoleBadge role={m.role} />
+                        <RoleBadge role={m.role} labels={{ lead: t("roleLead"), member: t("roleMember") }} />
                         {canManage && !isSelf && (
                           <>
                             {m.role === "member" ? (
@@ -677,13 +679,13 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
                 })}
               </div>
             ) : (
-              <p className="px-5 py-8 text-sm text-gray-600 text-center">Aucun membre dans ce cercle.</p>
+              <p className="px-5 py-8 text-sm text-gray-600 text-center">{t("noMembers")}</p>
             )}
           </div>
 
           {canManage && addableMembers.length > 0 && (
             <div className="rounded-xl bg-gray-900 border border-gray-800 p-4">
-              <h2 className="mb-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Ajouter un membre</h2>
+              <h2 className="mb-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">{t("addMember")}</h2>
               <form action={addMember} className="flex flex-wrap gap-3 items-end">
                 <select
                   name="userId"
@@ -699,8 +701,8 @@ export default async function CircleDetailPage({ params, searchParams }: Props) 
                   name="role"
                   className="rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
                 >
-                  <option value="member">Membre</option>
-                  <option value="lead">Leader</option>
+                  <option value="member">{t("roleMember")}</option>
+                  <option value="lead">{t("roleLead")}</option>
                 </select>
                 <button
                   type="submit"
@@ -784,9 +786,14 @@ function Avatar({ name, image, size = "md" }: {
   );
 }
 
-function RoleBadge({ role }: { role: string }) {
+/**
+ * Badge de rôle d'espace. Le libellé est passé en propriété : ce helper vit hors du
+ * composant serveur, donc hors de portée de `t`. Le traduire ici demanderait de le
+ * transformer en composant asynchrone pour un badge de deux mots.
+ */
+function RoleBadge({ role, labels }: { role: string; labels: { lead: string; member: string } }) {
   if (role === "lead") {
-    return <span className="rounded-full border border-indigo-800 bg-indigo-900/40 px-2.5 py-0.5 text-xs font-medium text-indigo-300">Leader</span>;
+    return <span className="rounded-full border border-indigo-800 bg-indigo-900/40 px-2.5 py-0.5 text-xs font-medium text-indigo-300">{labels.lead}</span>;
   }
-  return <span className="rounded-full border border-gray-700 bg-gray-800 px-2.5 py-0.5 text-xs font-medium text-gray-400">Membre</span>;
+  return <span className="rounded-full border border-gray-700 bg-gray-800 px-2.5 py-0.5 text-xs font-medium text-gray-400">{labels.member}</span>;
 }

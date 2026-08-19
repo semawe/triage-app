@@ -61,8 +61,12 @@ describe("catalogues de traduction", () => {
     const suspectes: string[] = [];
     const comparer = (a: unknown, b: unknown, p = "") => {
       if (typeof a === "string" && typeof b === "string") {
-        const mots = a.trim().split(/\s+/).length;
-        if (mots >= 4 && a === b) suspectes.push(`${p} = « ${a} »`);
+        const mots = a.trim().split(/\s+/);
+        // Une phrase, c'est au moins quatre mots ET des lettres : un exemple
+        // numérique (« 123 456 789 00012 ») compte quatre groupes sans être du
+        // texte, et n'a rien à traduire. Faux positif relevé le 19/08/2026.
+        const estPhrase = mots.length >= 4 && mots.filter((m) => /[A-Za-zÀ-ÿ]{2}/.test(m)).length >= 3;
+        if (estPhrase && a === b) suspectes.push(`${p} = « ${a} »`);
         return;
       }
       if (typeof a === "object" && a !== null && typeof b === "object" && b !== null) {
@@ -131,7 +135,7 @@ describe("chaînes visibles restées en dur", () => {
    * Cliquet. Baisser cette valeur à chaque conversion, jamais la remonter : une
    * hausse signifie qu'on a ajouté de l'écran non traduit, et le test la refuse.
    */
-  const PLAFOND = 252;
+  const PLAFOND = 197;
 
   it(`n'en compte pas plus que le plafond (${PLAFOND})`, () => {
     const pires = [...parFichier]
