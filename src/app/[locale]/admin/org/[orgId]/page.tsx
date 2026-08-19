@@ -16,17 +16,16 @@ import {
 } from "@/actions/admin";
 import DeleteOrgButton from "./DeleteOrgButton";
 
-const STATUS_OPTIONS = [
-  { value: "trial", label: "Essai gratuit" },
-  { value: "active", label: "Abonnement actif" },
-  { value: "past_due", label: "Paiement en retard" },
-  { value: "canceled", label: "Résilié" },
-];
-
 export default async function AdminOrgPage({ params }: { params: Promise<{ orgId: string }> }) {
   await requireSuperAdmin();
   const t = await getTranslations("admin");
   const tc = await getTranslations("common");
+  const statusOptions = [
+    { value: "trial", label: t("statusTrial") },
+    { value: "active", label: t("statusActive") },
+    { value: "past_due", label: t("statusPastDue") },
+    { value: "canceled", label: t("statusCanceled") },
+  ];
 
   const { orgId } = await params;
 
@@ -78,7 +77,7 @@ export default async function AdminOrgPage({ params }: { params: Promise<{ orgId
               defaultValue={org.subscriptionStatus}
               className="rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
             >
-              {STATUS_OPTIONS.map((o) => (
+              {statusOptions.map((o) => (
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}
             </select>
@@ -154,7 +153,7 @@ export default async function AdminOrgPage({ params }: { params: Promise<{ orgId
           </p>
           {org.joinRequests.length > 0 && (
             <span className="text-xs text-yellow-400 bg-yellow-900/20 border border-yellow-800 rounded-full px-2 py-0.5">
-              {org.joinRequests.length} demande{org.joinRequests.length !== 1 ? "s" : ""} en attente
+              {t("pendingRequests", { count: org.joinRequests.length })}
             </span>
           )}
         </div>
@@ -175,7 +174,7 @@ export default async function AdminOrgPage({ params }: { params: Promise<{ orgId
                       ? "border-amber-500/60 bg-amber-500/15 text-amber-300"
                       : "border-gray-600 bg-gray-800 text-gray-300"
                   }`}>
-                    {m.role === "admin" ? "Admin" : "Membre"}
+                    {t(m.role === "admin" ? "roleAdmin" : "roleMember")}
                   </span>
                   {m.role === "member" ? (
                     <form action={makeAdmin}>

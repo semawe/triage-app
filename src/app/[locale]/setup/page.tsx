@@ -107,7 +107,7 @@ export default async function SetupPage() {
                 type="submit"
                 className="w-full rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors"
               >
-                Créer et continuer →
+                {t("createContinue")}
               </button>
             </form>
           </>

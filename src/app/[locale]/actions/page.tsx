@@ -54,13 +54,13 @@ export default async function ActionsPage({
               href="/actions"
               className={`px-3 py-1.5 ${!showAll ? "bg-indigo-900/60 text-indigo-300 font-medium" : "text-gray-500 hover:text-gray-300"}`}
             >
-              Les miennes
+              {t("mineFilter")}
             </Link>
             <Link
               href="/actions?filter=all"
               className={`px-3 py-1.5 ${showAll ? "bg-indigo-900/60 text-indigo-300 font-medium" : "text-gray-500 hover:text-gray-300"}`}
             >
-              Toute l&apos;org
+              {t("allOrg")}
             </Link>
           </div>
         )}
@@ -68,14 +68,14 @@ export default async function ActionsPage({
 
       {outputs.length === 0 && (
         <p className="mt-16 text-center text-gray-500">
-          Aucune action{showAll ? " dans l'organisation" : " qui vous est assignée"}.
+          {t(showAll ? "noneAll" : "noneMine")}
         </p>
       )}
 
       {todo.length > 0 && (
         <div className="mb-8">
           <h2 className="mb-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-            À faire · {todo.length}
+            {t("todoCount", { count: todo.length })}
           </h2>
           <div className="space-y-2">
             {todo.map((o) => <ActionRow key={o.id} output={o} />)}
@@ -86,7 +86,7 @@ export default async function ActionsPage({
       {done.length > 0 && (
         <div>
           <h2 className="mb-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-            Terminées · {done.length}
+            {t("doneCount", { count: done.length })}
           </h2>
           <div className="space-y-2 opacity-60">
             {done.map((o) => <ActionRow key={o.id} output={o} />)}
@@ -97,7 +97,7 @@ export default async function ActionsPage({
   );
 }
 
-function ActionRow({
+async function ActionRow({
   output: o,
 }: {
   output: {
@@ -116,6 +116,7 @@ function ActionRow({
     };
   };
 }) {
+  const t = await getTranslations("actions");
   const toggle = toggleOutputDone.bind(null, o.id);
   const meetingDate = o.item.meeting.date.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
   const meetingLabel = o.item.meeting.title ?? `Triage · ${meetingDate}`;
@@ -131,7 +132,7 @@ function ActionRow({
               ? "bg-emerald-900 border-emerald-700 text-emerald-300"
               : "border-gray-600 hover:border-indigo-500"
           }`}
-          title={o.isDone ? "Marquer non terminé" : "Marquer terminé"}
+          title={t(o.isDone ? "markUndone" : "markDone")}
         >
           {o.isDone && <span className="text-xs">✓</span>}
         </button>
@@ -150,7 +151,7 @@ function ActionRow({
           </Link>
           {o.dueDate && (
             <span className={`text-xs ${isOverdue ? "text-red-400" : "text-gray-500"}`}>
-              {isOverdue && "⚠ "}Échéance : {new Date(o.dueDate).toLocaleDateString("fr-FR")}
+              {isOverdue && "⚠ "}{t("due", { date: new Date(o.dueDate).toLocaleDateString() })}
             </span>
           )}
           {o.assignee && (
@@ -160,7 +161,7 @@ function ActionRow({
       </div>
 
       <span className={`shrink-0 rounded-md px-2 py-0.5 text-xs font-medium ${OUTPUT_TYPE_COLORS.action}`}>
-        Action
+        {t("type")}
       </span>
     </div>
   );

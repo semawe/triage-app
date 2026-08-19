@@ -34,6 +34,11 @@ export default async function MeetingPage({ params }: Props) {
   const { id } = await params;
   const { org, session, membership } = await requireOrg();
   const t = await getTranslations("meeting");
+  const tOutput = await getTranslations("output.type");
+  const outputTypeLabels: Record<string, string> = {
+    note: tOutput("note"), action: tOutput("action"), decision: tOutput("decision"),
+    project: tOutput("project"), governance: tOutput("governance"),
+  };
   const isAdmin = membership.role === "admin";
   const meeting = await prisma.meeting.findUnique({
     where: { id },
@@ -77,7 +82,7 @@ export default async function MeetingPage({ params }: Props) {
         <div className="mt-24 text-center space-y-3">
           <p className="text-3xl">🔒</p>
           <p className="text-white font-semibold">{t("confidential")}</p>
-          <p className="text-sm text-gray-500">Réservée aux membres de l&apos;espace {meeting.space.name}.</p>
+          <p className="text-sm text-gray-500">{t("restrictedToSpace", { space: meeting.space.name })}</p>
         </div>
       </AppShell>
     );
@@ -292,7 +297,7 @@ export default async function MeetingPage({ params }: Props) {
           {meeting.status === "open" && (
             <form action={close}>
               <button type="submit" className="rounded-lg border border-gray-700 px-3 py-1.5 text-xs text-gray-400 hover:border-red-800 hover:text-red-400 transition-colors">
-                Clore
+                {t("close")}
               </button>
             </form>
           )}
@@ -410,13 +415,13 @@ export default async function MeetingPage({ params }: Props) {
             <div className="rounded-xl bg-gray-900 border border-gray-800 p-8 flex flex-col items-center justify-center gap-4 text-center">
               <p className="text-gray-400 text-sm">
                 {meeting.agendaItems.length === 0
-                  ? "Ajoutez des points à l'ordre du jour, puis ouvrez la réunion."
-                  : `${meeting.agendaItems.length} point${meeting.agendaItems.length > 1 ? "s" : ""} à l'ordre du jour. Prêt ?`}
+                  ? t("draftEmpty")
+                  : t("draftCount", { count: meeting.agendaItems.length })}
               </p>
               {meeting.agendaItems.length > 0 && (
                 <form action={open}>
                   <button type="submit" className="rounded-xl bg-indigo-600 px-8 py-3 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors">
-                    Ouvrir la réunion →
+                    {t("open")}
                   </button>
                 </form>
               )}
@@ -473,7 +478,7 @@ export default async function MeetingPage({ params }: Props) {
               {/* Scribe (retour #32) : qui tient le stylo + passage de relais */}
               <div className="flex items-center justify-between gap-3 flex-wrap text-xs">
                 <span className="text-gray-500">
-                  ✍️ Scribe : <span className="text-gray-300">{scribeName ?? "non défini"}</span>
+                  {t("scribe")} <span className="text-gray-300">{scribeName ?? "non défini"}</span>
                 </span>
                 {canManageScribe && memberOptions.length > 1 && (
                   <form action={pass} className="flex items-center gap-2">
@@ -494,7 +499,7 @@ export default async function MeetingPage({ params }: Props) {
                       type="submit"
                       className="rounded-lg border border-gray-700 px-2.5 py-1 text-gray-300 hover:border-indigo-600 hover:text-white transition-colors"
                     >
-                      Passer
+                      {t("pass")}
                     </button>
                   </form>
                 )}
@@ -522,7 +527,7 @@ export default async function MeetingPage({ params }: Props) {
                     type="submit"
                     className={`rounded-xl px-6 py-3 text-sm font-semibold text-white transition-colors ${pendingItems.length > 0 ? "bg-indigo-600 hover:bg-indigo-500" : "bg-emerald-700 hover:bg-emerald-600"}`}
                   >
-                    {pendingItems.length > 0 ? "Point suivant →" : "Clore la réunion ✓"}
+                    {pendingItems.length > 0 ? t("nextItem") : t("closeConfirm")}
                   </button>
                 </GuardedNavForm>
               </div>
@@ -535,7 +540,7 @@ export default async function MeetingPage({ params }: Props) {
               <p className="text-gray-400 text-sm">{t("allDone")}</p>
               <form action={close}>
                 <button type="submit" className="rounded-xl bg-emerald-700 px-6 py-3 text-sm font-semibold text-white hover:bg-emerald-600 transition-colors">
-                  Clore la réunion ✓
+                  {t("closeConfirm")}
                 </button>
               </form>
             </div>
@@ -544,12 +549,12 @@ export default async function MeetingPage({ params }: Props) {
           {/* CLOSED */}
           {meeting.status === "closed" && (() => {
             const recapText = [
-              `Compte-rendu — ${meeting.space.name} — ${dateLabel}`,
-              `${meeting.agendaItems.length} point${meeting.agendaItems.length !== 1 ? "s" : ""} traité${meeting.agendaItems.length !== 1 ? "s" : ""}`,
+              t("recapTitle", { space: meeting.space.name, date: dateLabel }),
+              t("processedCount", { count: meeting.agendaItems.length }),
               "",
               ...meeting.agendaItems.filter((i) => i.outputs.length > 0).flatMap((item) => [
                 `${itemNumbers.get(item.id)}. ${item.title}`,
-                ...item.outputs.map((o) => `  [${OUTPUT_TYPE_LABELS[o.type] ?? o.type}] ${o.content}${o.assignee ? ` → ${o.assignee.name}` : ""}`),
+                ...item.outputs.map((o) => `  [${outputTypeLabels[o.type] ?? o.type}] ${o.content}${o.assignee ? ` → ${o.assignee.name}` : ""}`),
                 "",
               ]),
             ].join("\n");
@@ -558,7 +563,7 @@ export default async function MeetingPage({ params }: Props) {
                 <div className="flex flex-col items-center gap-2 text-center">
                   <p className="text-3xl">✓</p>
                   <p className="font-semibold text-white">{t("ended")}</p>
-                  <p className="text-sm text-gray-500">{meeting.agendaItems.length} point{meeting.agendaItems.length !== 1 ? "s" : ""} traité{meeting.agendaItems.length !== 1 ? "s" : ""}</p>
+                  <p className="text-sm text-gray-500">{t("processedCount", { count: meeting.agendaItems.length })}</p>
                   {f.recapEmail && (
                     <div className="mt-2">
                       <SendRecapButton meetingId={meeting.id} recapText={recapText} />
@@ -616,11 +621,12 @@ export default async function MeetingPage({ params }: Props) {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function StatusBadge({ status }: { status: string }) {
+async function StatusBadge({ status }: { status: string }) {
+  const t = await getTranslations("meeting.status");
   const config: Record<string, { label: string; classes: string }> = {
-    draft: { label: "Brouillon", classes: "bg-yellow-900/40 text-yellow-400 border-yellow-800" },
-    open: { label: "En cours", classes: "bg-green-900/40 text-green-400 border-green-800" },
-    closed: { label: "Terminée", classes: "bg-gray-800 text-gray-400 border-gray-700" },
+    draft: { label: t("draft"), classes: "bg-yellow-900/40 text-yellow-400 border-yellow-800" },
+    open: { label: t("open"), classes: "bg-green-900/40 text-green-400 border-green-800" },
+    closed: { label: t("closed"), classes: "bg-gray-800 text-gray-400 border-gray-700" },
   };
   const c = config[status] ?? config.closed;
   return <span className={`rounded-full border px-3 py-1 text-xs font-medium ${c.classes}`}>{c.label}</span>;
@@ -650,18 +656,15 @@ const OUTPUT_TYPE_COLORS: Record<string, string> = {
   governance: "bg-pink-900 text-pink-300",
 };
 
-const OUTPUT_TYPE_LABELS: Record<string, string> = {
-  note: "Note",
-  action: "Action",
-  decision: "Décision",
-  project: "Projet",
-  governance: "Gouvernance",
-};
-
-function OutputTypeBadge({ type }: { type: string }) {
+async function OutputTypeBadge({ type }: { type: string }) {
+  const t = await getTranslations("output.type");
+  const labels: Record<string, string> = {
+    note: t("note"), action: t("action"), decision: t("decision"),
+    project: t("project"), governance: t("governance"),
+  };
   return (
     <span className={`shrink-0 rounded-md px-2 py-0.5 text-xs font-medium ${OUTPUT_TYPE_COLORS[type] ?? "bg-gray-700 text-gray-300"}`}>
-      {OUTPUT_TYPE_LABELS[type] ?? type}
+      {labels[type] ?? type}
     </span>
   );
 }

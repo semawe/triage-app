@@ -5,7 +5,7 @@ import AppShell from "@/components/AppShell";
 import { createMeeting } from "@/actions/meeting";
 import { Link } from "@/i18n/navigation";
 import DecalageHoraire from "./DecalageHoraire";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import type { Meeting, Space } from "@/generated/prisma";
 
 type MeetingWithSpace = Meeting & { space: Space };
@@ -19,6 +19,7 @@ export default async function MeetingsPage({
   const { org } = ctx;
   const { group } = await searchParams;
   const groupBySpace = group === "space";
+  const t = await getTranslations("meeting");
 
   // Le cloisonnement passe par le prédicat partagé, et non par un filtre réécrit
   // ici : celui qui vivait à cet endroit ignorait le drapeau `confidentiality`,
@@ -65,9 +66,9 @@ export default async function MeetingsPage({
     <AppShell>
       <PageHeader org={org} groupBySpace={false} />
       <CreateForm org={org} today={today} />
-      {open.length > 0 && <MeetingGroup label="En cours" meetings={open} />}
-      {draft.length > 0 && <MeetingGroup label="Brouillons" meetings={draft} />}
-      {closed.length > 0 && <MeetingGroup label="Terminées" meetings={closed.slice(0, 20)} />}
+      {open.length > 0 && <MeetingGroup label={t("status.open")} meetings={open} />}
+      {draft.length > 0 && <MeetingGroup label={t("status.draft")} meetings={draft} />}
+      {closed.length > 0 && <MeetingGroup label={t("status.closed")} meetings={closed.slice(0, 20)} />}
       {visibleMeetings.length === 0 && <Empty />}
     </AppShell>
   );
@@ -85,13 +86,13 @@ async function PageHeader({ org, groupBySpace }: { org: { name: string }; groupB
             href="/meetings"
             className={`px-3 py-1.5 ${!groupBySpace ? "bg-indigo-900/60 text-indigo-300 font-medium" : "text-gray-500 hover:text-gray-300"}`}
           >
-            Par statut
+            {t("byStatus")}
           </Link>
           <Link
             href="/meetings?group=space"
             className={`px-3 py-1.5 ${groupBySpace ? "bg-indigo-900/60 text-indigo-300 font-medium" : "text-gray-500 hover:text-gray-300"}`}
           >
-            Par espace
+            {t("bySpace")}
           </Link>
         </div>
       </div>
@@ -101,10 +102,11 @@ async function PageHeader({ org, groupBySpace }: { org: { name: string }; groupB
 
 async function CreateForm({ org, today }: { org: { spaces: { id: string; name: string }[] }; today: string }) {
   const t = await getTranslations("meeting");
+  const tc = await getTranslations("common");
   return (
     <div className="mb-8 rounded-xl bg-gray-900 border border-gray-800 p-5">
       <h2 className="mb-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-        Nouvelle réunion
+        {t("new")}
       </h2>
       <form action={createMeeting} className="flex flex-wrap gap-3 items-end">
         <div className="flex flex-col gap-1">
@@ -163,7 +165,7 @@ async function CreateForm({ org, today }: { org: { spaces: { id: string; name: s
           type="submit"
           className="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors"
         >
-          Créer
+          {tc("create")}
         </button>
       </form>
     </div>
@@ -183,8 +185,9 @@ function MeetingGroup({ label, meetings }: { label: string; meetings: MeetingWit
 
 async function MeetingRow({ meeting: m }: { meeting: MeetingWithSpace }) {
   const t = await getTranslations("meeting");
+  const locale = await getLocale();
   const effectivePrivate = m.isPrivate ?? m.space.isPrivate;
-  const dateLabel = m.date.toLocaleDateString("fr-FR", {
+  const dateLabel = m.date.toLocaleDateString(locale, {
     weekday: "short",
     day: "numeric",
     month: "short",
@@ -206,7 +209,7 @@ async function MeetingRow({ meeting: m }: { meeting: MeetingWithSpace }) {
             )}
           </p>
           <p className="text-xs text-gray-500">
-            {m.space.name} · {m.date.toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}
+            {m.space.name} · {m.date.toLocaleDateString(locale, { day: "numeric", month: "long" })}
             {m.durationMinutes ? ` · ${m.durationMinutes} min` : ""}
           </p>
         </div>

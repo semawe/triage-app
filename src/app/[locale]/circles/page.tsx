@@ -12,12 +12,6 @@ type Props = {
   searchParams: Promise<{ view?: string; parent?: string; circle?: string }>;
 };
 
-const TYPE_LABELS: Record<string, string> = {
-  circle: "Cercle",
-  project: "Projet",
-  instance: "Instance",
-};
-
 const TYPE_COLORS: Record<string, string> = {
   circle: "bg-indigo-900/40 text-indigo-300 border-indigo-800",
   project: "bg-orange-900/40 text-orange-300 border-orange-800",
@@ -76,13 +70,13 @@ export default async function CirclesPage({ params, searchParams }: Props) {
               href="/circles"
               className={`px-3 py-1.5 ${!showList ? "bg-indigo-900/60 text-indigo-300 font-medium" : "text-gray-500 hover:text-gray-300"}`}
             >
-              Carte
+              {t("map")}
             </Link>
             <Link
               href="/circles?view=list"
               className={`px-3 py-1.5 ${showList ? "bg-indigo-900/60 text-indigo-300 font-medium" : "text-gray-500 hover:text-gray-300"}`}
             >
-              Liste
+              {t("list")}
             </Link>
           </div>
         </div>
@@ -95,8 +89,9 @@ export default async function CirclesPage({ params, searchParams }: Props) {
           <p className="text-sm text-gray-600">{t("empty")}</p>
           {isAdmin && (
             <p className="mt-1 text-xs text-gray-700">
-              Crée le premier depuis la{" "}
-              <Link href="/circles?view=list" className="underline hover:text-gray-500">{t("listView")}</Link>.
+              <Link href="/circles?view=list" className="underline hover:text-gray-500">
+                {t("createFirst", { listView: t("listView") })}
+              </Link>
             </p>
           )}
         </div>
@@ -143,6 +138,7 @@ async function ListView({
 }) {
   const t = await getTranslations("circles");
   const tSpace = await getTranslations("space");
+  const tc = await getTranslations("common");
   const rootSpaces = spaces.filter((s) => !s.parentId);
   const childrenOf = (parentId: string) => spaces.filter((s) => s.parentId === parentId);
 
@@ -166,7 +162,7 @@ async function ListView({
       {isAdmin && (
         <div className="mb-8 rounded-xl bg-gray-900 border border-gray-800 p-5">
           <h2 className="mb-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-            Nouveau cercle
+            {t("new")}
           </h2>
           <form action={createSpace} className="flex flex-wrap gap-3 items-end">
             <div className="flex flex-col gap-1">
@@ -208,7 +204,7 @@ async function ListView({
               type="submit"
               className="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors"
             >
-              Créer
+              {tc("create")}
             </button>
           </form>
         </div>
@@ -239,18 +235,18 @@ async function ListView({
                   <span
                     className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${TYPE_COLORS[space.type] ?? "bg-gray-700 text-gray-300 border-gray-600"}`}
                   >
-                    {TYPE_LABELS[space.type] ?? space.type}
+                    {tSpace(`type.${space.type}`)}
                   </span>
                   <span className="text-sm font-medium text-white">{space.name}</span>
                   {space._count.children > 0 && (
                     <span className="text-xs text-gray-600">
-                      {space._count.children} sous-cercle{space._count.children > 1 ? "s" : ""}
+                      {t("subcircles", { count: space._count.children })}
                     </span>
                   )}
                 </Link>
                 <div className="flex items-center gap-4">
                   <span className="text-xs text-gray-600">
-                    {space._count.meetings} réunion{space._count.meetings !== 1 ? "s" : ""}
+                    {t("meetingsCount", { count: space._count.meetings })}
                   </span>
                   {isAdmin && (
                     canDelete ? (
@@ -268,13 +264,13 @@ async function ListView({
                         className="text-xs text-gray-700 cursor-not-allowed"
                         title={
                           space._count.children > 0
-                            ? "Ce cercle a des sous-cercles"
+                            ? t("hasChildren")
                             : space._count.roles > 0
-                              ? "Ce cercle a des rôles"
-                              : "Ce cercle a des réunions"
+                              ? t("hasRoles")
+                              : t("hasMeetings")
                         }
                       >
-                        Supprimer
+                        {tc("delete")}
                       </span>
                     )
                   )}
@@ -285,7 +281,7 @@ async function ListView({
         </div>
       ) : (
         <p className="mt-16 text-center text-gray-500">
-          Aucun cercle.{isAdmin ? " Crée-en un ci-dessus." : ""}
+          {t(isAdmin ? "emptyAdmin" : "emptyMember")}
         </p>
       )}
     </>

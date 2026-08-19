@@ -48,8 +48,7 @@ export default async function InvitePage({ params, searchParams }: Props) {
           <p className="text-2xl">✉️</p>
           <p className="text-white font-semibold">{tI("nominative")}</p>
           <p className="text-sm text-gray-500">
-            Elle a été envoyée à une autre adresse que {session.user.email}. Connecte-toi
-            avec le compte destinataire, ou demande une invitation à ton adresse.
+            {tI("wrongAccount", { email: session.user.email ?? "" })}
           </p>
         </div>
       </main>
@@ -62,11 +61,10 @@ export default async function InvitePage({ params, searchParams }: Props) {
         <div className="text-center space-y-3 max-w-sm px-6">
           <p className="text-2xl">🚪</p>
           <p className="text-white font-semibold">
-            Plus de siège disponible dans {invite.organisation.name}
+            {tI("fullTitle", { org: invite.organisation.name })}
           </p>
           <p className="text-sm text-gray-500">
-            L&apos;organisation a atteint sa limite de sièges. Demande à un administrateur
-            d&apos;en ajouter, puis réessaie avec ce lien.
+            {tI("fullBody")}
           </p>
         </div>
       </main>
@@ -78,21 +76,17 @@ export default async function InvitePage({ params, searchParams }: Props) {
       <div className="rounded-2xl bg-gray-900 border border-gray-800 p-8 max-w-sm w-full text-center space-y-5">
         <p className="text-3xl">🎉</p>
         <h1 className="text-lg font-bold text-white">
-          Rejoindre <span className="text-indigo-400">{invite.organisation.name}</span>
+          {tI("join", { org: invite.organisation.name })}
         </h1>
         <p className="text-sm text-gray-400">
-          Tu es invité(e) en tant que{" "}
-          <strong className="text-gray-200">
-            {invite.role === "admin" ? "administrateur" : "membre"}
-          </strong>
-          .
+          {tI("invitedRole", { role: tI(invite.role === "admin" ? "adminRole" : "memberRole") })}
         </p>
         <form action={acceptInvite.bind(null, token)}>
           <button
             type="submit"
             className="w-full rounded-xl bg-indigo-600 py-3 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors"
           >
-            Rejoindre l&apos;organisation →
+            {tI("joinCta")}
           </button>
         </form>
       </div>

@@ -49,6 +49,7 @@ export function GuardedNavForm({
   children: ReactNode;
 }) {
   const { dirty } = useContext(UnsavedOutputContext);
+  const t = useTranslations("outputs");
   return (
     <form
       action={action}
@@ -57,7 +58,7 @@ export function GuardedNavForm({
         if (
           dirty &&
           !confirm(
-            "Une note est saisie mais non enregistrée pour ce point. Quitter sans l'enregistrer ?",
+            t("unsavedConfirm"),
           )
         ) {
           e.preventDefault();
@@ -107,7 +108,7 @@ export function OutputEntry({
           // était auparavant indistinguable du succès, et le texte tapé pendant la
           // réunion partait avec lui.
           if (!resultat?.ok) {
-            setErreur(resultat?.message ?? "La saisie n'a pas été enregistrée.");
+            setErreur(resultat?.message ?? t("saveFailed"));
             return;
           }
           setErreur(null);
@@ -163,7 +164,7 @@ export function OutputEntry({
           role="alert"
           className="rounded-lg bg-red-950/60 border border-red-900 px-3 py-2 text-sm text-red-300"
         >
-          {erreur} Ta saisie est conservée ci-dessus.
+          {erreur} {t("preservedAfterError")}
         </p>
       )}
       <div className="flex items-center gap-3">
@@ -172,7 +173,7 @@ export function OutputEntry({
           disabled={pending || !content.trim()}
           className="rounded-lg bg-gray-700 px-4 py-2 text-sm text-gray-200 hover:bg-indigo-700 hover:text-white transition-colors disabled:opacity-50 disabled:hover:bg-gray-700 disabled:hover:text-gray-200"
         >
-          {pending ? "Enregistrement…" : "Ajouter l'output"}
+          {pending ? t("saving") : t("addOutput")}
         </button>
         {content.trim() && !pending && (
           <span className="text-xs text-yellow-500/80">{t("unsaved")}</span>

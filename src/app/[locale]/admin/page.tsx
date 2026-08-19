@@ -11,14 +11,14 @@ const STATUS_COLORS: Record<string, string> = {
   past_due: "text-red-400 bg-red-900/20 border-red-800",
   canceled: "text-gray-400 bg-gray-800 border-gray-700",
 };
-const STATUS_LABELS: Record<string, string> = {
-  trial: "Essai", active: "Actif", past_due: "En retard", canceled: "Résilié",
-};
-
 export default async function AdminPage() {
   await requireSuperAdmin();
   const t = await getTranslations("admin");
   const tc = await getTranslations("common");
+  const statusLabels: Record<string, string> = {
+    trial: t("statusTrial"), active: t("statusActive"),
+    past_due: t("statusPastDue"), canceled: t("statusCanceled"),
+  };
 
   const [orgs, userCount] = await Promise.all([
     prisma.organisation.findMany({
@@ -50,9 +50,9 @@ export default async function AdminPage() {
       {/* Stats */}
       <div className="mb-8 grid grid-cols-3 gap-4">
         {[
-          { label: "Organisations", value: orgs.length },
-          { label: "Utilisateurs", value: userCount, href: "/admin/users" },
-          { label: "Abonnements actifs", value: activeOrgs },
+          { label: t("organisations"), value: orgs.length },
+          { label: t("users"), value: userCount, href: "/admin/users" },
+          { label: t("activeSubscriptions"), value: activeOrgs },
         ].map((s) => {
           const inner = (
             <>
@@ -142,7 +142,7 @@ export default async function AdminPage() {
               </div>
               <div className="flex items-center gap-3 shrink-0">
                 <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${STATUS_COLORS[org.subscriptionStatus] ?? STATUS_COLORS.trial}`}>
-                  {STATUS_LABELS[org.subscriptionStatus] ?? org.subscriptionStatus}
+                  {statusLabels[org.subscriptionStatus] ?? org.subscriptionStatus}
                 </span>
                 <Link
                   href={`/admin/org/${org.id}`}

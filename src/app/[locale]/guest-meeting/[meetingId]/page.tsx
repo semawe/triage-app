@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { getGuestForMeeting } from "@/lib/guest";
 import { addAgendaItem } from "@/actions/meeting";
 import SSEListener from "../../meetings/[id]/SSEListener";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 
 type Props = { params: Promise<{ meetingId: string }> };
 
@@ -13,17 +13,18 @@ const OUTPUT_TYPE_COLORS: Record<string, string> = {
   project: "bg-orange-900 text-orange-300",
   governance: "bg-pink-900 text-pink-300",
 };
-const OUTPUT_TYPE_LABELS: Record<string, string> = {
-  note: "Note",
-  action: "Action",
-  decision: "Décision",
-  project: "Projet",
-  governance: "Gouvernance",
-};
-
 export default async function GuestMeetingPage({ params }: Props) {
   const { meetingId } = await params;
   const t = await getTranslations("guest");
+  const tOutput = await getTranslations("output.type");
+  const locale = await getLocale();
+  const outputTypeLabels: Record<string, string> = {
+    note: tOutput("note"),
+    action: tOutput("action"),
+    decision: tOutput("decision"),
+    project: tOutput("project"),
+    governance: tOutput("governance"),
+  };
 
   const guest = await getGuestForMeeting(meetingId);
 
@@ -65,7 +66,7 @@ export default async function GuestMeetingPage({ params }: Props) {
     );
   }
 
-  const dateLabel = meeting.date.toLocaleDateString("fr-FR", {
+  const dateLabel = meeting.date.toLocaleDateString(locale, {
     weekday: "long", day: "numeric", month: "long", year: "numeric",
   });
   const title = meeting.title?.trim() || dateLabel;
@@ -73,7 +74,7 @@ export default async function GuestMeetingPage({ params }: Props) {
   const addItem = addAgendaItem.bind(null, meetingId);
 
   const statusLabel =
-    meeting.status === "open" ? "En cours" : meeting.status === "closed" ? "Terminée" : "Brouillon";
+    meeting.status === "open" ? t("statusOpen") : meeting.status === "closed" ? t("statusClosed") : t("statusDraft");
 
   return (
     <main className="min-h-screen bg-gray-950 text-white">
@@ -103,7 +104,7 @@ export default async function GuestMeetingPage({ params }: Props) {
         <section className="rounded-xl bg-gray-900 border border-gray-800 overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-800">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-              Ordre du jour
+              {t("agenda")}
             </p>
           </div>
           <div className="p-2 space-y-0.5">
@@ -162,7 +163,7 @@ export default async function GuestMeetingPage({ params }: Props) {
                     <span
                       className={`shrink-0 rounded-md px-2 py-0.5 text-xs font-medium ${OUTPUT_TYPE_COLORS[o.type] ?? "bg-gray-700 text-gray-300"}`}
                     >
-                      {OUTPUT_TYPE_LABELS[o.type] ?? o.type}
+                      {outputTypeLabels[o.type] ?? o.type}
                     </span>
                     <div className="flex-1">
                       <p className="text-sm text-gray-200 leading-relaxed">{o.content}</p>
@@ -175,7 +176,7 @@ export default async function GuestMeetingPage({ params }: Props) {
               </div>
             )}
             <p className="text-xs text-gray-600">
-              Les outputs sont enregistrés par les membres de l&apos;organisation.
+              {t("readOnlyOutputs")}
             </p>
           </section>
         )}
@@ -185,7 +186,7 @@ export default async function GuestMeetingPage({ params }: Props) {
             <p className="text-2xl">✓</p>
             <p className="mt-1 font-semibold text-white">{t("closed")}</p>
             <p className="mt-1 text-sm text-gray-500">
-              Tu recevras le compte-rendu par email s&apos;il est diffusé.
+              {t("recapByEmail")}
             </p>
           </div>
         )}

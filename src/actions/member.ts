@@ -64,7 +64,25 @@ export async function removeMember(memberId: string) {
   if (target.organisationId !== org.id) return;
   if (target.userId === session.user.id) return;
 
-  await prisma.organisationMember.delete({ where: { id: memberId } });
+  // Une appartenance d'espace ou une attribution de rôle survivante n'accorde
+  // pas d'accès sans OrganisationMember, mais elle ressusciterait silencieusement
+  // si la personne rejoignait l'organisation plus tard. Le retrait signifie donc
+  // retrait de tous les rôles propres à CETTE organisation, atomiquement.
+  await prisma.$transaction([
+    prisma.roleAssignment.deleteMany({
+      where: {
+        userId: target.userId,
+        role: { space: { organisationId: org.id } },
+      },
+    }),
+    prisma.spaceMember.deleteMany({
+      where: {
+        userId: target.userId,
+        space: { organisationId: org.id },
+      },
+    }),
+    prisma.organisationMember.delete({ where: { id: memberId } }),
+  ]);
 
   revalidatePath("/", "layout");
 }

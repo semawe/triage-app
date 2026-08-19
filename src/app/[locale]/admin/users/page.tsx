@@ -24,11 +24,11 @@ export default async function AdminUsersPage() {
       {/* Header */}
       <div className="mb-8 flex items-center gap-3 flex-wrap">
         <Link href="/admin" className="text-xs text-gray-400 hover:text-gray-200 transition-colors">
-          ← Admin
+          {t("back")}
         </Link>
         <span className="text-gray-700">/</span>
         <span className="text-xs font-medium text-red-400 bg-red-900/30 border border-red-800 rounded-full px-2.5 py-0.5">
-          Super admin
+          {t("superAdmin")}
         </span>
         <h1 className="text-2xl font-bold text-white">{t("title")}</h1>
       </div>
@@ -36,7 +36,7 @@ export default async function AdminUsersPage() {
       <div className="rounded-xl bg-gray-900 border border-gray-800 overflow-hidden">
         <div className="px-5 py-3 border-b border-gray-800">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-            {users.length} utilisateur{users.length !== 1 ? "s" : ""}
+            {t("count", { count: users.length })}
           </p>
         </div>
         <div className="divide-y divide-gray-800">
@@ -56,7 +56,7 @@ export default async function AdminUsersPage() {
                     {u.name ?? "—"}
                     {u.superAdmin && (
                       <span className="rounded-full border border-red-800 bg-red-900/30 px-2 py-0.5 text-[10px] font-semibold text-red-300">
-                        Super admin
+                        {t("superAdmin")}
                       </span>
                     )}
                   </p>
@@ -75,7 +75,7 @@ export default async function AdminUsersPage() {
                     >
                       {m.organisation.name}
                       <span className={m.role === "admin" ? "text-amber-300" : "text-gray-500"}>
-                        {m.role === "admin" ? " · admin" : " · membre"}
+                        {m.role === "admin" ? ` · ${t("orgAdmin")}` : ` · ${t("orgMember")}`}
                       </span>
                     </Link>
                   ))

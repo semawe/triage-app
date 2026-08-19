@@ -16,14 +16,15 @@ const OUTPUT_TYPE_COLORS: Record<string, string> = {
   project: "text-orange-300",
   governance: "text-pink-300",
 };
-const OUTPUT_TYPE_LABELS: Record<string, string> = {
-  note: "Note", action: "Action", decision: "Décision", project: "Projet", governance: "Gouvernance",
-};
-
 export default async function ProjectorPage({ params }: Props) {
   const { id } = await params;
   const ctx = await requireOrg();
   const t = await getTranslations("projector");
+  const tOutput = await getTranslations("output.type");
+  const outputTypeLabels: Record<string, string> = {
+    note: tOutput("note"), action: tOutput("action"), decision: tOutput("decision"),
+    project: tOutput("project"), governance: tOutput("governance"),
+  };
   const { org } = ctx;
 
   // Même règle de confidentialité que la page réunion : le mode projecteur
@@ -65,7 +66,7 @@ export default async function ProjectorPage({ params }: Props) {
       <aside className="w-56 shrink-0 border-r border-gray-800/60 bg-gray-900/40 flex flex-col overflow-hidden">
         <div className="px-4 py-4 border-b border-gray-800/60">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t("agenda")}</p>
-          <p className="text-xs text-gray-700 mt-0.5">{doneCount}/{total} traités</p>
+          <p className="text-xs text-gray-700 mt-0.5">{doneCount}/{total} {t("processed")}</p>
         </div>
         <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
           {meeting.agendaItems.map((item) => {
@@ -115,7 +116,7 @@ export default async function ProjectorPage({ params }: Props) {
               href={`/meetings/${id}`}
               className="rounded-lg border border-gray-700 px-4 py-2 text-sm text-gray-400 hover:border-gray-500 hover:text-gray-200 transition-colors"
             >
-              ← Quitter
+              {t("exit")}
             </Link>
           </div>
         </div>
@@ -134,7 +135,7 @@ export default async function ProjectorPage({ params }: Props) {
                   {activeItem.outputs.map((o) => (
                     <div key={o.id} className="flex items-start gap-4">
                       <span className={`text-sm font-semibold uppercase tracking-wider shrink-0 ${OUTPUT_TYPE_COLORS[o.type] ?? "text-gray-400"}`}>
-                        {OUTPUT_TYPE_LABELS[o.type]}
+                        {outputTypeLabels[o.type] ?? o.type}
                       </span>
                       <p className="text-xl text-gray-200">{o.content}</p>
                       {o.assignee && (
@@ -150,8 +151,8 @@ export default async function ProjectorPage({ params }: Props) {
             <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-800/60">
               <p className="text-sm text-gray-600">
                 {pendingItems.length > 0
-                  ? `${pendingItems.length} point${pendingItems.length > 1 ? "s" : ""} restant${pendingItems.length > 1 ? "s" : ""}`
-                  : "Dernier point"}
+                  ? t("remaining", { count: pendingItems.length })
+                  : t("lastItem")}
               </p>
               <form action={pendingItems.length > 0 ? next : close}>
                 <button
@@ -160,7 +161,7 @@ export default async function ProjectorPage({ params }: Props) {
                     pendingItems.length > 0 ? "bg-indigo-600 hover:bg-indigo-500" : "bg-emerald-700 hover:bg-emerald-600"
                   }`}
                 >
-                  {pendingItems.length > 0 ? "Point suivant →" : "Clore la réunion ✓"}
+                  {pendingItems.length > 0 ? t("nextItem") : t("closeMeeting")}
                 </button>
               </form>
             </div>
@@ -172,12 +173,12 @@ export default async function ProjectorPage({ params }: Props) {
                 <>
                   <p className="text-6xl mb-4">✓</p>
                   <p className="text-2xl font-bold text-white">{t("ended")}</p>
-                  <p className="text-gray-500 mt-2">{doneCount} points traités</p>
+                  <p className="text-gray-500 mt-2">{t("processedCount", { count: doneCount })}</p>
                 </>
               ) : (
                 <>
                   <p className="text-2xl text-gray-400">{t("notOpened")}</p>
-                  <p className="text-gray-600 mt-2 text-sm">{total} point{total !== 1 ? "s" : ""} à l&apos;ordre du jour</p>
+                  <p className="text-gray-600 mt-2 text-sm">{t("agendaCount", { count: total })}</p>
                 </>
               )}
             </div>

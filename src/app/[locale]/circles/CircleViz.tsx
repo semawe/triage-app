@@ -32,12 +32,6 @@ type Selection =
 
 const ROLE_COLOR = "#f59e0b"; // ambre — distingue les rôles des cercles/instances
 
-const TYPE_LABELS: Record<VizSpace["type"], string> = {
-  circle: "Cercle",
-  instance: "Instance",
-  project: "Projet",
-};
-
 const PALETTE: Record<VizSpace["type"], string[]> = {
   circle:   ["#6366f1","#8b5cf6","#a855f7","#7c3aed","#4f46e5","#6d28d9"],
   instance: ["#0ea5e9","#14b8a6","#06b6d4","#0284c7","#0891b2","#0d9488"],
@@ -113,6 +107,7 @@ function SpaceNode({
   space: VizSpace; x: number; y: number; r: number; color: string;
   isMe: boolean; isSelected: boolean; onClick: () => void; onOpen: () => void;
 }) {
+  const tSpace = useTranslations("space.type");
   const hasChildren = space.childCount > 0;
   const lines = splitLines(space.name, r > 80 ? 13 : r > 65 ? 11 : 9);
   const lh = r > 80 ? 13 : 11;
@@ -147,7 +142,7 @@ function SpaceNode({
       <text x={x} y={typeY} textAnchor="middle" dominantBaseline="hanging"
         fill={`${color}55`} fontSize={7}
         fontFamily="-apple-system,BlinkMacSystemFont,sans-serif" pointerEvents="none">
-        {TYPE_LABELS[space.type]}
+        {tSpace(space.type)}
         {hasChildren ? `  ·  ${space.childCount}↗` : ""}
       </text>
 
@@ -245,6 +240,7 @@ export default function CircleViz({
   initialSelection?: { kind: "space" | "role"; id: string } | null;
 }) {
   const t = useTranslations("circleViz");
+  const tSpace = useTranslations("space.type");
   const [selected, setSelected] = useState<Selection>(() => {
     if (initialSelection?.kind === "space") {
       const space = spaces.find((s) => s.id === initialSelection.id);
@@ -330,9 +326,9 @@ export default function CircleViz({
   }
 
   const sidebarSections: { label: string; items: VizSpace[] }[] = [
-    { label: "Cercles", items: circles },
-    { label: "Instances", items: instances },
-    { label: "Projets", items: projects },
+    { label: t("circles"), items: circles },
+    { label: t("instances"), items: instances },
+    { label: t("projects"), items: projects },
   ];
 
   return (
@@ -389,7 +385,7 @@ export default function CircleViz({
             <text x={250} y={250} textAnchor="middle" dominantBaseline="middle"
               fill="#475569" fontSize={11}
               fontFamily="-apple-system,BlinkMacSystemFont,sans-serif" pointerEvents="none">
-              Aucun sous-cercle ni rôle
+              {t("empty")}
             </text>
           )}
 
@@ -440,12 +436,12 @@ export default function CircleViz({
                     background: `${colorMap.get(selected.space.id)}1a`,
                   }}
                 >
-                  {TYPE_LABELS[selected.space.type]}
+                  {tSpace(selected.space.type)}
                 </span>
               ) : (
                 <span className="rounded-full border px-2.5 py-0.5 text-xs font-medium"
                   style={{ color: ROLE_COLOR, borderColor: `${ROLE_COLOR}55`, background: `${ROLE_COLOR}1a` }}>
-                  Rôle
+                  {t("role")}
                 </span>
               )}
               <div className="flex items-center gap-3">
@@ -478,25 +474,23 @@ export default function CircleViz({
                   )}
                 </div>
                 <p className="text-xs text-gray-500">
-                  {selected.space.childCount} sous-cercle{selected.space.childCount !== 1 ? "s" : ""}
-                  {" · "}
-                  {selected.space.roleCount} rôle{selected.space.roleCount !== 1 ? "s" : ""}
+                  {t("summary", { children: selected.space.childCount, roles: selected.space.roleCount })}
                 </p>
                 <button
                   onClick={() => openSpace(selected.space)}
                   className="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors"
                 >
-                  Entrer dans {selected.space.type === "circle" ? "le cercle" : selected.space.type === "instance" ? "l'instance" : "le projet"} →
+                  {t("enter", { type: tSpace(selected.space.type).toLocaleLowerCase() })}
                 </button>
                 <p className="text-[11px] text-gray-600 text-center">
-                  ou cliquer une 2ᵉ fois sur le cercle dans la carte
+                  {t("orDoubleClick")}
                 </p>
               </>
             ) : (
               <>
                 <div className="space-y-2">
                   <p className="text-xs text-gray-600 font-medium uppercase tracking-wider">
-                    Titulaire{selected.role.holders.length > 1 ? "s" : ""}
+                    {t("holders", { count: selected.role.holders.length })}
                   </p>
                   {selected.role.holders.length > 0 ? (
                     <div className="space-y-1.5">
@@ -546,7 +540,7 @@ export default function CircleViz({
                     href={governanceHref}
                     className="block w-full rounded-lg border border-gray-700 px-4 py-2 text-sm font-medium text-gray-300 hover:border-gray-500 hover:text-white transition-colors text-center"
                   >
-                    Gérer dans la gouvernance →
+                    {t("manageGovernance")}
                   </Link>
                 )}
               </>

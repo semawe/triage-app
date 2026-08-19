@@ -36,7 +36,7 @@ export default function SendRecapButton({
               disabled={pending}
               className="rounded-lg border border-gray-700 px-4 py-2 text-sm text-gray-300 hover:border-indigo-600 hover:text-indigo-300 transition-colors disabled:opacity-50"
             >
-              {pending ? "Envoi en cours…" : "Envoyer le compte-rendu ✉"}
+              {pending ? t("sendingRecap") : t("sendRecap")}
             </button>
           </form>
         )}
@@ -46,7 +46,7 @@ export default function SendRecapButton({
           className="rounded-lg border border-gray-700 px-4 py-2 text-sm text-gray-400 hover:border-gray-600 hover:text-gray-200 transition-colors"
           title={t("copyRecap")}
         >
-          Copier
+          {t("copy")}
         </button>
       </div>
       {state?.error && (

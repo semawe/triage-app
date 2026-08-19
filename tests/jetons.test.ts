@@ -12,7 +12,7 @@ import {
   addMember, addSpaceMember, makeMeeting, makeOrg, makeSpace, makeUser, prisma, resetDb,
 } from "./factories";
 import { acceptInvite, sendInviteByEmail, generateInvite } from "@/actions/member";
-import { inviteGuestToMeeting, revokeGuest } from "@/actions/guest";
+import { enterAsGuest, inviteGuestToMeeting, revokeGuest } from "@/actions/guest";
 import { newToken } from "@/lib/tokens";
 
 beforeEach(async () => {
@@ -106,6 +106,34 @@ describe("entropie des jetons", () => {
 });
 
 describe("invité de réunion", () => {
+  it("ne relie jamais un jeton invité au compte réel portant la même adresse", async () => {
+    const org = await makeOrg({});
+    const host = await makeUser("host-identity@example.com");
+    const realAccount = await makeUser("invite-existing@example.com");
+    await addMember(org.id, host.id, "admin");
+    const space = await makeSpace(org.id);
+    const meeting = await makeMeeting(space.id, { status: "open", createdById: host.id });
+    currentCookies.set("triage-active-org", org.id);
+    actAs(host);
+
+    await inviteGuestToMeeting(
+      meeting.id,
+      null,
+      form({ email: realAccount.email!, name: "Invité ponctuel" })
+    );
+    const guest = await prisma.meetingGuest.findFirstOrThrow({ where: { meetingId: meeting.id } });
+
+    actAs(null);
+    await enterAsGuest(guest.token, form({ name: "Invité ponctuel" })).catch((e) => {
+      if (!(e instanceof RedirectError)) throw e;
+    });
+
+    const entered = await prisma.meetingGuest.findUniqueOrThrow({ where: { id: guest.id } });
+    expect(entered.userId).not.toBe(realAccount.id);
+    const guestUser = await prisma.user.findUniqueOrThrow({ where: { id: entered.userId! } });
+    expect(guestUser.email).toBe(`guest-${guest.id}@guest.triapp.invalid`);
+  });
+
   it("ne ressuscite pas l'ancien jeton après révocation puis réinvitation", async () => {
     const org = await makeOrg({});
     const host = await makeUser("host@example.com");

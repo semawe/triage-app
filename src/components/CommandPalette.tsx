@@ -24,6 +24,7 @@ const GROUP_DOTS: Record<FlatItem["group"], string> = {
 
 export default function CommandPalette() {
   const t = useTranslations("search");
+  const tSpace = useTranslations("space.type");
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -75,7 +76,7 @@ export default function CommandPalette() {
       key: `c-${c.id}`,
       group: "circles" as const,
       label: c.name,
-      sublabel: c.type === "circle" ? "Cercle" : c.type === "instance" ? "Instance" : "Projet",
+      sublabel: tSpace(c.type),
       href: `/circles/${c.id}`,
     })),
     ...results.roles.map((r) => ({

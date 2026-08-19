@@ -106,12 +106,16 @@ export async function enterAsGuest(token: string, formData: FormData) {
 
   const name = ((formData.get("name") as string) ?? "").trim() || guest.name || guest.email;
 
-  // User léger pour porter l'authorship. Si l'email correspond déjà à un compte,
-  // on le réutilise (simple attribution, aucun droit d'org n'est accordé ici).
+  // User léger distinct pour porter l'authorship. Ne jamais réutiliser le compte
+  // NextAuth qui porte la même adresse : le jeton invité est une identité moins
+  // forte et ne doit ni écrire sous l'identité du compte réel, ni hériter à
+  // l'avenir d'un droit ajouté sur ce compte. L'adresse synthétique, stable pour
+  // ce MeetingGuest, reste interne ; l'adresse de contact vit sur MeetingGuest.
+  const guestUserEmail = `guest-${guest.id}@guest.triapp.invalid`;
   const user = await prisma.user.upsert({
-    where: { email: guest.email },
-    create: { email: guest.email, name },
-    update: {},
+    where: { email: guestUserEmail },
+    create: { email: guestUserEmail, name },
+    update: { name },
   });
 
   await prisma.meetingGuest.update({
