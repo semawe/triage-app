@@ -1,6 +1,7 @@
 "use client";
 
 import type { ResultatSortie } from "@/actions/output";
+import { useTranslations } from "next-intl";
 
 import {
   createContext,
@@ -92,6 +93,8 @@ export function OutputEntry({
   const { setDirty } = useContext(UnsavedOutputContext);
   const [content, setContent] = useState("");
   const [erreur, setErreur] = useState<string | null>(null);
+  const t = useTranslations("outputs");
+  const tOut = useTranslations("output");
   const [pending, startTransition] = useTransition();
 
   return (
@@ -120,17 +123,17 @@ export function OutputEntry({
           name="type"
           className="rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
         >
-          <option value="note">Note</option>
-          {showActions && <option value="action">Action</option>}
-          <option value="decision">Décision</option>
-          {showProjects && <option value="project">Projet</option>}
-          {showGovernance && <option value="governance">Gouvernance</option>}
+          <option value="note">{tOut("type.note")}</option>
+          {showActions && <option value="action">{tOut("type.action")}</option>}
+          <option value="decision">{tOut("type.decision")}</option>
+          {showProjects && <option value="project">{tOut("type.project")}</option>}
+          {showGovernance && <option value="governance">{tOut("type.governance")}</option>}
         </select>
         <select
           name="assigneeId"
           className="rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
         >
-          <option value="">Assigné (optionnel)</option>
+          <option value="">{t("assignee")}</option>
           {members.map((m) => (
             <option key={m.userId} value={m.userId}>
               {m.name}
@@ -152,7 +155,7 @@ export function OutputEntry({
           setContent(e.target.value);
           setDirty(e.target.value.trim().length > 0);
         }}
-        placeholder="Saisir l'output…"
+        placeholder={t("entryPlaceholder")}
         className="w-full rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 resize-none"
       />
       {erreur && (
@@ -172,7 +175,7 @@ export function OutputEntry({
           {pending ? "Enregistrement…" : "Ajouter l'output"}
         </button>
         {content.trim() && !pending && (
-          <span className="text-xs text-yellow-500/80">Note non enregistrée</span>
+          <span className="text-xs text-yellow-500/80">{t("unsaved")}</span>
         )}
       </div>
     </form>

@@ -81,7 +81,30 @@
       "draft": "Brouillon",
       "open": "En cours",
       "closed": "Terminée"
-    }
+    },
+    "confidential": "Réunion confidentielle",
+    "confidentialShort": "Confidentiel",
+    "linkPlaceholder": "Ajouter un lien (Fireflies, visio…)",
+    "projector": "Mode projecteur",
+    "thisMeeting": "Cette réunion :",
+    "privateWord": "confidentiel",
+    "publicWord": "public",
+    "circlePage": "la page du cercle",
+    "noItems": "Aucun point",
+    "addItemPlaceholder": "Ajouter un point…",
+    "passScribe": "Passer le relais à…",
+    "allDone": "Tous les points ont été traités.",
+    "ended": "Réunion terminée",
+    "recap": "Récapitulatif des outputs",
+    "list": "Réunions",
+    "titleOptional": "Titre (optionnel)",
+    "titlePlaceholder": "Triage hebdo…",
+    "space": "Espace",
+    "duration": "Durée",
+    "noLimit": "Sans limite",
+    "empty": "Aucune réunion. Créez-en une ci-dessus.",
+    "minutes": "{n} min",
+    "dateTime": "Date et heure"
   },
   "item": {
     "status": {
@@ -223,6 +246,8 @@
   "outputs": {
     "assignee": "Assigné (optionnel)",
     "edit": "Modifier",
-    "delete": "Supprimer"
+    "delete": "Supprimer",
+    "entryPlaceholder": "Saisir l'output…",
+    "unsaved": "Note non enregistrée"
   }
 }

@@ -81,7 +81,30 @@
       "draft": "Draft",
       "open": "Open",
       "closed": "Closed"
-    }
+    },
+    "confidential": "Confidential meeting",
+    "confidentialShort": "Confidential",
+    "linkPlaceholder": "Add a link (Fireflies, video call…)",
+    "projector": "Projector mode",
+    "thisMeeting": "This meeting:",
+    "privateWord": "confidential",
+    "publicWord": "public",
+    "circlePage": "the circle page",
+    "noItems": "No items",
+    "addItemPlaceholder": "Add an item…",
+    "passScribe": "Hand the pen to…",
+    "allDone": "Every item has been processed.",
+    "ended": "Meeting ended",
+    "recap": "Summary of outputs",
+    "list": "Meetings",
+    "titleOptional": "Title (optional)",
+    "titlePlaceholder": "Weekly triage…",
+    "space": "Space",
+    "duration": "Duration",
+    "noLimit": "No limit",
+    "empty": "No meetings yet. Create one above.",
+    "minutes": "{n} min",
+    "dateTime": "Date and time"
   },
   "item": {
     "status": {
@@ -223,6 +246,8 @@
   "outputs": {
     "assignee": "Assignee (optional)",
     "edit": "Edit",
-    "delete": "Delete"
+    "delete": "Delete",
+    "entryPlaceholder": "Enter the output…",
+    "unsaved": "Note not saved"
   }
 }

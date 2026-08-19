@@ -5,6 +5,7 @@ import AppShell from "@/components/AppShell";
 import { createMeeting } from "@/actions/meeting";
 import { Link } from "@/i18n/navigation";
 import DecalageHoraire from "./DecalageHoraire";
+import { getTranslations } from "next-intl/server";
 import type { Meeting, Space } from "@/generated/prisma";
 
 type MeetingWithSpace = Meeting & { space: Space };
@@ -72,10 +73,11 @@ export default async function MeetingsPage({
   );
 }
 
-function PageHeader({ org, groupBySpace }: { org: { name: string }; groupBySpace: boolean }) {
+async function PageHeader({ org, groupBySpace }: { org: { name: string }; groupBySpace: boolean }) {
+  const t = await getTranslations("meeting");
   return (
     <div className="mb-8 flex items-center justify-between">
-      <h1 className="text-2xl font-bold text-white">Réunions</h1>
+      <h1 className="text-2xl font-bold text-white">{t("list")}</h1>
       <div className="flex items-center gap-4">
         <span className="text-sm text-gray-400">{org.name}</span>
         <div className="flex rounded-lg border border-gray-800 overflow-hidden text-xs">
@@ -97,7 +99,8 @@ function PageHeader({ org, groupBySpace }: { org: { name: string }; groupBySpace
   );
 }
 
-function CreateForm({ org, today }: { org: { spaces: { id: string; name: string }[] }; today: string }) {
+async function CreateForm({ org, today }: { org: { spaces: { id: string; name: string }[] }; today: string }) {
+  const t = await getTranslations("meeting");
   return (
     <div className="mb-8 rounded-xl bg-gray-900 border border-gray-800 p-5">
       <h2 className="mb-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">
@@ -105,16 +108,16 @@ function CreateForm({ org, today }: { org: { spaces: { id: string; name: string 
       </h2>
       <form action={createMeeting} className="flex flex-wrap gap-3 items-end">
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-gray-500">Titre (optionnel)</label>
+          <label className="text-xs text-gray-500">{t("titleOptional")}</label>
           <input
             type="text"
             name="title"
-            placeholder="Triage hebdo…"
+            placeholder={t("titlePlaceholder")}
             className="rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 w-44"
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-gray-500">Espace</label>
+          <label className="text-xs text-gray-500">{t("space")}</label>
           <select
             name="spaceId"
             required
@@ -129,7 +132,7 @@ function CreateForm({ org, today }: { org: { spaces: { id: string; name: string 
         </div>
         <div className="flex flex-col gap-1">
           <label htmlFor="meeting-date" className="text-xs text-gray-500">
-            Date et heure
+            {t("dateTime")}
           </label>
           <DecalageHoraire />
           <input
@@ -142,15 +145,15 @@ function CreateForm({ org, today }: { org: { spaces: { id: string; name: string 
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-gray-500">Durée</label>
+          <label className="text-xs text-gray-500">{t("duration")}</label>
           <select
             name="duration"
             className="rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
           >
-            <option value="">Sans limite</option>
-            <option value="20">20 min</option>
-            <option value="30">30 min</option>
-            <option value="45">45 min</option>
+            <option value="">{t("noLimit")}</option>
+            <option value="20">{t("minutes", { n: 20 })}</option>
+            <option value="30">{t("minutes", { n: 30 })}</option>
+            <option value="45">{t("minutes", { n: 45 })}</option>
             <option value="60">1 h</option>
             <option value="90">1 h 30</option>
             <option value="120">2 h</option>
@@ -178,7 +181,8 @@ function MeetingGroup({ label, meetings }: { label: string; meetings: MeetingWit
   );
 }
 
-function MeetingRow({ meeting: m }: { meeting: MeetingWithSpace }) {
+async function MeetingRow({ meeting: m }: { meeting: MeetingWithSpace }) {
+  const t = await getTranslations("meeting");
   const effectivePrivate = m.isPrivate ?? m.space.isPrivate;
   const dateLabel = m.date.toLocaleDateString("fr-FR", {
     weekday: "short",
@@ -198,7 +202,7 @@ function MeetingRow({ meeting: m }: { meeting: MeetingWithSpace }) {
           <p className="text-sm font-medium text-white group-hover:text-indigo-300 transition-colors truncate">
             {displayName}
             {effectivePrivate && (
-              <span className="ml-2 text-xs text-gray-600" title="Confidentiel">🔒</span>
+              <span className="ml-2 text-xs text-gray-600" title={t("confidentialShort")}>🔒</span>
             )}
           </p>
           <p className="text-xs text-gray-500">
@@ -221,6 +225,7 @@ function StatusDot({ status }: { status: string }) {
   return <span className={`h-2 w-2 rounded-full shrink-0 ${classes[status] ?? "bg-gray-600"}`} />;
 }
 
-function Empty() {
-  return <p className="mt-16 text-center text-gray-500">Aucune réunion. Créez-en une ci-dessus.</p>;
+async function Empty() {
+  const t = await getTranslations("meeting");
+  return <p className="mt-16 text-center text-gray-500">{t("empty")}</p>;
 }
