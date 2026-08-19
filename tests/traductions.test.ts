@@ -130,7 +130,7 @@ export function chainesEnDur(source: string): string[] {
   // le 19/08/2026 en ouvrant `/en` dans un navigateur, pas en lisant le compteur.
   // La leçon vaut plus que la correction : un instrument qui rend vert doit être
   // confronté à la chose qu'il prétend mesurer.
-  for (const m of source.matchAll(/(=?)>([^<>{}]{2,}?)</gs)) {
+  for (const m of source.matchAll(/(=?)>([^<>{}]{2,}?)</g)) {
     // `=>` suivi d'un type générique (`=> Promise<void>`) n'est pas du texte.
     if (m[1] === "=") continue;
     const t = m[2].replace(/\s+/g, " ").trim();
