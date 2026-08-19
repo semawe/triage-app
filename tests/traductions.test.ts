@@ -112,20 +112,36 @@ function fichiersInterface(): string[] {
  * n'a pas de traduction. La liste est courte et exacte — comparaison stricte, pas
  * une sous-chaîne — pour qu'elle n'excuse jamais une vraie phrase.
  */
-const NON_TRADUISIBLES = ["app", "tri", "AGPL-3.0", "Sémawé", "triapp", "Holacracy"];
+const NON_TRADUISIBLES = [
+  "app", "tri", "triapp", "Sémawé", "Holacracy", "AGPL-3.0",
+  // Raisons sociales des mentions légales : opposables telles quelles.
+  "Heterostasia", "OVH SAS",
+];
 
 export function chainesEnDur(source: string): string[] {
   const trouvees: string[] = [];
 
-  // Texte entre deux balises : `>Ajouter un point<`
-  for (const m of source.matchAll(/(=?)>([^<>{}\n]{2,})</g)) {
+  // Texte entre deux balises : `>Ajouter un point<`.
+  //
+  // Le saut de ligne est autorisé dans la capture. Il ne l'était pas, et c'est ce
+  // qui a laissé passer des titres et des paragraphes entiers écrits sur plusieurs
+  // lignes — `<h2 …>\n  Éditeur du site\n</h2>`. Le compteur est tombé à zéro alors
+  // qu'un tiers de la page des mentions légales était encore en français : trouvé
+  // le 19/08/2026 en ouvrant `/en` dans un navigateur, pas en lisant le compteur.
+  // La leçon vaut plus que la correction : un instrument qui rend vert doit être
+  // confronté à la chose qu'il prétend mesurer.
+  for (const m of source.matchAll(/(=?)>([^<>{}]{2,}?)</gs)) {
     // `=>` suivi d'un type générique (`=> Promise<void>`) n'est pas du texte.
     if (m[1] === "=") continue;
-    const t = m[2].trim();
+    const t = m[2].replace(/\s+/g, " ").trim();
     if (!t) continue;
     if (!/[A-Za-zÀ-ÿ]{2}/.test(t)) continue; // ni ponctuation seule, ni nombre
     if (/^[\d\s.,:/%-]+$/.test(t)) continue;
+    // Un fragment multi-lignes se normalise avant comparaison et report.
     if (NON_TRADUISIBLES.includes(t)) continue;
+    // Expression JavaScript prise entre deux chevrons de comparaison :
+    // `remaining >= 0 && remaining < 5 * 60` produit un faux « >= 0 && remaining <ations ».
+    if (/&&|\|\||=>|\?\?|===|!==/.test(t)) continue;
     trouvees.push(t);
   }
 
@@ -148,7 +164,7 @@ describe("chaînes visibles restées en dur", () => {
    * Cliquet. Baisser cette valeur à chaque conversion, jamais la remonter : une
    * hausse signifie qu'on a ajouté de l'écran non traduit, et le test la refuse.
    */
-  const PLAFOND = 47;
+  const PLAFOND = 188;
 
   it(`n'en compte pas plus que le plafond (${PLAFOND})`, () => {
     const pires = [...parFichier]
@@ -173,6 +189,9 @@ describe("chaînes visibles restées en dur", () => {
     expect(chainesEnDur('  fn: (x: string) => Promise<void>;')).toEqual([]);
     expect(chainesEnDur('tri<span className="x">app</span>')).toEqual([]);
     expect(chainesEnDur('<span>AGPL-3.0</span>')).toEqual([]);
+    expect(chainesEnDur('const w = remaining >= 0 && remaining < 300;')).toEqual([]);
+    // Titre écrit sur plusieurs lignes : le cas que le détecteur ratait.
+    expect(chainesEnDur('<h2 className="x">\n  Éditeur du site\n</h2>')).toContain("Éditeur du site");
     // Mais la liste est stricte : une phrase qui CONTIENT un nom propre compte.
     expect(chainesEnDur('<p>Sémawé / Cercle principal</p>')).toContain("Sémawé / Cercle principal");
   });

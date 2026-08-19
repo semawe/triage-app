@@ -1,4 +1,5 @@
 import { auth } from "@/lib/auth";
+import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { getLocale } from "next-intl/server";
@@ -7,6 +8,7 @@ import { requestJoin } from "@/actions/join";
 type Props = { searchParams: Promise<{ orgId?: string }> };
 
 export default async function JoinRequestPage({ searchParams }: Props) {
+  const tI = await getTranslations("inviteLink");
   const session = await auth();
   const locale = await getLocale().catch(() => "fr");
 
@@ -62,7 +64,7 @@ export default async function JoinRequestPage({ searchParams }: Props) {
           {pending ? (
             pending.status === "rejected" ? (
               <div className="text-center">
-                <p className="text-sm text-red-400 mb-4">Ta demande a été refusée par l&apos;administrateur.</p>
+                <p className="text-sm text-red-400 mb-4">{tI("rejected")}</p>
                 <form action={submit}>
                   <button
                     type="submit"
@@ -75,7 +77,7 @@ export default async function JoinRequestPage({ searchParams }: Props) {
             ) : (
               <div className="text-center">
                 <div className="mb-3 text-yellow-400 text-2xl">⏳</div>
-                <p className="text-sm text-gray-300 font-medium">Demande en attente</p>
+                <p className="text-sm text-gray-300 font-medium">{tI("pending")}</p>
                 <p className="mt-1 text-xs text-gray-500">
                   L&apos;administrateur de {org.name} recevra une notification et pourra accepter ou refuser ta demande.
                 </p>

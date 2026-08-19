@@ -1,9 +1,11 @@
 import { requireSuperAdmin } from "@/lib/session";
+import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import AppShell from "@/components/AppShell";
 import { Link } from "@/i18n/navigation";
 
 export default async function AdminUsersPage() {
+  const t = await getTranslations("adminUsers");
   await requireSuperAdmin();
 
   const users = await prisma.user.findMany({
@@ -28,7 +30,7 @@ export default async function AdminUsersPage() {
         <span className="text-xs font-medium text-red-400 bg-red-900/30 border border-red-800 rounded-full px-2.5 py-0.5">
           Super admin
         </span>
-        <h1 className="text-2xl font-bold text-white">Utilisateurs</h1>
+        <h1 className="text-2xl font-bold text-white">{t("title")}</h1>
       </div>
 
       <div className="rounded-xl bg-gray-900 border border-gray-800 overflow-hidden">
@@ -63,7 +65,7 @@ export default async function AdminUsersPage() {
               </div>
               <div className="flex items-center gap-2 shrink-0 max-w-[50%] flex-wrap justify-end">
                 {u.orgMemberships.length === 0 ? (
-                  <span className="text-xs text-gray-500">Aucune organisation</span>
+                  <span className="text-xs text-gray-500">{t("noOrg")}</span>
                 ) : (
                   u.orgMemberships.map((m) => (
                     <Link

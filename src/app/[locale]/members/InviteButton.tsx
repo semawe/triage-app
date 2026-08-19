@@ -1,11 +1,13 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useActionState, useEffect, useRef } from "react";
 import { generateInvite } from "@/actions/member";
 
 type State = { url: string } | null;
 
 export default function InviteButton() {
+  const t = useTranslations("inviteLink");
   const [state, action, pending] = useActionState<State, FormData>(
     generateInvite,
     null
@@ -23,13 +25,13 @@ export default function InviteButton() {
     <div className="space-y-3">
       <form action={action} className="flex flex-wrap gap-3 items-end">
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-gray-500">Rôle de l&apos;invité</label>
+          <label className="text-xs text-gray-500">{t("role")}</label>
           <select
             name="role"
             className="rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
           >
-            <option value="member">Membre</option>
-            <option value="admin">Admin</option>
+            <option value="member">{t("roleMember")}</option>
+            <option value="admin">{t("roleAdmin")}</option>
           </select>
         </div>
         <button
@@ -43,7 +45,7 @@ export default function InviteButton() {
 
       {state?.url && (
         <div className="space-y-1.5">
-          <p className="text-xs text-emerald-400">✓ Lien copié dans le presse-papier — valable 7 jours</p>
+          <p className="text-xs text-emerald-400">{t("copied")}</p>
           <input
             ref={inputRef}
             readOnly

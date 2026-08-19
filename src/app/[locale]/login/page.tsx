@@ -11,7 +11,7 @@ export default function LoginPage() {
     <main className="flex flex-1 flex-col items-center justify-center px-4">
       <div className="w-full max-w-sm space-y-8">
         <div className="text-center">
-          <h1 className="text-2xl font-bold tracking-tight">Triage App</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{tApp("name")}</h1>
           <p className="mt-2 text-sm text-gray-500">
             {tApp("tagline")}
           </p>

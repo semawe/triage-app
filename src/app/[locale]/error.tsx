@@ -1,6 +1,7 @@
 "use client";
 
 import { Link } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
 
 /**
  * Frontière d'erreur des pages de `[locale]`.
@@ -17,10 +18,11 @@ export default function Erreur({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const t = useTranslations("app");
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-4 px-4 py-24 text-center">
       <p className="text-3xl">⚠️</p>
-      <h1 className="text-xl font-bold text-white">Cette page n&apos;a pas pu s&apos;afficher</h1>
+      <h1 className="text-xl font-bold text-white">{t("errorTitle")}</h1>
       <p className="max-w-md text-sm text-gray-400">
         L&apos;erreur a été enregistrée. Réessayer suffit le plus souvent ; si elle revient,
         la référence ci-dessous aide à la retrouver.

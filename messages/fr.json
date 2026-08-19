@@ -1,7 +1,9 @@
 {
   "app": {
     "name": "Triage App",
-    "tagline": "Facilitation du triage, pour Holacracy et au-delà"
+    "tagline": "Facilitation du triage, pour Holacracy et au-delà",
+    "errorTitle": "Cette page n'a pas pu s'afficher",
+    "loading": "Chargement…"
   },
   "auth": {
     "signIn": "Se connecter",
@@ -25,7 +27,8 @@
     "admin": "Admin",
     "more": "Plus",
     "search": "Rechercher",
-    "signOut": "Déconnexion"
+    "signOut": "Déconnexion",
+    "live": "En direct"
   },
   "search": {
     "placeholder": "Cercles, rôles, membres, réunions…",
@@ -51,7 +54,10 @@
     "allActions": "Toutes mes actions →",
     "allMeetings": "Toutes les réunions →",
     "vacant": "Non attribué",
-    "live": "En cours"
+    "live": "En cours",
+    "lead": "Leader",
+    "member": "Membre",
+    "markDone": "Marquer terminé"
   },
   "space": {
     "type": {
@@ -111,7 +117,8 @@
     "privacyPrivate": "Privée",
     "privacyAutoTitle": "Hérite du réglage de l'espace ({state})",
     "inheritsPrefix": "Hérite de l'espace :",
-    "inheritsSuffix": "— modifiable depuis"
+    "inheritsSuffix": "— modifiable depuis",
+    "rename": "Cliquer pour renommer"
   },
   "item": {
     "status": {
@@ -139,7 +146,9 @@
       "someday_maybe": "Un jour peut-être",
       "reference": "Référence",
       "trash": "À abandonner"
-    }
+    },
+    "panel": "Pistes de traitement",
+    "short": "Pistes"
   },
   "setup": {
     "joinTitle": "Rejoindre ton organisation",
@@ -255,7 +264,9 @@
     "edit": "Modifier",
     "delete": "Supprimer",
     "entryPlaceholder": "Saisir l'output…",
-    "unsaved": "Note non enregistrée"
+    "unsaved": "Note non enregistrée",
+    "recapSent": "✓ Compte-rendu envoyé",
+    "copyRecap": "Copier le texte du compte-rendu"
   },
   "settings": {
     "title": "Paramètres",
@@ -362,6 +373,48 @@
     "titlePlaceholder": "Intitulé de la tâche",
     "unassigned": "Non assignée",
     "empty": "Aucune tâche pour l'instant.",
-    "deleteForever": "Supprimer définitivement"
+    "deleteForever": "Supprimer définitivement",
+    "breadcrumb": "Projets"
+  },
+  "landing": {
+    "featureAgenda": "Agenda collaboratif",
+    "featureTriage": "Traitement structuré",
+    "featureSpaces": "Multi-espaces",
+    "pricing": "Tarifs",
+    "exclVat": "HT",
+    "demoSpace": "Sémawé / Cercle principal",
+    "demoStatus": "En cours",
+    "demoMeeting": "Triage hebdomadaire",
+    "demoDate": "Mercredi 18 juin 2025, 10h00",
+    "remaining": "restant",
+    "demoIndicators": "Indicateurs clés",
+    "demoItem1": "Recrutement — prochaine étape",
+    "demoItem2": "Budget Q3 — décision",
+    "demoItem3": "Point partenariat Novalis",
+    "goToApp": "→ En cours"
+  },
+  "inviteLink": {
+    "role": "Rôle de l'invité",
+    "roleMember": "Membre",
+    "roleAdmin": "Admin",
+    "copied": "✓ Lien copié dans le presse-papier — valable 7 jours",
+    "invalidTitle": "Lien d'invitation invalide ou expiré",
+    "invalidBody": "Demande un nouveau lien à l'administrateur.",
+    "nominative": "Cette invitation est nominative",
+    "rejected": "Ta demande a été refusée par l'administrateur.",
+    "pending": "Demande en attente"
+  },
+  "adminUsers": {
+    "title": "Utilisateurs",
+    "noOrg": "Aucune organisation"
+  },
+  "legal": {
+    "title": "Mentions légales",
+    "legalForm": "Société par actions simplifiée (SAS) au capital de {capital}",
+    "registeredOffice": "Siège social : {address}",
+    "registration": "SIREN : {siren} — RCS {city}",
+    "vat": "TVA intracommunautaire : {vat}",
+    "contact": "Contact :",
+    "hostAddress": "{address}"
   }
 }

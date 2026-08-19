@@ -1,4 +1,5 @@
 import { auth } from "@/lib/auth";
+import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { acceptInvite } from "@/actions/member";
@@ -9,6 +10,7 @@ type Props = {
 };
 
 export default async function InvitePage({ params, searchParams }: Props) {
+  const tI = await getTranslations("inviteLink");
   const { token, locale } = await params;
   const sp = await searchParams;
   const { full } = sp;
@@ -31,8 +33,8 @@ export default async function InvitePage({ params, searchParams }: Props) {
       <main className="min-h-screen bg-gray-950 flex items-center justify-center">
         <div className="text-center space-y-3">
           <p className="text-2xl">⛔</p>
-          <p className="text-white font-semibold">Lien d&apos;invitation invalide ou expiré</p>
-          <p className="text-sm text-gray-500">Demande un nouveau lien à l&apos;administrateur.</p>
+          <p className="text-white font-semibold">{tI("invalidTitle")}</p>
+          <p className="text-sm text-gray-500">{tI("invalidBody")}</p>
         </div>
       </main>
     );
@@ -44,7 +46,7 @@ export default async function InvitePage({ params, searchParams }: Props) {
       <main className="min-h-screen bg-gray-950 flex items-center justify-center">
         <div className="text-center space-y-3 max-w-sm px-6">
           <p className="text-2xl">✉️</p>
-          <p className="text-white font-semibold">Cette invitation est nominative</p>
+          <p className="text-white font-semibold">{tI("nominative")}</p>
           <p className="text-sm text-gray-500">
             Elle a été envoyée à une autre adresse que {session.user.email}. Connecte-toi
             avec le compte destinataire, ou demande une invitation à ton adresse.

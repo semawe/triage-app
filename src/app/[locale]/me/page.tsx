@@ -127,9 +127,9 @@ export default async function MePage() {
                   </span>
                   <span className="text-xs shrink-0 ml-3">
                     {sm.role === "lead" ? (
-                      <span className="text-indigo-400">Leader</span>
+                      <span className="text-indigo-400">{t("lead")}</span>
                     ) : (
-                      <span className="text-gray-600">Membre</span>
+                      <span className="text-gray-600">{t("member")}</span>
                     )}
                   </span>
                 </Link>
@@ -160,7 +160,7 @@ export default async function MePage() {
                       <button
                         type="submit"
                         className="h-4 w-4 rounded border border-gray-600 hover:border-indigo-500 transition-colors"
-                        title="Marquer terminé"
+                        title={t("markDone")}
                       />
                     </form>
                     <div className="min-w-0">

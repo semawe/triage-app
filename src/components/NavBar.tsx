@@ -186,7 +186,7 @@ export default function NavBar({
               >
                 <span className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
                 <span className="hidden sm:inline">{liveMeetings[0].spaceName}</span>
-                <span className="sm:hidden">Live</span>
+                <span className="sm:hidden">{t("live")}</span>
               </Link>
             )}
             <button

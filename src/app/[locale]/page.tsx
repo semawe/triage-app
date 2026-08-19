@@ -1,4 +1,5 @@
 import { auth } from "@/lib/auth";
+import { getTranslations } from "next-intl/server";
 import { redirect } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import type { Metadata } from "next";
@@ -19,6 +20,7 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
+  const tL = await getTranslations("landing");
   const session = await auth();
   if (session) redirect("/me");
 
@@ -76,17 +78,17 @@ export default async function HomePage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           <FeatureCard
             icon="◈"
-            title="Agenda collaboratif"
+            title={tL("featureAgenda")}
             description="Chaque membre ajoute ses points avant la réunion. L'ordre se construit ensemble, en temps réel."
           />
           <FeatureCard
             icon="◎"
-            title="Traitement structuré"
+            title={tL("featureTriage")}
             description="Un point à la fois. Notes, actions, décisions, projets, gouvernance — chaque output est typé et daté."
           />
           <FeatureCard
             icon="◉"
-            title="Multi-espaces"
+            title={tL("featureSpaces")}
             description="Cercles, équipes ou projets. Chaque espace a ses réunions, ses membres, sa hiérarchie."
           />
         </div>
@@ -123,13 +125,13 @@ export default async function HomePage() {
 
       {/* Pricing */}
       <section id="tarifs" className="max-w-5xl mx-auto px-6 pb-28">
-        <h2 className="text-2xl font-bold text-center mb-12">Tarifs</h2>
+        <h2 className="text-2xl font-bold text-center mb-12">{tL("pricing")}</h2>
         <div className="max-w-sm mx-auto rounded-2xl border border-gray-800 bg-gray-950 p-8">
           <p className="text-xs font-semibold text-indigo-400 uppercase tracking-widest mb-2">
             Standard
           </p>
           <p className="text-4xl font-bold mb-1">
-            2 <span className="text-2xl">€</span> <span className="text-2xl text-gray-500">HT</span>
+            2 <span className="text-2xl">€</span> <span className="text-2xl text-gray-500">{tL("exclVat")}</span>
           </p>
           <p className="text-sm text-gray-500 mb-8">
             par utilisateur / mois · soit 2,40 € TTC (TVA 20 %)
@@ -198,7 +200,8 @@ export default async function HomePage() {
   );
 }
 
-function AppMock() {
+async function AppMock() {
+  const tL = await getTranslations("landing");
   return (
     <div className="rounded-2xl border border-gray-800 overflow-hidden shadow-2xl shadow-black/60 select-none">
       {/* App nav */}
@@ -207,22 +210,22 @@ function AppMock() {
           tri<span className="text-indigo-400">app</span>
         </span>
         <span className="text-gray-700 text-xs">·</span>
-        <span className="text-xs text-gray-500">Sémawé / Cercle principal</span>
+        <span className="text-xs text-gray-500">{tL("demoSpace")}</span>
         <div className="ml-auto flex items-center gap-2">
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-xs text-emerald-400 font-medium">En cours</span>
+          <span className="text-xs text-emerald-400 font-medium">{tL("demoStatus")}</span>
         </div>
       </div>
 
       {/* Meeting header */}
       <div className="bg-[#0d0d0d] px-5 py-4 border-b border-gray-800 flex items-center justify-between gap-4">
         <div>
-          <p className="text-xs text-gray-600 mb-0.5">Triage hebdomadaire</p>
-          <p className="text-sm font-semibold text-white">Mercredi 18 juin 2025, 10h00</p>
+          <p className="text-xs text-gray-600 mb-0.5">{tL("demoMeeting")}</p>
+          <p className="text-sm font-semibold text-white">{tL("demoDate")}</p>
         </div>
         <div className="text-right shrink-0">
           <p className="text-xl font-mono font-semibold text-white">12:47</p>
-          <p className="text-xs text-gray-600">restant</p>
+          <p className="text-xs text-gray-600">{tL("remaining")}</p>
         </div>
       </div>
 
@@ -231,14 +234,14 @@ function AppMock() {
         <MockAgendaItem
           status="done"
           number={1}
-          title="Indicateurs clés"
+          title={tL("demoIndicators")}
           initials="A"
           avatarClass="bg-indigo-700"
         />
         <MockAgendaItem
           status="active"
           number={2}
-          title="Recrutement — prochaine étape"
+          title={tL("demoItem1")}
           initials="J"
           avatarClass="bg-purple-700"
           output={{ type: "action", text: "@Juliette — préparer le brief RH avant le 25/06" }}
@@ -246,14 +249,14 @@ function AppMock() {
         <MockAgendaItem
           status="pending"
           number={3}
-          title="Budget Q3 — décision"
+          title={tL("demoItem2")}
           initials="S"
           avatarClass="bg-emerald-700"
         />
         <MockAgendaItem
           status="pending"
           number={4}
-          title="Point partenariat Novalis"
+          title={tL("demoItem3")}
           initials="A"
           avatarClass="bg-indigo-700"
         />
@@ -262,7 +265,7 @@ function AppMock() {
   );
 }
 
-function MockAgendaItem({
+async function MockAgendaItem({
   status,
   number,
   title,
@@ -277,6 +280,7 @@ function MockAgendaItem({
   avatarClass: string;
   output?: { type: string; text: string };
 }) {
+  const tL = await getTranslations("landing");
   const isDone = status === "done";
   const isActive = status === "active";
 
@@ -310,7 +314,7 @@ function MockAgendaItem({
           {title}
         </p>
         {isActive && (
-          <span className="text-xs text-indigo-400 font-medium shrink-0">→ En cours</span>
+          <span className="text-xs text-indigo-400 font-medium shrink-0">{tL("goToApp")}</span>
         )}
       </div>
       {output && (

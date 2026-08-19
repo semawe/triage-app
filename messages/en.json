@@ -1,7 +1,9 @@
 {
   "app": {
     "name": "Triage App",
-    "tagline": "Triage facilitation, for Holacracy and beyond"
+    "tagline": "Triage facilitation, for Holacracy and beyond",
+    "errorTitle": "This page could not be displayed",
+    "loading": "Loading…"
   },
   "auth": {
     "signIn": "Sign in",
@@ -25,7 +27,8 @@
     "admin": "Admin",
     "more": "More",
     "search": "Search",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "live": "Live"
   },
   "search": {
     "placeholder": "Circles, roles, members, meetings…",
@@ -51,7 +54,10 @@
     "allActions": "All my actions →",
     "allMeetings": "All meetings →",
     "vacant": "Vacant",
-    "live": "Live"
+    "live": "Live",
+    "lead": "Lead",
+    "member": "Member",
+    "markDone": "Mark as done"
   },
   "space": {
     "type": {
@@ -111,7 +117,8 @@
     "privacyPrivate": "Private",
     "privacyAutoTitle": "Inherits the circle's setting ({state})",
     "inheritsPrefix": "Inherits from the circle:",
-    "inheritsSuffix": "— change it on"
+    "inheritsSuffix": "— change it on",
+    "rename": "Click to rename"
   },
   "item": {
     "status": {
@@ -139,7 +146,9 @@
       "someday_maybe": "Someday / maybe",
       "reference": "Reference",
       "trash": "Drop it"
-    }
+    },
+    "panel": "Processing tracks",
+    "short": "Tracks"
   },
   "setup": {
     "joinTitle": "Join your organisation",
@@ -255,7 +264,9 @@
     "edit": "Edit",
     "delete": "Delete",
     "entryPlaceholder": "Enter the output…",
-    "unsaved": "Note not saved"
+    "unsaved": "Note not saved",
+    "recapSent": "✓ Minutes sent",
+    "copyRecap": "Copy the text of the minutes"
   },
   "settings": {
     "title": "Settings",
@@ -362,6 +373,48 @@
     "titlePlaceholder": "Task title",
     "unassigned": "Unassigned",
     "empty": "No tasks yet.",
-    "deleteForever": "Delete permanently"
+    "deleteForever": "Delete permanently",
+    "breadcrumb": "Projects"
+  },
+  "landing": {
+    "featureAgenda": "Collaborative agenda",
+    "featureTriage": "Structured processing",
+    "featureSpaces": "Multiple circles",
+    "pricing": "Pricing",
+    "exclVat": "excl. VAT",
+    "demoSpace": "Acme / Main circle",
+    "demoStatus": "In progress",
+    "demoMeeting": "Weekly triage",
+    "demoDate": "Wednesday 18 June 2025, 10:00",
+    "remaining": "remaining",
+    "demoIndicators": "Key indicators",
+    "demoItem1": "Hiring — next action",
+    "demoItem2": "Q3 budget — decision",
+    "demoItem3": "Novalis partnership check-in",
+    "goToApp": "→ In progress"
+  },
+  "inviteLink": {
+    "role": "Guest role",
+    "roleMember": "Member",
+    "roleAdmin": "Admin",
+    "copied": "✓ Link copied to the clipboard — valid for 7 days",
+    "invalidTitle": "Invalid or expired invitation link",
+    "invalidBody": "Ask the administrator for a new link.",
+    "nominative": "This invitation is personal",
+    "rejected": "Your request was declined by the administrator.",
+    "pending": "Request pending"
+  },
+  "adminUsers": {
+    "title": "Users",
+    "noOrg": "No organisation"
+  },
+  "legal": {
+    "title": "Legal notice",
+    "legalForm": "Simplified joint-stock company (SAS), share capital {capital}",
+    "registeredOffice": "Registered office: {address}",
+    "registration": "Company number: {siren} — Trade register of {city}",
+    "vat": "EU VAT number: {vat}",
+    "contact": "Contact:",
+    "hostAddress": "{address}"
   }
 }

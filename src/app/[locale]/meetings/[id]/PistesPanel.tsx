@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 const PISTES = [
@@ -70,6 +71,7 @@ const TACTIQUES_HOLACRACY = [
 type Tab = "pistes" | "tactiques";
 
 export default function PistesPanel() {
+  const tT = useTranslations("triage");
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<Tab>("pistes");
 
@@ -78,10 +80,10 @@ export default function PistesPanel() {
       <button
         onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-2 rounded-xl border border-gray-800 bg-gray-900 px-4 py-3 text-sm text-gray-300 hover:border-gray-700 hover:text-white transition-colors whitespace-nowrap"
-        title="Pistes de traitement"
+        title={tT("panel")}
       >
         <span className="text-xs">{open ? "▶" : "◀"}</span>
-        <span className="font-medium">Pistes</span>
+        <span className="font-medium">{tT("short")}</span>
       </button>
 
       {open && (

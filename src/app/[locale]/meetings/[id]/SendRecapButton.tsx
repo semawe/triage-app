@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useActionState, useCallback } from "react";
 import { sendMeetingRecap } from "@/actions/email";
 
@@ -12,6 +13,7 @@ export default function SendRecapButton({
   meetingId: string;
   recapText: string;
 }) {
+  const t = useTranslations("outputs");
   const [state, action, pending] = useActionState<State, FormData>(
     sendMeetingRecap,
     null
@@ -25,7 +27,7 @@ export default function SendRecapButton({
     <div className="flex flex-col items-center gap-2">
       <div className="flex items-center gap-2">
         {state?.ok ? (
-          <p className="text-sm text-emerald-400">✓ Compte-rendu envoyé</p>
+          <p className="text-sm text-emerald-400">{t("recapSent")}</p>
         ) : (
           <form action={action}>
             <input type="hidden" name="meetingId" value={meetingId} />
@@ -42,7 +44,7 @@ export default function SendRecapButton({
           type="button"
           onClick={copyToClipboard}
           className="rounded-lg border border-gray-700 px-4 py-2 text-sm text-gray-400 hover:border-gray-600 hover:text-gray-200 transition-colors"
-          title="Copier le texte du compte-rendu"
+          title={t("copyRecap")}
         >
           Copier
         </button>

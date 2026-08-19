@@ -65,7 +65,7 @@ export default async function ProjectDetailPage({ params }: Props) {
   return (
     <AppShell>
       <div className="mb-2 flex items-center gap-1.5 text-xs text-gray-500">
-        <Link href="/projects" className="hover:text-gray-300 transition-colors">Projets</Link>
+        <Link href="/projects" className="hover:text-gray-300 transition-colors">{tr("breadcrumb")}</Link>
         <span>›</span>
         <Link href={`/circles/${project.space.id}?tab=synchro`} className="hover:text-gray-300 transition-colors">
           {project.space.name}

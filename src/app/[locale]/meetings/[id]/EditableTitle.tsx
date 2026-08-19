@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useRef, useState, useTransition } from "react";
 import { updateMeetingTitle } from "@/actions/meeting";
 
@@ -12,6 +13,7 @@ export default function EditableTitle({
   title: string | null;
   fallback: string;
 }) {
+  const t = useTranslations("meeting");
   const [editing, setEditing] = useState(false);
   const [pending, startTransition] = useTransition();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -59,7 +61,7 @@ export default function EditableTitle({
     <button
       onClick={handleClick}
       className="text-left group flex items-center gap-2"
-      title="Cliquer pour renommer"
+      title={t("rename")}
     >
       <h1 className="text-xl font-bold text-white capitalize group-hover:text-indigo-300 transition-colors">
         {title ?? fallback}
