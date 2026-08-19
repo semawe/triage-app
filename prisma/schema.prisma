@@ -204,6 +204,7 @@ model SpaceMember {
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([spaceId, userId])
+  @@index([userId]) // requête par utilisateur seul (/me, prédicats de visibilité) : le unique commence par spaceId, il ne peut pas la servir
 }
 
 enum MeetingStatus {
@@ -294,6 +295,7 @@ model Role {
 
   space       Space            @relation(fields: [spaceId], references: [id], onDelete: Cascade)
   assignments RoleAssignment[]
+  @@index([spaceId]) // gouvernance d'un cercle et recherche transverse
 }
 
 model RoleAssignment {
@@ -308,6 +310,7 @@ model RoleAssignment {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([roleId, userId])
+  @@index([userId, endDate]) // « mes rôles en cours » sur /me : le unique commence par roleId
 }
 
 model PendingInvite {
@@ -322,6 +325,7 @@ model PendingInvite {
   expiresAt DateTime
 
   organisation Organisation @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  @@index([orgId, expiresAt]) // décompte des invitations vivantes pour les sièges
 }
 
 enum JoinRequestStatus {
@@ -341,6 +345,7 @@ model JoinRequest {
   organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
 
   @@unique([userId, organisationId])
+  @@index([organisationId, status]) // liste des demandes en attente d'une organisation : le unique commence par userId
 }
 
 model SuperAdmin {
@@ -375,6 +380,7 @@ model Output {
   assignee User?      @relation("OutputAssignee", fields: [assigneeId], references: [id])
 
   @@index([itemId])
+  @@index([assigneeId, type, isDone]) // « mes actions » sur /actions et /me — huit points d'appel
 }
 
 // ── Phase de synchro (réunion tactique) ──────────────────────────────────────

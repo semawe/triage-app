@@ -10,11 +10,41 @@ import { broadcast } from "@/lib/sse";
 import { hasFeature } from "@/lib/features";
 import type { Prisma } from "@/generated/prisma";
 
-function parseDatetimeLocal(value: string): Date {
+/**
+ * Convertit la valeur d'un `<input type="datetime-local">` en instant.
+ *
+ * `new Date(y, m, d, h, min)` interprète les composantes dans le fuseau du
+ * **serveur**. Tant que tout le monde vit dans le fuseau du VPS, personne ne le
+ * remarque ; dès qu'un participant est ailleurs, il saisit 14 h et l'application
+ * enregistre un autre instant (revue adverse du 18/08/2026). Le formulaire envoie
+ * donc son décalage, et on s'en sert quand il est là.
+ *
+ * `offsetMinutes` est ce que rend `Date.prototype.getTimezoneOffset()` côté
+ * navigateur : minutes à AJOUTER à l'heure locale pour obtenir UTC (60 pour Paris
+ * en hiver, -120 pour Tokyo). Absent, on retombe sur le fuseau du serveur, qui
+ * reste le comportement d'avant.
+ */
+function parseDatetimeLocal(value: string, offsetMinutes?: number | null): Date {
   const [datePart, timePart = "00:00"] = value.split("T");
   const [year, month, day] = datePart.split("-").map(Number);
   const [hours, minutes] = timePart.split(":").map(Number);
-  return new Date(year, month - 1, day, hours, minutes);
+
+  if (offsetMinutes === undefined || offsetMinutes === null || Number.isNaN(offsetMinutes)) {
+    return new Date(year, month - 1, day, hours, minutes);
+  }
+  return new Date(
+    Date.UTC(year, month - 1, day, hours, minutes) + offsetMinutes * 60_000
+  );
+}
+
+/** Le décalage transmis par le formulaire, ou null s'il est absent ou aberrant. */
+function decalageDuFormulaire(formData: FormData): number | null {
+  const brut = formData.get("tzOffset");
+  if (typeof brut !== "string" || brut.trim() === "") return null;
+  const n = Number(brut);
+  // Les décalages réels vont de -14 h à +12 h ; au-delà, on ignore la valeur.
+  if (!Number.isFinite(n) || Math.abs(n) > 14 * 60) return null;
+  return n;
 }
 
 export async function createMeeting(formData: FormData) {
@@ -65,7 +95,7 @@ export async function createMeeting(formData: FormData) {
   const meeting = await prisma.meeting.create({
     data: {
       spaceId,
-      date: parseDatetimeLocal(dateStr),
+      date: parseDatetimeLocal(dateStr, decalageDuFormulaire(formData)),
       durationMinutes: durationMinutes || null,
       title: title || null,
       status: "draft",

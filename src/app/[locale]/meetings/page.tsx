@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import AppShell from "@/components/AppShell";
 import { createMeeting } from "@/actions/meeting";
 import { Link } from "@/i18n/navigation";
+import DecalageHoraire from "./DecalageHoraire";
 import type { Meeting, Space } from "@/generated/prisma";
 
 type MeetingWithSpace = Meeting & { space: Space };
@@ -127,8 +128,12 @@ function CreateForm({ org, today }: { org: { spaces: { id: string; name: string 
           </select>
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-gray-500">Date et heure</label>
+          <label htmlFor="meeting-date" className="text-xs text-gray-500">
+            Date et heure
+          </label>
+          <DecalageHoraire />
           <input
+            id="meeting-date"
             type="datetime-local"
             name="date"
             required
