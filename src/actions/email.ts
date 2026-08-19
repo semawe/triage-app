@@ -48,7 +48,13 @@ export async function sendMeetingRecap(
         orderBy: { order: "asc" },
         include: { outputs: { orderBy: { createdAt: "asc" } } },
       },
-      guests: { where: { revokedAt: null }, select: { email: true } },
+      // Tous les invités, révoqués compris : la clôture révoque les liens d'accès
+      // (`closeMeeting`), et le compte-rendu s'envoie précisément APRÈS la clôture.
+      // Filtrer sur `revokedAt: null` revenait donc à ne l'envoyer à aucun invité
+      // dans le cas normal — alors que la page d'entrée invité leur promet
+      // explicitement de le recevoir (revue adverse du 18/08/2026). Révoquer un
+      // accès et avoir participé sont deux états différents.
+      guests: { select: { email: true } },
     },
   });
 

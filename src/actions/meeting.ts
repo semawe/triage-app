@@ -167,6 +167,19 @@ async function withMeetingLock<T>(
   });
 }
 
+/**
+ * La réunion est-elle ouverte ? Contrôle à faire SOUS le verrou : lu avant, le
+ * statut peut changer entre la lecture et l'écriture, ce qui est exactement la
+ * course entre `nextItem` et `closeMeeting`.
+ */
+async function reunionOuverte(tx: Tx, meetingId: string): Promise<boolean> {
+  const m = await tx.meeting.findUnique({
+    where: { id: meetingId },
+    select: { status: true },
+  });
+  return m?.status === "open";
+}
+
 async function activateFirstAgendaItem(tx: Tx, meetingId: string) {
   const firstItem = await tx.agendaItem.findFirst({
     where: { meetingId, status: "pending" },
@@ -183,6 +196,12 @@ async function activateFirstAgendaItem(tx: Tx, meetingId: string) {
 export async function openMeeting(meetingId: string) {
   const ctx = await requireMeetingAccess(meetingId);
   if (!ctx) return;
+
+  // Précondition : on n'ouvre que ce qui est en brouillon. Sans elle, appeler
+  // l'action sur une réunion close la rouvrait — les points étaient déjà marqués
+  // terminés et les invités révoqués, donc la réunion « rouverte » était un état
+  // que rien d'autre ne sait produire (revue adverse du 18/08/2026).
+  if (ctx.meeting.status !== "draft") return;
 
   await prisma.meeting.update({
     where: { id: meetingId },
@@ -243,6 +262,10 @@ export async function jumpToItem(meetingId: string, targetItemId: string) {
   // targetItemId doit appartenir à cette réunion (sinon on activerait
   // un point d'une autre réunion via un id arbitraire).
   await withMeetingLock(meetingId, async (tx) => {
+    // Sous le verrou, et non avant : le statut lu hors verrou pourrait changer
+    // entre la lecture et l'écriture — c'est la course avec la clôture.
+    if (!(await reunionOuverte(tx, meetingId))) return;
+
     await tx.agendaItem.updateMany({
       where: { meetingId, status: "active" },
       data: { status: "pending" },
@@ -261,6 +284,8 @@ export async function nextItem(meetingId: string, currentItemId: string) {
   if (!(await requireMeetingAccess(meetingId))) return;
 
   await withMeetingLock(meetingId, async (tx) => {
+    if (!(await reunionOuverte(tx, meetingId))) return;
+
     // Conditionné sur `active` : un second clic concurrent ne fait rien plutôt
     // que d'avancer une deuxième fois l'ordre du jour.
     const closed = await tx.agendaItem.updateMany({
@@ -329,21 +354,30 @@ export async function passScribe(meetingId: string, formData: FormData) {
 export async function closeMeeting(meetingId: string) {
   if (!(await requireMeetingAccess(meetingId))) return;
 
-  await prisma.agendaItem.updateMany({
-    where: { meetingId, status: { in: ["active", "pending"] } },
-    data: { status: "done" },
-  });
+  // Les trois écritures sous le MÊME verrou que les transitions d'agenda, et dans
+  // une transaction. Séparées, elles laissaient deux états impossibles : `nextItem`
+  // pouvait activer un point entre le marquage des points et le passage en
+  // « close » (réunion close avec un point actif), et un échec après le passage en
+  // « close » laissait les liens invités valables sept jours.
+  await withMeetingLock(meetingId, async (tx) => {
+    if (!(await reunionOuverte(tx, meetingId))) return;
 
-  await prisma.meeting.update({
-    where: { id: meetingId },
-    data: { status: "closed" },
-  });
+    await tx.agendaItem.updateMany({
+      where: { meetingId, status: { in: ["active", "pending"] } },
+      data: { status: "done" },
+    });
 
-  // Un lien invité vaut pour une réunion : il cesse de valoir quand elle est
-  // close (il restait sinon actif jusqu'à son expiration de 7 jours).
-  await prisma.meetingGuest.updateMany({
-    where: { meetingId, revokedAt: null },
-    data: { revokedAt: new Date() },
+    await tx.meeting.update({
+      where: { id: meetingId },
+      data: { status: "closed" },
+    });
+
+    // Un lien invité vaut pour une réunion : il cesse de valoir quand elle est
+    // close (il restait sinon actif jusqu'à son expiration de 7 jours).
+    await tx.meetingGuest.updateMany({
+      where: { meetingId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
   });
 
   revalidatePath("/", "layout");

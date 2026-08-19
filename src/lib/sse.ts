@@ -39,12 +39,42 @@ export function releaseStreamSlot(userId: string) {
 
 const encoder = new TextEncoder();
 
+/**
+ * Le broker retient l'utilisateur derrière chaque contrôleur.
+ *
+ * Il ne le connaissait pas : quand `broadcast` trouvait un contrôleur mort, il le
+ * retirait de la Map sans pouvoir libérer le créneau réservé à son propriétaire.
+ * Après huit connexions mortes — le plafond par utilisateur — le temps réel restait
+ * fermé pour cette personne jusqu'au redémarrage du processus (revue adverse du
+ * 18/08/2026). Même défaut sur l'échec d'un ping côté route.
+ */
+const proprietaire = new WeakMap<ReadableStreamDefaultController<Uint8Array>, string>();
+
 export function subscribe(
   meetingId: string,
-  ctrl: ReadableStreamDefaultController<Uint8Array>
+  ctrl: ReadableStreamDefaultController<Uint8Array>,
+  userId: string
 ) {
   if (!sseClients.has(meetingId)) sseClients.set(meetingId, new Set());
   sseClients.get(meetingId)!.add(ctrl);
+  proprietaire.set(ctrl, userId);
+}
+
+/**
+ * Retire un client ET libère son créneau. À appeler sur TOUT chemin de sortie —
+ * abandon de la requête, échec d'un ping, échec d'une diffusion. Idempotente : le
+ * créneau n'est libéré qu'une fois, même sur deux appels.
+ */
+export function dispose(
+  meetingId: string,
+  ctrl: ReadableStreamDefaultController<Uint8Array>
+) {
+  unsubscribe(meetingId, ctrl);
+  const userId = proprietaire.get(ctrl);
+  if (userId !== undefined) {
+    proprietaire.delete(ctrl);
+    releaseStreamSlot(userId);
+  }
 }
 
 export function unsubscribe(
@@ -63,11 +93,13 @@ export function broadcast(meetingId: string) {
   const clients = sseClients.get(meetingId);
   if (!clients || clients.size === 0) return;
   const msg = encoder.encode("data: update\n\n");
-  for (const ctrl of clients) {
+  for (const ctrl of [...clients]) {
     try {
       ctrl.enqueue(msg);
     } catch {
-      clients.delete(ctrl);
+      // `dispose` et non `clients.delete` : le créneau de l'utilisateur doit être
+      // rendu, sinon il s'épuise silencieusement.
+      dispose(meetingId, ctrl);
     }
   }
   if (clients.size === 0) sseClients.delete(meetingId);

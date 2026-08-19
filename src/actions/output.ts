@@ -60,28 +60,49 @@ async function assigneAcceptable(
   });
 }
 
-export async function addOutput(formData: FormData) {
+/**
+ * Résultat d'une saisie de sortie.
+ *
+ * Ces actions renvoyaient `undefined` sur un refus, exactement comme sur un
+ * succès. Le formulaire, ne pouvant pas distinguer les deux, effaçait le texte
+ * dans les deux cas : une note tapée pendant une réunion disparaissait sans un mot
+ * dès que le stylo venait de changer de main (revue adverse du 18/08/2026). C'est
+ * le seul défaut du rapport qui détruit du travail humain, et le seul dont
+ * l'utilisateur ne peut pas se remettre — il ne sait même pas qu'il a perdu.
+ */
+export type ResultatSortie =
+  | { ok: true }
+  | { ok: false; motif: "refus" | "invalide"; message: string };
+
+const REFUS = (message: string): ResultatSortie => ({ ok: false, motif: "refus", message });
+const INVALIDE = (message: string): ResultatSortie => ({ ok: false, motif: "invalide", message });
+
+export async function addOutput(formData: FormData): Promise<ResultatSortie> {
   const itemId = formData.get("itemId") as string;
   const type = formData.get("type") as OutputType;
   const content = (formData.get("content") as string)?.trim();
   const assigneeId = (formData.get("assigneeId") as string) || null;
   const dueDateStr = (formData.get("dueDate") as string) || null;
 
-  if (!itemId || !type || !content) return;
+  if (!itemId || !type || !content) return INVALIDE("Saisie incomplète.");
 
   const item = await prisma.agendaItem.findUnique({
     where: { id: itemId },
     select: { meetingId: true },
   });
-  if (!item) return;
+  if (!item) return INVALIDE("Ce point de l'ordre du jour n'existe plus.");
 
   const ctx = await requireMeetingAccess(item.meetingId);
-  if (!ctx) return;
+  if (!ctx) return REFUS("Tu n'as plus accès à cette réunion.");
   // Seul le scribe saisit les outputs (retour #32). scribeId null = pas encore
   // de scribe (réunion héritée / non ouverte) → on n'ordonne pas la restriction.
-  if (ctx.meeting.scribeId && ctx.meeting.scribeId !== ctx.session.user.id) return;
+  if (ctx.meeting.scribeId && ctx.meeting.scribeId !== ctx.session.user.id) {
+    return REFUS("Tu n'es plus le scribe : ta saisie n'a pas été enregistrée.");
+  }
 
-  if (!(await assigneAcceptable(item.meetingId, assigneeId || null))) return;
+  if (!(await assigneAcceptable(item.meetingId, assigneeId || null))) {
+    return REFUS("Cette personne n'a pas accès à cette réunion : choisis quelqu'un d'autre.");
+  }
 
   await prisma.output.create({
     data: {
@@ -96,6 +117,7 @@ export async function addOutput(formData: FormData) {
 
   revalidatePath("/", "layout");
   broadcast(item.meetingId);
+  return { ok: true };
 }
 
 /**

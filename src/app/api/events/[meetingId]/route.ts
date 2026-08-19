@@ -1,5 +1,5 @@
 import { type NextRequest } from "next/server";
-import { acquireStreamSlot, releaseStreamSlot, subscribe, unsubscribe } from "@/lib/sse";
+import { acquireStreamSlot, dispose, subscribe } from "@/lib/sse";
 import { resolveParticipant } from "@/lib/guest";
 
 export const dynamic = "force-dynamic";
@@ -29,23 +29,27 @@ export async function GET(
   const stream = new ReadableStream<Uint8Array>({
     start(c) {
       ctrl = c;
-      subscribe(meetingId, ctrl);
+      subscribe(meetingId, ctrl, participant.userId);
+
+      // Un seul chemin de sortie, pour que le créneau soit rendu quoi qu'il arrive.
+      // L'échec d'un ping ne faisait qu'arrêter la minuterie : le client restait
+      // inscrit et son créneau réservé, jusqu'au redémarrage du processus.
+      const fermer = () => {
+        clearInterval(pingInterval);
+        dispose(meetingId, ctrl);
+        try { ctrl.close(); } catch { /* déjà fermé */ }
+      };
 
       // Keep-alive ping every 20s to prevent proxy/browser timeout
       pingInterval = setInterval(() => {
         try {
           ctrl.enqueue(new TextEncoder().encode(": ping\n\n"));
         } catch {
-          clearInterval(pingInterval);
+          fermer();
         }
       }, 20_000);
 
-      req.signal.addEventListener("abort", () => {
-        clearInterval(pingInterval);
-        unsubscribe(meetingId, ctrl);
-        releaseStreamSlot(participant.userId);
-        try { ctrl.close(); } catch { /* already closed */ }
-      });
+      req.signal.addEventListener("abort", fermer);
     },
   });
 

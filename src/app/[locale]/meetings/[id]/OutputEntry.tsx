@@ -1,5 +1,7 @@
 "use client";
 
+import type { ResultatSortie } from "@/actions/output";
+
 import {
   createContext,
   useContext,
@@ -80,7 +82,7 @@ export function OutputEntry({
   showGovernance,
   members,
 }: {
-  addOutput: (formData: FormData) => Promise<void>;
+  addOutput: (formData: FormData) => Promise<ResultatSortie>;
   itemId: string;
   showActions: boolean;
   showProjects: boolean;
@@ -89,6 +91,7 @@ export function OutputEntry({
 }) {
   const { setDirty } = useContext(UnsavedOutputContext);
   const [content, setContent] = useState("");
+  const [erreur, setErreur] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   return (
@@ -96,7 +99,15 @@ export function OutputEntry({
       action={(formData) => {
         if (!content.trim()) return;
         startTransition(async () => {
-          await addOutput(formData);
+          const resultat = await addOutput(formData);
+          // On n'efface la saisie que si elle est réellement enregistrée. Le refus
+          // était auparavant indistinguable du succès, et le texte tapé pendant la
+          // réunion partait avec lui.
+          if (!resultat?.ok) {
+            setErreur(resultat?.message ?? "La saisie n'a pas été enregistrée.");
+            return;
+          }
+          setErreur(null);
           setContent("");
           setDirty(false);
         });
@@ -144,6 +155,14 @@ export function OutputEntry({
         placeholder="Saisir l'output…"
         className="w-full rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 resize-none"
       />
+      {erreur && (
+        <p
+          role="alert"
+          className="rounded-lg bg-red-950/60 border border-red-900 px-3 py-2 text-sm text-red-300"
+        >
+          {erreur} Ta saisie est conservée ci-dessus.
+        </p>
+      )}
       <div className="flex items-center gap-3">
         <button
           type="submit"

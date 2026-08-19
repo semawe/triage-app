@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { jumpToItem, nextItem, closeMeeting } from "@/actions/meeting";
 import { viewerFrom, visibleMeetingWhere } from "@/lib/visibility";
+import SSEListener from "../SSEListener";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -53,6 +54,11 @@ export default async function ProjectorPage({ params }: Props) {
 
   return (
     <div className="min-h-screen bg-gray-950 flex">
+      {/* L'écran que toute la salle regarde ne s'abonnait à rien : il se figeait
+          après le chargement, sans rafraîchissement ni indication (revue adverse du
+          18/08/2026). C'est le pire endroit du produit pour une divergence
+          silencieuse — deux personnes décidant sur des états différents. */}
+      <SSEListener meetingId={meeting.id} />
       {/* ── Left sidebar: agenda ── */}
       <aside className="w-56 shrink-0 border-r border-gray-800/60 bg-gray-900/40 flex flex-col overflow-hidden">
         <div className="px-4 py-4 border-b border-gray-800/60">

@@ -27,9 +27,18 @@ export async function sendEmail({
   }
 
   try {
+    // Les destinataires vont en copie cachée, jamais en `To`.
+    //
+    // Ils étaient tous dans `To` : chaque membre et chaque invité d'une réunion
+    // recevait l'adresse de tous les autres (revue adverse du 18/08/2026). Pour un
+    // compte-rendu de réunion, ce sont des adresses professionnelles de plusieurs
+    // organisations clientes — divulguées à chaque envoi, sans que personne ne
+    // l'ait décidé. `to` reste l'expéditeur, pour que le message ait un
+    // destinataire visible et ne soit pas classé indésirable.
     await transporter.sendMail({
       from: `"Triage App — Sémawé" <${EMAIL_FROM}>`,
-      to: to.join(", "),
+      to: EMAIL_FROM,
+      bcc: to,
       subject,
       html,
     });
