@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { prisma } from "./prisma";
 import { auth } from "./auth";
-import { isMeetingPrivate } from "./visibility";
+import { peutVoirLaReunion } from "./visibility";
 import { hasFeature } from "./features";
 
 /**
@@ -95,23 +95,16 @@ export async function resolveParticipant(meetingId: string): Promise<Participant
   });
   if (!membership) return null;
 
-  // Même règle de confidentialité que `requireMeetingAccess` : un membre de
-  // l'org extérieur au cercle privé n'est pas un participant.
-  const confidential = isMeetingPrivate(
+  // Même décision que `requireMeetingAccess`, et littéralement la même fonction :
+  // un membre de l'org extérieur au cercle privé n'est pas un participant.
+  const visible = await peutVoirLaReunion({
     meeting,
-    meeting.space,
-    hasFeature(meeting.space.organisation, "confidentiality")
-  );
-  if (confidential && membership.role !== "admin") {
-    const isHost = meeting.createdById === session.user.id;
-    if (!isHost) {
-      const spaceMember = await prisma.spaceMember.findUnique({
-        where: { spaceId_userId: { spaceId: meeting.spaceId, userId: session.user.id } },
-        select: { userId: true },
-      });
-      if (!spaceMember) return null;
-    }
-  }
+    space: meeting.space,
+    enabled: hasFeature(meeting.space.organisation, "confidentiality"),
+    userId: session.user.id,
+    role: membership.role,
+  });
+  if (!visible) return null;
 
   return { userId: session.user.id, isGuest: false, canRecordOutputs: true };
 }

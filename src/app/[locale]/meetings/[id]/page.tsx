@@ -168,12 +168,36 @@ export default async function MeetingPage({ params }: Props) {
   const hasTime = meeting.date.getHours() !== 0 || meeting.date.getMinutes() !== 0;
   const fallbackTitle = `${dateLabel}${hasTime ? ` · ${timeLabel}` : ""}`;
 
-  // All org members for output assignee select
+  // Membres de l'org, pour le choix du scribe et l'affichage des noms.
   const orgMembers = await prisma.organisationMember.findMany({
     where: { organisationId: org.id },
     include: { user: { select: { id: true, name: true } } },
   });
-  const memberOptions = orgMembers.map((m) => ({ userId: m.userId, name: m.user.name ?? m.user.id }));
+
+  // Assignés proposés : seulement ceux qui ont le droit de voir CETTE réunion.
+  // Le sélecteur offrait toute l'organisation, y compris sur une réunion d'un
+  // cercle privé — le serveur refuse désormais un assigné illégitime, mais mieux
+  // vaut ne pas le proposer (revue adverse du 18/08/2026).
+  const confidentialityOn = hasFeature(org, "confidentiality", meeting.space);
+  const spaceMemberIds = confidentialityOn
+    ? new Set(
+        (
+          await prisma.spaceMember.findMany({
+            where: { spaceId: meeting.spaceId },
+            select: { userId: true },
+          })
+        ).map((m) => m.userId)
+      )
+    : null;
+  const meetingIsPrivate = confidentialityOn && (meeting.isPrivate ?? meeting.space.isPrivate);
+  const memberOptions = orgMembers
+    .filter((m) => {
+      if (!meetingIsPrivate) return true;
+      if (m.role === "admin") return true;
+      if (meeting.createdById === m.userId) return true;
+      return spaceMemberIds?.has(m.userId) ?? false;
+    })
+    .map((m) => ({ userId: m.userId, name: m.user.name ?? m.user.id }));
 
   // Scribe (retour #32) : seul le scribe saisit/édite les outputs. scribeId null
   // (réunion héritée) = pas de restriction, tout le monde peut écrire.

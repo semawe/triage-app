@@ -1,4 +1,5 @@
 import type { Prisma } from "@/generated/prisma";
+import { prisma } from "@/lib/prisma";
 import { hasFeature } from "@/lib/features";
 
 /**
@@ -90,4 +91,53 @@ export function canViewSpace(
   if (unrestricted(v)) return true;
   if (!space.isPrivate) return true;
   return !!space.members?.some((m) => m.userId === v.userId);
+}
+
+/**
+ * Prédicat Prisma des sorties visibles — composé du prédicat des réunions, pour
+ * que la règle ne soit écrite qu'une fois.
+ *
+ * Sans lui, une action assignée à quelqu'un lui était affichée sur `/actions` et
+ * `/me` sans le moindre contrôle de cloisonnement : le contenu, le titre de la
+ * réunion et le nom du cercle confidentiel avec (revue adverse du 18/08/2026).
+ */
+export function visibleOutputWhere(v: Viewer): Prisma.OutputWhereInput {
+  return { item: { meeting: visibleMeetingWhere(v) } };
+}
+
+/**
+ * L'utilisateur donné peut-il voir cette réunion ?
+ *
+ * **Décision unique.** Cette règle — un cercle privé n'est visible que de ses
+ * membres, de l'admin de l'org et de l'hôte de la réunion — était écrite quatre
+ * fois : ici en prédicats, dans `requireMeetingAccess`, dans `resolveParticipant`,
+ * et à la main dans les pages `/meetings` et `/me` où le drapeau `confidentiality`
+ * n'était même pas consulté. Une divergence entre ces copies ne casse rien de
+ * visible : elle ouvre ou ferme un accès en silence. Les quatre appellent
+ * maintenant cette fonction.
+ *
+ * Elle sert aussi à valider un **tiers** — l'assigné d'une action — et pas
+ * seulement l'appelant : assigner une action à quelqu'un qui n'a pas accès à la
+ * réunion lui en livrait le contenu par la porte de derrière.
+ */
+export async function peutVoirLaReunion(opts: {
+  meeting: { spaceId: string; isPrivate: boolean | null; createdById: string | null };
+  space: { isPrivate: boolean };
+  /** Module `confidentiality` résolu au niveau de l'org de la réunion. */
+  enabled: boolean;
+  userId: string;
+  /** Rôle de l'utilisateur dans l'organisation de la réunion. */
+  role: string;
+}): Promise<boolean> {
+  const { meeting, space, enabled, userId, role } = opts;
+
+  if (!isMeetingPrivate(meeting, space, enabled)) return true;
+  if (role === "admin") return true;
+  if (meeting.createdById === userId) return true;
+
+  const membre = await prisma.spaceMember.findUnique({
+    where: { spaceId_userId: { spaceId: meeting.spaceId, userId } },
+    select: { userId: true },
+  });
+  return !!membre;
 }

@@ -1,4 +1,5 @@
 import { requireOrg } from "@/lib/session";
+import { viewerFrom, visibleOutputWhere } from "@/lib/visibility";
 import { prisma } from "@/lib/prisma";
 import AppShell from "@/components/AppShell";
 import { toggleOutputDone } from "@/actions/output";
@@ -13,7 +14,8 @@ export default async function ActionsPage({
 }: {
   searchParams: Promise<{ filter?: string }>;
 }) {
-  const { org, session, membership } = await requireOrg();
+  const ctx = await requireOrg();
+  const { session, membership } = ctx;
   const { filter } = await searchParams;
   const showAll = filter === "all" && membership.role === "admin";
 
@@ -21,9 +23,10 @@ export default async function ActionsPage({
     where: {
       type: "action",
       ...(showAll ? {} : { assigneeId: session.user.id }),
-      item: {
-        meeting: { space: { organisationId: org.id } },
-      },
+      // Le seul filtre était l'organisation : une action née dans un cercle privé
+      // s'affichait à son assigné même extérieur au cercle, avec le titre de la
+      // réunion et le nom du cercle (revue adverse du 18/08/2026).
+      ...visibleOutputWhere(viewerFrom(ctx)),
     },
     include: {
       assignee: { select: { name: true, image: true } },

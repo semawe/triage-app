@@ -1,4 +1,5 @@
 import { requireOrg } from "@/lib/session";
+import { viewerFrom, visibleMeetingWhere, visibleOutputWhere, type Viewer } from "@/lib/visibility";
 import { prisma } from "@/lib/prisma";
 import AppShell from "@/components/AppShell";
 import { toggleOutputDone } from "@/actions/output";
@@ -7,21 +8,26 @@ import { getTranslations } from "next-intl/server";
 
 // Réunions pertinentes : en cours, ou brouillons pas plus vieux que 2 h.
 // (Hors composant : la règle de pureté RSC interdit Date.now() pendant le rendu.)
-function upcomingMeetingsWhere(orgId: string) {
+function upcomingMeetingsWhere(viewer: Viewer) {
   return {
-    space: { organisationId: orgId },
-    OR: [
-      { status: "open" as const },
-      { status: "draft" as const, date: { gte: new Date(Date.now() - 2 * 3600 * 1000) } },
+    AND: [
+      visibleMeetingWhere(viewer),
+      {
+        OR: [
+          { status: "open" as const },
+          { status: "draft" as const, date: { gte: new Date(Date.now() - 2 * 3600 * 1000) } },
+        ],
+      },
     ],
   };
 }
 
 export default async function MePage() {
-  const { session, org, membership } = await requireOrg();
+  const ctx = await requireOrg();
+  const { session, org } = ctx;
   const t = await getTranslations("me");
   const userId = session.user.id;
-  const isAdmin = membership.role === "admin";
+  const viewer = viewerFrom(ctx);
 
   const [assignments, spaceMemberships, actions, meetingsRaw] = await Promise.all([
     prisma.roleAssignment.findMany({
@@ -47,7 +53,9 @@ export default async function MePage() {
         type: "action",
         isDone: false,
         assigneeId: userId,
-        item: { meeting: { space: { organisationId: org.id } } },
+        // Cloisonnement : une action née dans un cercle privé n'apparaît pas ici
+        // au seul motif qu'elle m'est assignée.
+        ...visibleOutputWhere(viewer),
       },
       include: {
         item: { include: { meeting: { select: { id: true, title: true, date: true } } } },
@@ -56,20 +64,14 @@ export default async function MePage() {
       take: 8,
     }),
     prisma.meeting.findMany({
-      where: upcomingMeetingsWhere(org.id),
+      where: upcomingMeetingsWhere(viewer),
       include: { space: { select: { id: true, name: true, isPrivate: true } } },
       orderBy: { date: "asc" },
       take: 12,
     }),
   ]);
 
-  const mySpaceIds = new Set(spaceMemberships.map((m) => m.spaceId));
-  const meetings = meetingsRaw
-    .filter((m) => {
-      const effectivePrivate = m.isPrivate ?? m.space.isPrivate;
-      return !effectivePrivate || isAdmin || mySpaceIds.has(m.spaceId);
-    })
-    .slice(0, 5);
+  const meetings = meetingsRaw.slice(0, 5);
 
   const firstName = session.user.name?.split(" ")[0] ?? "";
 

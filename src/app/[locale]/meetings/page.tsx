@@ -1,4 +1,5 @@
 import { requireOrg } from "@/lib/session";
+import { viewerFrom, visibleMeetingWhere } from "@/lib/visibility";
 import { prisma } from "@/lib/prisma";
 import AppShell from "@/components/AppShell";
 import { createMeeting } from "@/actions/meeting";
@@ -12,29 +13,18 @@ export default async function MeetingsPage({
 }: {
   searchParams: Promise<{ group?: string }>;
 }) {
-  const { org, session, membership } = await requireOrg();
+  const ctx = await requireOrg();
+  const { org } = ctx;
   const { group } = await searchParams;
   const groupBySpace = group === "space";
 
-  // Spaces where user is member
-  const spaceMemberships = await prisma.spaceMember.findMany({
-    where: { userId: session.user.id, space: { organisationId: org.id } },
-    select: { spaceId: true },
-  });
-  const memberSpaceIds = new Set(spaceMemberships.map((s) => s.spaceId));
-  const isAdmin = membership.role === "admin";
-
-  const meetings = await prisma.meeting.findMany({
-    where: { space: { organisationId: org.id } },
+  // Le cloisonnement passe par le prédicat partagé, et non par un filtre réécrit
+  // ici : celui qui vivait à cet endroit ignorait le drapeau `confidentiality`,
+  // donc cachait des réunions que les actions laissaient par ailleurs ouvertes.
+  const visibleMeetings = await prisma.meeting.findMany({
+    where: visibleMeetingWhere(viewerFrom(ctx)),
     include: { space: true },
     orderBy: { date: "desc" },
-  });
-
-  // Filter by privacy
-  const visibleMeetings = meetings.filter((m) => {
-    const effectivePrivate = m.isPrivate ?? m.space.isPrivate;
-    if (!effectivePrivate) return true;
-    return isAdmin || memberSpaceIds.has(m.spaceId);
   });
 
   const today = new Date().toISOString().split("T")[0];

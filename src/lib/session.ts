@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { getLocale } from "next-intl/server";
 import { cookies } from "next/headers";
 import { isOrgAccessible } from "./stripe";
-import { isMeetingPrivate } from "./visibility";
+import { peutVoirLaReunion } from "./visibility";
 import { hasFeature } from "./features";
 import type { Session } from "next-auth";
 
@@ -138,23 +138,16 @@ export const requireMeetingAccess = async (meetingId: string) => {
   if (!membership) return null;
 
   // Confidentialité : appartenance à l'org insuffisante sur une réunion privée.
-  // Y accèdent l'admin de l'org, les membres de l'espace, et l'hôte de la réunion.
-  const confidentiality = hasFeature(meeting.space.organisation, "confidentiality");
-  if (
-    isMeetingPrivate(meeting, meeting.space, confidentiality) &&
-    membership.role !== "admin"
-  ) {
-    const isHost = meeting.createdById === session.user.id;
-    if (!isHost) {
-      const spaceMember = await prisma.spaceMember.findUnique({
-        where: {
-          spaceId_userId: { spaceId: meeting.spaceId, userId: session.user.id },
-        },
-        select: { userId: true },
-      });
-      if (!spaceMember) return null;
-    }
-  }
+  // La décision vit dans `peutVoirLaReunion` — un seul endroit pour les quatre
+  // appelants qui la réécrivaient (cf. src/lib/visibility.ts).
+  const visible = await peutVoirLaReunion({
+    meeting,
+    space: meeting.space,
+    enabled: hasFeature(meeting.space.organisation, "confidentiality"),
+    userId: session.user.id,
+    role: membership.role,
+  });
+  if (!visible) return null;
 
   return { session, meeting, membership };
 };
