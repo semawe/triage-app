@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { Link } from "@/i18n/navigation";
 import { createCheckoutSession, createCustomerPortalSession, updateSeatsForm } from "@/actions/billing";
 import { isOrgAccessible } from "@/lib/stripe";
+import { getTranslations } from "next-intl/server";
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   trial:    { label: "Essai gratuit",        color: "text-yellow-400 bg-yellow-900/30 border-yellow-800" },
@@ -22,6 +23,7 @@ export default async function SettingsPage({
   searchParams: Promise<{ org?: string; billing?: string }>;
 }) {
   const { allOrgs } = await requireOrgForBilling();
+  const t = await getTranslations("settings");
 
   // Only orgs where the current user is admin
   const adminOrgs = allOrgs.filter((o) => o.role === "admin");
@@ -45,7 +47,7 @@ export default async function SettingsPage({
     <AppShell allowSuspended>
       <div className="mb-8 flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-white">Paramètres</h1>
+          <h1 className="text-2xl font-bold text-white">{t("title")}</h1>
           <p className="text-sm text-gray-400 mt-1">{org.name}</p>
         </div>
 
@@ -77,17 +79,17 @@ export default async function SettingsPage({
         <form action={updateOrgBranding} className="flex flex-wrap gap-5 items-end">
           <input type="hidden" name="orgId" value={org.id} />
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs text-gray-500">URL du logo</label>
+            <label className="text-xs text-gray-500">{t("logoUrl")}</label>
             <input
               type="url"
               name="logoUrl"
               defaultValue={org.logoUrl ?? ""}
-              placeholder="https://example.com/logo.png"
+              placeholder={t("logoPlaceholder")}
               className="rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 w-72"
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs text-gray-500">Couleur principale</label>
+            <label className="text-xs text-gray-500">{t("primaryColor")}</label>
             <div className="flex items-center gap-2">
               <input
                 type="color"
@@ -95,7 +97,7 @@ export default async function SettingsPage({
                 defaultValue={org.primaryColor ?? "#6366f1"}
                 className="h-9 w-9 rounded-lg border border-gray-700 bg-gray-800 cursor-pointer p-0.5"
               />
-              <span className="text-xs text-gray-500">Teinte la navigation et les éléments actifs.</span>
+              <span className="text-xs text-gray-500">{t("colorHint")}</span>
             </div>
           </div>
           <button
@@ -118,14 +120,14 @@ export default async function SettingsPage({
         <form action={updateOrgDomain} className="flex flex-wrap gap-3 items-end">
           <input type="hidden" name="orgId" value={org.id} />
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs text-gray-500">Domaine autorisé</label>
+            <label className="text-xs text-gray-500">{t("allowedDomain")}</label>
             <div className="flex items-center gap-1.5">
               <span className="text-sm text-gray-500">@</span>
               <input
                 type="text"
                 name="domain"
                 defaultValue={org.allowedEmailDomain ?? ""}
-                placeholder="semawe.fr"
+                placeholder={t("domainPlaceholder")}
                 className="rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500 w-52"
               />
             </div>
@@ -146,7 +148,7 @@ export default async function SettingsPage({
 
       {/* Facturation */}
       <section className="mb-8 rounded-xl bg-gray-900 border border-gray-800 p-6">
-        <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-5">Facturation</h2>
+        <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-5">{t("billing")}</h2>
 
         {/* Feedback Stripe */}
         {billingFeedback === "success" && (
@@ -175,14 +177,21 @@ export default async function SettingsPage({
             </div>
 
             {/* Sièges */}
+            {/* Pluriels ICU : le nombre et son accord vivent dans le catalogue, pas
+                dans un ternaire — l'anglais n'accorde pas « active » et une langue
+                à plusieurs formes plurielles n'aurait aucune place ici. */}
             <div className="text-sm text-gray-400">
-              <span className="text-white font-medium">{memberCount}</span> membre{memberCount > 1 ? "s" : ""} actif{memberCount > 1 ? "s" : ""}
-              {" · "}
               <span className={memberCount > org.seatCount ? "text-red-400" : "text-white font-medium"}>
-                {org.seatCount}
-              </span> siège{org.seatCount > 1 ? "s" : ""} inclus
+                {t("activeMembers", { count: memberCount })}
+              </span>
               {" · "}
-              <span className="text-gray-500">2 € HT/siège/mois (2,40 € TTC)</span>
+              <span className="text-white font-medium">
+                {t("includedSeats", { count: org.seatCount })}
+              </span>
+              {" · "}
+              <span className="text-gray-500">
+                {t("pricePerSeat", { net: "2 €", gross: "2,40 €" })}
+              </span>
             </div>
 
             {/* Ajuster les sièges — une fois abonné */}
@@ -190,7 +199,7 @@ export default async function SettingsPage({
               <form action={updateSeatsForm} className="flex items-end gap-2 pt-1">
                 <input type="hidden" name="orgId" value={org.id} />
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs text-gray-500">Nombre de sièges</label>
+                  <label className="text-xs text-gray-500">{t("seatCount")}</label>
                   <input
                     type="number"
                     name="seats"
@@ -249,7 +258,7 @@ export default async function SettingsPage({
       {/* Modules */}
       <section className="rounded-xl bg-gray-900 border border-gray-800 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-800">
-          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Modules actifs</h2>
+          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t("activeModules")}</h2>
           <p className="text-xs text-gray-600 mt-1">
             Active ou désactive des fonctionnalités pour toute l&apos;organisation.
             Les changements prennent effet immédiatement.

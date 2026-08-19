@@ -256,5 +256,34 @@
     "delete": "Supprimer",
     "entryPlaceholder": "Saisir l'output…",
     "unsaved": "Note non enregistrée"
+  },
+  "settings": {
+    "title": "Paramètres",
+    "logoUrl": "URL du logo",
+    "logoPlaceholder": "https://example.com/logo.png",
+    "primaryColor": "Couleur principale",
+    "colorHint": "Teinte la navigation et les éléments actifs.",
+    "allowedDomain": "Domaine autorisé",
+    "domainPlaceholder": "semawe.fr",
+    "billing": "Facturation",
+    "seatCount": "Nombre de sièges",
+    "activeModules": "Modules actifs",
+    "pricePerSeat": "{net} HT/siège/mois ({gross} TTC)",
+    "activeMembers": "{count, plural, one {# membre actif} other {# membres actifs}}",
+    "includedSeats": "{count, plural, one {# siège inclus} other {# sièges inclus}}"
+  },
+  "members": {
+    "title": "Membres",
+    "you": "(vous)",
+    "noSpaces": "Tu n'es membre d'aucun espace pour l'instant."
+  },
+  "actions": {
+    "mine": "Mes actions"
+  },
+  "projects": {
+    "title": "Projets",
+    "namePlaceholder": "Nom du projet",
+    "descriptionPlaceholder": "Description (optionnel)",
+    "deleteForever": "Supprimer définitivement"
   }
 }

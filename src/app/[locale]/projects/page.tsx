@@ -1,6 +1,7 @@
 import { requireOrg } from "@/lib/session";
 import { viewerFrom, visibleSpaceWhere } from "@/lib/visibility";
 import { prisma } from "@/lib/prisma";
+import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import { createProjectInSpace, updateProjectStatus, deleteProject } from "@/actions/project";
@@ -20,6 +21,7 @@ export default async function ProjectsPage({
   searchParams: Promise<{ space?: string }>;
 }) {
   const ctx = await requireOrg();
+  const t = await getTranslations("projects");
   const { org, session, membership } = ctx;
 
   if (!hasFeature(org, "projects")) notFound();
@@ -67,7 +69,7 @@ export default async function ProjectsPage({
   return (
     <AppShell>
       <div className="mb-6 flex items-center justify-between flex-wrap gap-4">
-        <h1 className="text-2xl font-bold text-white">Projets</h1>
+        <h1 className="text-2xl font-bold text-white">{t("title")}</h1>
 
         {/* Filtre par espace */}
         {spaces.length > 1 && (
@@ -101,12 +103,12 @@ export default async function ProjectsPage({
             <input
               name="name"
               required
-              placeholder="Nom du projet"
+              placeholder={t("namePlaceholder")}
               className="flex-1 min-w-48 rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500"
             />
             <input
               name="description"
-              placeholder="Description (optionnel)"
+              placeholder={t("descriptionPlaceholder")}
               className="flex-1 min-w-48 rounded-lg bg-gray-800 border border-gray-700 px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-indigo-500"
             />
             <select
@@ -178,7 +180,7 @@ export default async function ProjectsPage({
   );
 }
 
-function ProjectCard({
+async function ProjectCard({
   project: p,
   canManage,
   showSpace,
@@ -193,6 +195,7 @@ function ProjectCard({
   canManage: boolean;
   showSpace: boolean;
 }) {
+  const t = await getTranslations("projects");
   return (
     <div className="rounded-lg bg-gray-800/60 border border-gray-800 px-3 py-2.5 space-y-1.5">
       <Link
@@ -231,7 +234,7 @@ function ProjectCard({
                 <button
                   type="submit"
                   className="px-1.5 py-0.5 rounded text-gray-700 hover:text-red-400 transition-colors"
-                  title="Supprimer définitivement"
+                  title={t("deleteForever")}
                 >
                   ✕
                 </button>

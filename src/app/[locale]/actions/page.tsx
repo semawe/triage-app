@@ -1,4 +1,5 @@
 import { requireOrg } from "@/lib/session";
+import { getTranslations } from "next-intl/server";
 import { viewerFrom, visibleOutputWhere } from "@/lib/visibility";
 import { prisma } from "@/lib/prisma";
 import AppShell from "@/components/AppShell";
@@ -15,6 +16,7 @@ export default async function ActionsPage({
   searchParams: Promise<{ filter?: string }>;
 }) {
   const ctx = await requireOrg();
+  const t = await getTranslations("actions");
   const { session, membership } = ctx;
   const { filter } = await searchParams;
   const showAll = filter === "all" && membership.role === "admin";
@@ -45,7 +47,7 @@ export default async function ActionsPage({
   return (
     <AppShell>
       <div className="mb-8 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-white">Mes actions</h1>
+        <h1 className="text-2xl font-bold text-white">{t("mine")}</h1>
         {membership.role === "admin" && (
           <div className="flex rounded-lg border border-gray-800 overflow-hidden text-xs">
             <Link

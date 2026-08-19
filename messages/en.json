@@ -256,5 +256,34 @@
     "delete": "Delete",
     "entryPlaceholder": "Enter the output…",
     "unsaved": "Note not saved"
+  },
+  "settings": {
+    "title": "Settings",
+    "logoUrl": "Logo URL",
+    "logoPlaceholder": "https://example.com/logo.png",
+    "primaryColor": "Primary colour",
+    "colorHint": "Tints the navigation and active elements.",
+    "allowedDomain": "Allowed domain",
+    "domainPlaceholder": "example.com",
+    "billing": "Billing",
+    "seatCount": "Number of seats",
+    "activeModules": "Active modules",
+    "pricePerSeat": "{net} excl. VAT per seat per month ({gross} incl. VAT)",
+    "activeMembers": "{count, plural, one {# active member} other {# active members}}",
+    "includedSeats": "{count, plural, one {# seat included} other {# seats included}}"
+  },
+  "members": {
+    "title": "Members",
+    "you": "(you)",
+    "noSpaces": "You are not a member of any circle yet."
+  },
+  "actions": {
+    "mine": "My actions"
+  },
+  "projects": {
+    "title": "Projects",
+    "namePlaceholder": "Project name",
+    "descriptionPlaceholder": "Description (optional)",
+    "deleteForever": "Delete permanently"
   }
 }

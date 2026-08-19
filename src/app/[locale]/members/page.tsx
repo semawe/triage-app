@@ -1,5 +1,6 @@
 import { requireOrg } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
+import { getTranslations } from "next-intl/server";
 import AppShell from "@/components/AppShell";
 import { updateMemberRole, removeMember } from "@/actions/member";
 import { approveJoinRequest, rejectJoinRequest } from "@/actions/join";
@@ -13,6 +14,7 @@ export default async function MembersPage({
   searchParams: Promise<{ error?: string }>;
 }) {
   const { session, org, membership } = await requireOrg();
+  const t = await getTranslations("members");
   const isAdmin = membership.role === "admin";
   const { error } = await searchParams;
 
@@ -42,7 +44,7 @@ export default async function MembersPage({
   return (
     <AppShell>
       <div className="mb-8 flex items-center justify-between gap-4 flex-wrap">
-        <h1 className="text-2xl font-bold text-white">Membres</h1>
+        <h1 className="text-2xl font-bold text-white">{t("title")}</h1>
         <div className="flex items-center gap-3 text-sm text-gray-400">
           <span>{org.name}</span>
           <span className="text-gray-700">·</span>
@@ -157,7 +159,7 @@ export default async function MembersPage({
                     <p className="text-sm font-medium text-white truncate">
                       {m.user.name ?? "—"}
                       {isSelf && (
-                        <span className="ml-2 text-xs text-gray-500">(vous)</span>
+                        <span className="ml-2 text-xs text-gray-500">{t("you")}</span>
                       )}
                     </p>
                     <p className="text-xs text-gray-500 truncate">{m.user.email}</p>
@@ -215,7 +217,7 @@ export default async function MembersPage({
             ))}
           </div>
         ) : (
-          <p className="text-sm text-gray-600">Tu n&apos;es membre d&apos;aucun espace pour l&apos;instant.</p>
+          <p className="text-sm text-gray-600">{t("noSpaces")}</p>
         )}
       </div>
 
