@@ -355,6 +355,50 @@ function retourObjetNu(code: string): string[] {
     .map((d) => d.nom);
 }
 
+/**
+ * Les actions serveur **inline** — une fonction portant `"use server"` dans son
+ * corps, déclarée hors de `src/actions/`, typiquement dans une page.
+ *
+ * L'invariant les ignorait complètement : il cherchait les actions dans
+ * `src/actions/*.ts` et les pages par leur export par défaut. Une action inline
+ * n'est ni l'un ni l'autre, donc elle traversait l'analyse sans être vue — alors
+ * que c'est un endpoint POST public au même titre que les autres. Trouvé par une
+ * revue adverse le 18/08/2026, qui en a exhibé une (`join-request/page.tsx`).
+ * Elle était correctement gardée ; l'angle mort, lui, était réel.
+ */
+export function actionsInline(source: string): string[] {
+  // La directive se cherche dans la source BRUTE : `codeSeul()` remplace les
+  // chaînes par un espace, donc `"use server"` y a déjà disparu. C'est la panne
+  // qu'a immédiatement révélée l'assertion de non-vacuité de ce test, au premier
+  // jet — un détecteur qui ne trouvait rien, sur un dépôt qui en contient une.
+  const noms: string[] = [];
+  const motif = /(?:async\s+)?function\s+([A-Za-z0-9_$]+)\s*\([^)]*\)\s*\{\s*["']use server["']/g;
+  let m: RegExpExecArray | null;
+  while ((m = motif.exec(source))) noms.push(m[1]);
+  return noms;
+}
+
+/**
+ * Les fonctions importées depuis `src/actions/` comptent comme gardées quand une
+ * action inline leur délègue : chacune est elle-même soumise à l'invariant plus
+ * bas. Sans cette résolution, une délégation légitime — le cas normal — passerait
+ * pour une porte nue.
+ */
+export function nomsImportesDActions(source: string): string[] {
+  // Sur la source BRUTE, comme `actionsInline` : le chemin du module est une
+  // chaîne, et `codeSeul()` l'aurait effacé. Deuxième occurrence du même piège.
+  const noms: string[] = [];
+  const motif = /import\s*\{([^}]*)\}\s*from\s*["'](?:@\/actions\/|\.\.?\/[^"']*actions\/)[^"']*["']/g;
+  let m: RegExpExecArray | null;
+  while ((m = motif.exec(source))) {
+    for (const brut of m[1].split(",")) {
+      const nom = brut.trim().split(/\s+as\s+/).pop()?.trim();
+      if (nom) noms.push(nom);
+    }
+  }
+  return noms;
+}
+
 /** Tous les fichiers de `src/app`, pour pouvoir affirmer qu'aucun n'échappe au tri. */
 const TOUT_APP = fichiersSous("src/app", () => true);
 
@@ -362,6 +406,11 @@ const ENTREES_APP = TOUT_APP.filter((c) => estEntreeNext(c.split("/").pop()!));
 const ROUTES = ENTREES_APP.filter((c) => /\/route\.[^./]+$/.test(c));
 const PAGES = ENTREES_APP.filter((c) => !/\/route\.[^./]+$/.test(c));
 const ACTIONS = fichiersSous("src/actions", (f) => f.endsWith(".ts"));
+
+/** Fichiers hors `src/actions/` portant la directive `"use server"`. */
+const PORTEURS_INLINE = [...fichiersSous("src/app", (f) => /\.(tsx|ts|jsx|js)$/.test(f)),
+                         ...fichiersSous("src/components", (f) => /\.(tsx|ts|jsx|js)$/.test(f))]
+  .filter((c) => /["']use server["']/.test(readFileSync(join(RACINE, c), "utf8")));
 
 describe("chaque porte d'entrée atteint une garde", () => {
   /**
@@ -407,6 +456,31 @@ describe("chaque porte d'entrée atteint une garde", () => {
     expect(entrees.length).toBeGreaterThan(0);
     const nues = entrees.filter((e) => !e.garde).map((e) => e.nom);
     expect(nues, `actions sans garde dans ${chemin} : ${nues.join(", ")}`).toEqual([]);
+  });
+
+  it("garde aussi les actions serveur déclarées en ligne dans une page", () => {
+    const nues: string[] = [];
+    let comptees = 0;
+    for (const chemin of PORTEURS_INLINE) {
+      const source = readFileSync(join(RACINE, chemin), "utf8");
+      const code = codeSeul(source);
+      const decls = declarations(code);
+      const locales = new Map(decls.map((d) => [d.nom, d.corps]));
+      // Une délégation vers `src/actions/` compte : cette action est vérifiée ailleurs.
+      const deleguees = nomsImportesDActions(source);
+      for (const nom of actionsInline(source)) {
+        comptees += 1;
+        const corps = locales.get(nom);
+        expect(corps, `corps introuvable pour l'action inline ${chemin} › ${nom}`).toBeDefined();
+        const garde =
+          atteintUneGarde(corps!, locales) ||
+          deleguees.some((n) => new RegExp(`\\b${n}\\s*\\(`).test(corps!));
+        if (!garde) nues.push(`${chemin} › ${nom}`);
+      }
+    }
+    expect(nues, "action serveur inline n'atteignant aucune garde").toEqual([]);
+    // Non-vacuité : si le détecteur cessait d'en trouver, le contrôle deviendrait creux.
+    expect(comptees, "aucune action inline détectée — le détecteur voit-il encore ?").toBeGreaterThan(0);
   });
 
   it("ne laisse aucun point d'entrée sous une forme d'export non analysée", () => {
